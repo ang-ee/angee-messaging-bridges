@@ -8,61 +8,14 @@ permissions:
   contents: read
 
 jobs:
-  uv:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: angee-messaging-bridges
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: angee-messaging-bridges
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-django
-          path: angee-django
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-react
-          path: angee-react
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-base
-          path: angee-base
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.14"
-      - run: uv run pytest -q
-
-  pnpm:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: angee-messaging-bridges
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: angee-messaging-bridges
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-django
-          path: angee-django
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-react
-          path: angee-react
-      - uses: actions/checkout@v4
-        with:
-          repository: ang-ee/angee-base
-          path: angee-base
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.1.3
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22.13"
-          cache: pnpm
-          cache-dependency-path: angee-messaging-bridges/pnpm-lock.yaml
-      - run: pnpm install
-      - run: pnpm -r typecheck
-      - run: pnpm -r test
+  checks:
+    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@main
+    secrets: inherit
+    with:
+      python-version: "3.14"
+      # The suite resolves base addons from the sibling slot and the
+      # fragments' @angee/gql fixture is the stack root's composed runtime/,
+      # so pytest + typecheck/test run in the stack lane.
+      uv-enabled: false
+      pnpm-enabled: false
+      stack-enabled: true
