@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
-      "@angee/gql/*": ["../../../angee-django/examples/notes-angee/runtime/gql/*"]
+      "@angee/gql/*": ["../../../../../runtime/gql/*"]
     },
     "target": "ES2022",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],

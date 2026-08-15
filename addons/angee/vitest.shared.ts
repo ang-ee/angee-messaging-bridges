@@ -4,7 +4,7 @@ export const gqlAlias = [
   {
     find: /^@angee\/gql\//,
     replacement: fileURLToPath(
-      new URL("../../../angee-django/examples/notes-angee/runtime/gql/", import.meta.url),
+      new URL("../../../../../runtime/gql/", import.meta.url),
     ),
   },
 ];
