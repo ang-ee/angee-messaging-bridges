@@ -1,0 +1,52 @@
+[project]
+name = "angee-messaging-bridges"
+version = "0.0.0"
+requires-python = ">=3.14"
+dependencies = ["django-angee[postgres,matrix]"]
+
+[dependency-groups]
+dev = [
+  "daphne>=4.0",
+  "faker>=30.0",
+  "pytest>=8.0",
+  "pytest-django>=4.8",
+  "ruff>=0.15.12",
+]
+
+[tool.uv]
+package = false
+cache-dir = ".angee/caches/uv"
+
+[tool.uv.extra-build-variables]
+python-olm = { CXXFLAGS = "-fdelayed-template-parsing" }
+
+[tool.uv.sources]
+django-angee = { path = "../angee-django", editable = true }
+
+[tool.pytest.ini_options]
+cache_dir = ".pytest_cache"
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+pythonpath = [".", "addons", "../angee-base/addons"]
+addopts = "-ra --strict-markers --import-mode=importlib"
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+cache-dir = ".ruff_cache"
+src = [".", "addons", "../angee-base/addons"]
+exclude = [
+  ".angee",
+  ".git",
+  ".mypy_cache",
+  ".reference",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".venv",
+  "node_modules",
+  "**/runtime",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

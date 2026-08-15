@@ -1,0 +1,10 @@
+packages:
+  - "../angee-react/app"
+  - "../angee-react/ui"
+  - "../angee-react/refine"
+  - "../angee-react/metadata"
+  - "../angee-base/addons/angee/*/web"
+  - "addons/angee/*/web"
+allowBuilds:
+  esbuild: true
+  "@tailwindcss/oxide": true
