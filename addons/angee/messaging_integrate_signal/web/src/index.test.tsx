@@ -3,10 +3,7 @@ import { CHANNEL_MODEL, MESSAGING_CHANNEL_TOOLBAR_SLOT } from "@angee/messaging"
 import { formViewRecordActionsSlot } from "@angee/ui";
 import { describe, expect, test } from "vitest";
 
-import {
-  SIGNAL_BACKEND,
-  default as messagingIntegrateSignal,
-} from "./index";
+import messagingIntegrateSignal from "./index";
 
 describe("messaging_integrate_signal addon manifest", () => {
   test("declares a valid bridge at the Signal implementation key", () => {
@@ -17,8 +14,8 @@ describe("messaging_integrate_signal addon manifest", () => {
       sequence: 22,
     });
     const actions = (messagingIntegrateSignal.slots ?? []).slice(1);
-    expect(actions.map((entry) => entry.slot)).toEqual(
-      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, SIGNAL_BACKEND)),
+    expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
+      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "signal")),
     );
   });
 

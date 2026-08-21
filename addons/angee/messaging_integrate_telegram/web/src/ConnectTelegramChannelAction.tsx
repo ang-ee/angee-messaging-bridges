@@ -72,10 +72,10 @@ export function ConnectTelegramChannelAction(): React.ReactElement {
         required: true,
         description: t("channel.telegram.credentialHelp"),
         relation: {
-          resource: "Credential",
+          resource: "integrate.Credential",
           filters: APP_KEYS_ONLY,
           create: {
-            resource: "Credential",
+            resource: "integrate.Credential",
             fields: createFields,
             title: t("channel.telegram.keysTitle"),
             submit: async (data) => {

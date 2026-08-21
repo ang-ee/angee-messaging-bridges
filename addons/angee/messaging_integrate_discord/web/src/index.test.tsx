@@ -3,7 +3,7 @@ import { CHANNEL_MODEL, MESSAGING_CHANNEL_TOOLBAR_SLOT } from "@angee/messaging"
 import { formViewRecordActionsSlot } from "@angee/ui";
 import { describe, expect, test } from "vitest";
 
-import { DISCORD_BACKEND, default as messagingIntegrateDiscord } from "./index";
+import messagingIntegrateDiscord from "./index";
 
 describe("messaging_integrate_discord addon manifest", () => {
   test("declares a live bridge with no QR instruction", () => {
@@ -14,8 +14,8 @@ describe("messaging_integrate_discord addon manifest", () => {
       sequence: 25,
     });
     const actions = (messagingIntegrateDiscord.slots ?? []).slice(1);
-    expect(actions.map((entry) => entry.slot)).toEqual(
-      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, DISCORD_BACKEND)),
+    expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
+      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "discord")),
     );
   });
 

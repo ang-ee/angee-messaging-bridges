@@ -133,7 +133,7 @@ describe("ConnectTelegramChannelAction", () => {
       {
         name: "credential",
         relation: {
-          resource: "Credential",
+          resource: "integrate.Credential",
           filters: [{ field: "kind", operator: "eq", value: "app_keys" }],
         },
       },
@@ -166,7 +166,7 @@ describe("ConnectTelegramChannelAction", () => {
     // this owner and selects the row it returns.
     const row = await create?.submit(
       { name: "  My keys  ", app_id: 123456, app_secret: "  telegram-api-hash  " },
-      { resource: "Credential", id: null, isCreate: true, record: null, lines: null },
+      { resource: "integrate.Credential", id: null, isCreate: true, record: null, lines: null },
     );
 
     expect(actionMocks.createKeysMutation).toHaveBeenCalledWith({

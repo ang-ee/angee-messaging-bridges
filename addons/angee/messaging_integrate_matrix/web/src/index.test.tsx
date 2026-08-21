@@ -3,7 +3,7 @@ import { CHANNEL_MODEL, MESSAGING_CHANNEL_TOOLBAR_SLOT } from "@angee/messaging"
 import { formViewRecordActionsSlot } from "@angee/ui";
 import { describe, expect, test } from "vitest";
 
-import { MATRIX_BACKEND, default as messagingIntegrateMatrix } from "./index";
+import messagingIntegrateMatrix from "./index";
 
 describe("messaging_integrate_matrix addon manifest", () => {
   test("declares a valid bridge at the Matrix implementation key", () => {
@@ -14,8 +14,8 @@ describe("messaging_integrate_matrix addon manifest", () => {
       sequence: 23,
     });
     const actions = (messagingIntegrateMatrix.slots ?? []).slice(1);
-    expect(actions.map((entry) => entry.slot)).toEqual(
-      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, MATRIX_BACKEND)),
+    expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
+      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "matrix")),
     );
   });
 
