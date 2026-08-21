@@ -1,57 +1,44 @@
-import { usePairingConnect } from "@angee/messaging";
-import * as React from "react";
 import {
-  Button,
-  Glyph,
-  MutationDialog,
-  type MutationDialogField,
+  ConnectChannelAction,
+  type ConnectChannelFields,
+} from "@angee/messaging";
+import type { AuthoredVariables } from "@angee/refine";
+import {
+  mutationDialogValueCodecs,
+  type MutationDialogValues,
 } from "@angee/ui";
+import * as React from "react";
 
 import { ConnectWhatsappChannel } from "./documents";
-import { useMessagingWhatsappT } from "./i18n";
 
-/** Button + two-step dialog contributed into the messaging channel toolbar slot. */
+const fields: ConnectChannelFields = (t) => [
+  {
+    name: "name",
+    label: t("channel.connect.name"),
+    placeholder: t("channel.whatsapp.namePlaceholder"),
+    required: true,
+  },
+];
+
+function parseValues(
+  values: MutationDialogValues,
+): AuthoredVariables<typeof ConnectWhatsappChannel> {
+  return {
+    name: mutationDialogValueCodecs.requiredString(values.name, "name"),
+  };
+}
+
+/** WhatsApp field declaration followed by the shared pairing hand-off. */
 export function ConnectWhatsappChannelAction(): React.ReactElement {
-  const t = useMessagingWhatsappT();
-  const [open, setOpen] = React.useState(false);
-  const { connect, pairingDialog } = usePairingConnect(
-    ConnectWhatsappChannel,
-    "connect_whatsapp_channel",
-    t("channel.whatsapp.scan"),
-  );
-  const fields = React.useMemo<readonly MutationDialogField[]>(
-    () => [
-      {
-        name: "name",
-        label: t("channel.whatsapp.name"),
-        placeholder: t("channel.whatsapp.namePlaceholder"),
-        required: true,
-      },
-    ],
-    [t],
-  );
   return (
-    <>
-      <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Glyph decorative name="plus" />
-        {t("channel.whatsapp.button")}
-      </Button>
-      <MutationDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={t("channel.whatsapp.title")}
-        description={t("channel.whatsapp.description")}
-        fields={fields}
-        submitLabel={t("channel.whatsapp.submit")}
-        submittingLabel={t("channel.whatsapp.submitting")}
-        cancelLabel={t("channel.whatsapp.cancel")}
-        errorFallback={t("channel.whatsapp.error")}
-        onSubmit={async (values) => {
-          const name = typeof values.name === "string" ? values.name.trim() : "";
-          await connect({ name });
-        }}
-      />
-      {pairingDialog}
-    </>
+    <ConnectChannelAction
+      kind="pairing"
+      document={ConnectWhatsappChannel}
+      fields={fields}
+      i18nPrefix="channel.whatsapp"
+      parseValues={parseValues}
+      resultField="connect_whatsapp_channel"
+      instructionKey="channel.whatsapp.scan"
+    />
   );
 }
