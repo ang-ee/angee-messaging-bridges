@@ -15,7 +15,8 @@ dev = [
 
 [tool.uv]
 package = false
-cache-dir = ".angee/caches/uv"
+# No cache-dir: a CWD-relative cache mints strays wherever uv runs; the
+# default per-user cache is shared and correct.
 
 [tool.uv.extra-build-variables]
 python-olm = { CXXFLAGS = "-fdelayed-template-parsing" }
