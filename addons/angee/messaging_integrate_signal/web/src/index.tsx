@@ -8,7 +8,7 @@ const messagingIntegrateSignal = defineChannelBridgeAddon({
   key: "signal",
   sequence: 22,
   connectAction: <ConnectSignalChannelAction />,
-  i18n: enMessagingSignalMessages,
+  i18n: { messaging: enMessagingSignalMessages },
   instructionKey: "channel.signal.scan",
 });
 

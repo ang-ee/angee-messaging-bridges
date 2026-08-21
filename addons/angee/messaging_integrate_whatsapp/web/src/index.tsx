@@ -8,7 +8,7 @@ const messagingIntegrateWhatsapp = defineChannelBridgeAddon({
   key: "whatsapp",
   sequence: 20,
   connectAction: <ConnectWhatsappChannelAction />,
-  i18n: enMessagingWhatsappMessages,
+  i18n: { messaging: enMessagingWhatsappMessages },
   instructionKey: "channel.whatsapp.scan",
 });
 

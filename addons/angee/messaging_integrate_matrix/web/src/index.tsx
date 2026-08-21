@@ -8,7 +8,7 @@ const messagingIntegrateMatrix = defineChannelBridgeAddon({
   key: "matrix",
   sequence: 23,
   connectAction: <ConnectMatrixChannelAction />,
-  i18n: enMessagingMatrixMessages,
+  i18n: { messaging: enMessagingMatrixMessages },
   instructionKey: "channel.matrix.recovery",
 });
 

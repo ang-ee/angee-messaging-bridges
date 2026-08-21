@@ -8,7 +8,7 @@ const messagingIntegrateDiscord = defineChannelBridgeAddon({
   key: "discord",
   sequence: 25,
   connectAction: <ConnectDiscordChannelAction />,
-  i18n: enMessagingDiscordMessages,
+  i18n: { messaging: enMessagingDiscordMessages },
 });
 
 export default messagingIntegrateDiscord;

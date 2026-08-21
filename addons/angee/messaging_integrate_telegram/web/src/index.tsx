@@ -8,7 +8,7 @@ const messagingIntegrateTelegram = defineChannelBridgeAddon({
   key: "telegram",
   sequence: 21,
   connectAction: <ConnectTelegramChannelAction />,
-  i18n: enMessagingTelegramMessages,
+  i18n: { messaging: enMessagingTelegramMessages },
   instructionKey: "channel.telegram.scan",
 });
 
