@@ -1,5 +1,5 @@
-import { expectValidBaseAddon } from "@angee/app/testing";
-import { CHANNEL_MODEL, MESSAGING_CHANNEL_TOOLBAR_SLOT } from "@angee/messaging";
+import { CHANNEL_MODEL } from "@angee/messaging";
+import { expectValidChannelBridgeAddon } from "@angee/messaging/testing";
 import { formViewRecordActionsSlot } from "@angee/ui";
 import { describe, expect, test } from "vitest";
 
@@ -7,12 +7,7 @@ import messagingIntegrateDiscord from "./index";
 
 describe("messaging_integrate_discord addon manifest", () => {
   test("declares a live bridge with no QR instruction", () => {
-    expect(() => expectValidBaseAddon(messagingIntegrateDiscord)).not.toThrow();
-    expect(messagingIntegrateDiscord.slots?.[0]).toMatchObject({
-      slot: MESSAGING_CHANNEL_TOOLBAR_SLOT,
-      id: "messaging-integrate-discord.connect",
-      sequence: 25,
-    });
+    expect(() => expectValidChannelBridgeAddon(messagingIntegrateDiscord)).not.toThrow();
     const actions = (messagingIntegrateDiscord.slots ?? []).slice(1);
     expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
       actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "discord")),
