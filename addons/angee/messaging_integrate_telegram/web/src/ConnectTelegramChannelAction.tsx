@@ -1,125 +1,134 @@
-import { usePairingConnect } from "@angee/messaging";
-import { useAuthoredMutation } from "@angee/refine";
 import {
-  Button,
-  Glyph,
-  MutationDialog,
+  ConnectChannelAction,
+  type ConnectChannelFields,
+} from "@angee/messaging";
+import {
+  useAuthoredMutation,
+  type AuthoredVariables,
+} from "@angee/refine";
+import {
+  mutationDialogValueCodecs,
   type MutationDialogField,
+  type MutationDialogValues,
 } from "@angee/ui";
 import * as React from "react";
 
 import { ConnectTelegramChannel, CreateTelegramAppKeys } from "./documents";
-import { useMessagingTelegramT } from "./i18n";
 
-/** Only application-key credentials can parameterize a Telegram client. */
 const APP_KEYS_ONLY = [
   { field: "kind", operator: "eq", value: "app_keys" },
 ] as const;
 
-/** Telegram application-key dialog followed by the shared channel pairing dialog. */
+function parseValues(
+  values: MutationDialogValues,
+): AuthoredVariables<typeof ConnectTelegramChannel> {
+  return {
+    name: mutationDialogValueCodecs.requiredString(values.name, "name"),
+    credentialId: mutationDialogValueCodecs.requiredString(
+      values.credential,
+      "credential",
+    ),
+  };
+}
+
+/** Telegram declarations plus its credential-creation relation affordance. */
 export function ConnectTelegramChannelAction(): React.ReactElement {
-  const t = useMessagingTelegramT();
-  const [open, setOpen] = React.useState(false);
-  const { connect, pairingDialog } = usePairingConnect(
-    ConnectTelegramChannel,
-    "connect_telegram_channel",
-    t("channel.telegram.scan"),
-  );
   const [createAppKeys] = useAuthoredMutation(CreateTelegramAppKeys);
-  const createFields = React.useMemo<readonly MutationDialogField[]>(
-    () => [
-      {
-        name: "name",
-        label: t("channel.telegram.keysName"),
-        placeholder: t("channel.telegram.keysNamePlaceholder"),
-      },
-      {
-        name: "app_id",
-        label: t("channel.telegram.apiId"),
-        kind: "integer",
-        placeholder: t("channel.telegram.apiIdPlaceholder"),
-      },
-      {
-        name: "app_secret",
-        label: t("channel.telegram.apiHash"),
-        widget: "password",
-        placeholder: t("channel.telegram.apiHashPlaceholder"),
-        description: (
-          <>
-            <span>{t("channel.telegram.keysHelp")}</span>
-            <br />
-            <a href="https://my.telegram.org/" target="_blank" rel="noreferrer">
-              {t("channel.telegram.keysLink")}
-            </a>
-          </>
-        ),
-      },
-    ],
-    [t],
-  );
-  const fields = React.useMemo<readonly MutationDialogField[]>(
-    () => [
-      {
-        name: "name",
-        label: t("channel.telegram.name"),
-        placeholder: t("channel.telegram.namePlaceholder"),
-        required: true,
-      },
-      {
-        name: "credential",
-        label: t("channel.telegram.credential"),
-        placeholder: t("channel.telegram.credentialPlaceholder"),
-        required: true,
-        description: t("channel.telegram.credentialHelp"),
-        relation: {
-          resource: "Credential",
-          filters: APP_KEYS_ONLY,
-          create: {
-            resource: "Credential",
-            fields: createFields,
-            title: t("channel.telegram.keysTitle"),
-            submit: async (data) => {
-              const created = await createAppKeys({
-                name: stringValue(data.name).trim(),
-                appId: String(data.app_id ?? "").trim(),
-                appSecret: stringValue(data.app_secret).trim(),
-              });
-              return created?.create_credential ?? null;
+  const fields = React.useCallback<ConnectChannelFields>(
+    (translate) => {
+      const createFields: readonly MutationDialogField[] = [
+        {
+          name: "name",
+          label: translate("channel.connect.name"),
+          placeholder: translate("channel.telegram.keysNamePlaceholder"),
+          required: true,
+        },
+        {
+          name: "app_id",
+          label: translate("channel.telegram.apiId"),
+          kind: "integer",
+          placeholder: translate("channel.telegram.apiIdPlaceholder"),
+          required: true,
+        },
+        {
+          name: "app_secret",
+          label: translate("channel.telegram.apiHash"),
+          widget: "password",
+          placeholder: translate("channel.telegram.apiHashPlaceholder"),
+          required: true,
+          description: (
+            <>
+              <span>{translate("channel.telegram.keysHelp")}</span>
+              <br />
+              <a href="https://my.telegram.org/" target="_blank" rel="noreferrer">
+                {translate("channel.telegram.keysLink")}
+              </a>
+            </>
+          ),
+        },
+      ];
+      return [
+        {
+          name: "name",
+          label: translate("channel.connect.name"),
+          placeholder: translate("channel.telegram.namePlaceholder"),
+          required: true,
+        },
+        {
+          name: "credential",
+          label: translate("channel.telegram.credential"),
+          placeholder: translate("channel.telegram.credentialPlaceholder"),
+          required: true,
+          description: translate("channel.telegram.credentialHelp"),
+          relation: {
+            resource: "integrate.Credential",
+            filters: APP_KEYS_ONLY,
+            create: {
+              resource: "integrate.Credential",
+              fields: createFields,
+              title: translate("channel.telegram.keysTitle"),
+              submit: async (values) => {
+                const appId = mutationDialogValueCodecs.integer(
+                  values.app_id,
+                  translate("channel.telegram.apiId"),
+                  (label) =>
+                    translate("channel.telegram.apiIdInvalid", { label }),
+                );
+                if (appId === null) {
+                  throw new TypeError(
+                    'Telegram app-key invariant: required field "app_id" was empty.',
+                  );
+                }
+                const created = await createAppKeys({
+                  name: mutationDialogValueCodecs.requiredString(
+                    values.name,
+                    "name",
+                  ),
+                  appId: String(appId),
+                  appSecret: mutationDialogValueCodecs.requiredString(
+                    values.app_secret,
+                    "app_secret",
+                  ),
+                });
+                return created?.create_credential ?? null;
+              },
             },
           },
         },
-      },
-    ],
-    [createAppKeys, createFields, t],
+      ];
+    },
+    [createAppKeys],
   );
-  return (
-    <>
-      <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Glyph decorative name="plus" />
-        {t("channel.telegram.button")}
-      </Button>
-      <MutationDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={t("channel.telegram.title")}
-        description={t("channel.telegram.description")}
-        fields={fields}
-        submitLabel={t("channel.telegram.submit")}
-        submittingLabel={t("channel.telegram.submitting")}
-        cancelLabel={t("channel.telegram.cancel")}
-        errorFallback={t("channel.telegram.error")}
-        onSubmit={async (values) => {
-          await connect({
-            name: stringValue(values.name).trim(),
-            credentialId: stringValue(values.credential),
-          });
-        }}
-      />
-      {pairingDialog}
-    </>
-  );
-}
 
-function stringValue(value: unknown): string {
-  return typeof value === "string" ? value : "";
+  return (
+    <ConnectChannelAction
+      kind="pairing"
+      document={ConnectTelegramChannel}
+      fields={fields}
+      i18nPrefix="channel.telegram"
+      parseValues={parseValues}
+      resultField="connect_telegram_channel"
+      instructionKey="channel.telegram.scan"
+    />
+  );
 }

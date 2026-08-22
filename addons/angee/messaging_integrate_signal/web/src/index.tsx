@@ -3,16 +3,12 @@ import { defineChannelBridgeAddon } from "@angee/messaging";
 import { ConnectSignalChannelAction } from "./ConnectSignalChannelAction";
 import { enMessagingSignalMessages } from "./i18n";
 
-export const SIGNAL_CONNECT_ACTION_ID = "messaging-integrate-signal.connect";
-export const SIGNAL_PAIRING_ACTION_ID = "messaging-integrate-signal.pairing";
-export const SIGNAL_BACKEND = "signal";
-
 const messagingIntegrateSignal = defineChannelBridgeAddon({
   id: "messaging-integrate-signal",
-  key: SIGNAL_BACKEND,
+  key: "signal",
   sequence: 22,
   connectAction: <ConnectSignalChannelAction />,
-  i18n: enMessagingSignalMessages,
+  i18n: { messaging: enMessagingSignalMessages },
   instructionKey: "channel.signal.scan",
 });
 
