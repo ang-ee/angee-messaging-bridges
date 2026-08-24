@@ -167,13 +167,15 @@ def test_matrix_real_crypto_store_imports_and_round_trips_sqlite_device_id(tmp_p
     """The installed E2EE boundary includes both DB drivers and a usable SQLite store.
 
     The only test here that needs the real libraries — every other one runs against
-    the fake worker-only modules. They ship in the optional ``matrix`` extra
-    (``pyproject.toml``), so a checkout resolved without it skips this rather than
-    failing: the assertion is about a *composed* Matrix addon's boundary being
-    complete, which is vacuous when the addon's dependencies are not installed.
+    the fake worker-only modules. They arrive through the Matrix addon's
+    ``mautrix[encryption]`` dependency in the generated addons group, which plain
+    ``uv sync`` installs through ``default-groups``. A checkout that has not synced
+    that group skips this rather than failing: the assertion is about a *composed*
+    Matrix addon's boundary being complete, which is vacuous when its dependencies
+    are not installed.
     """
 
-    pytest.importorskip("olm", reason="matrix extra not installed (uv sync --extra matrix)")
+    pytest.importorskip("olm", reason="Matrix addon dependencies not installed (run plain uv sync)")
     import aiosqlite  # noqa: F401 — importing both drivers is part of the assertion.
     import asyncpg  # noqa: F401
     import olm  # noqa: F401
