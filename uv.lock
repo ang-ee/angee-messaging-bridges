@@ -216,7 +216,7 @@ addons = [
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
     { name = "strawberry-django-aggregates", specifier = ">=0.10.0" },
-    { name = "strawberry-django-hasura", specifier = ">=0.6.0" },
+    { name = "strawberry-django-hasura", specifier = ">=0.7.1" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=e4fa3198f704d81b3ca96b6dcac75420c5fee516" },
     { name = "strawberry-graphql-django", specifier = ">=0.86.7" },
     { name = "tablib", specifier = ">=3" },
@@ -959,7 +959,7 @@ requires-dist = [
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
     { name = "django-zed-rebac", specifier = ">=0.14" },
-    { name = "hatch-angee", specifier = ">=0.2.1" },
+    { name = "hatch-angee", specifier = ">=0.2.2" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'", specifier = ">=3.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -1302,16 +1302,16 @@ wheels = [
 
 [[package]]
 name = "hatch-angee"
-version = "0.2.1"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "hatchling" },
     { name = "packaging" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/77/e2530adb6c91a38732b88540fcdf49ec93a2547cf3ab911db0377d822f06/hatch_angee-0.2.1.tar.gz", hash = "sha256:c53701e2bc84b520fa2df36b61b407feb13d85150a2bec4a0a3633dba2608a12", size = 52732, upload-time = "2026-08-15T12:25:01.529Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b8/29/3e5b64055b02da9678a166c52cc6b5b271959cb334f8717d931d0d33c7c6/hatch_angee-0.2.2.tar.gz", hash = "sha256:ab496e82df3af6584507c8be0eddc4e7d6e74e07b5505a68950050f0337a9b82", size = 53231, upload-time = "2026-08-25T09:01:01.431Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/fd/3332968f5bf2f3f8150f7de40fbc25c7168dc1f5e902c3c11b4a588fddfd/hatch_angee-0.2.1-py3-none-any.whl", hash = "sha256:892e6aa1a45fd7669ef095f1ab3c4babdb00d61bff888588cee56f7869f0e729", size = 25983, upload-time = "2026-08-15T12:25:00.414Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/9e/93bae0e19a381b3915a37018ecc64075051b24804a38df647a779c13dcc3/hatch_angee-0.2.2-py3-none-any.whl", hash = "sha256:018f3242484715a024f0dba8577246ce2acacb829333a97f4fa4a0efc7851735", size = 26155, upload-time = "2026-08-25T09:01:00.274Z" },
 ]
 
 [[package]]
@@ -2856,7 +2856,7 @@ wheels = [
 
 [[package]]
 name = "strawberry-django-hasura"
-version = "0.6.0"
+version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -2864,9 +2864,9 @@ dependencies = [
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/f3/a1e4e9efe81c2211043c9cd851bb5e401bd5f0a7d253c3d12cf6b54c7fbe/strawberry_django_hasura-0.6.0.tar.gz", hash = "sha256:f464e7e00acea9fffe752d5e0d2c0a7d5b3324b140991dd9429a6d709e951ffb", size = 72239, upload-time = "2026-07-15T14:57:54.926Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/e8/9a7b8c09deb0560fc923846e87bf741447fab0cc4fec5b8494e158ffddc7/strawberry_django_hasura-0.7.1.tar.gz", hash = "sha256:2f09351d0ef7ac3047dc68463a95ee8d56f9d24734007cc2b2a02e50c50a7e9e", size = 75338, upload-time = "2026-08-25T09:46:48.833Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/5b/9de34cd4bb5036871ae8a96eea85f9aa2732cf21731de6bbdb98576f43e9/strawberry_django_hasura-0.6.0-py3-none-any.whl", hash = "sha256:dc0e7a26534a48381b0a9f35b70c7da6c791a571b2f17863c5f1e6a058d058f2", size = 55817, upload-time = "2026-07-15T14:57:53.817Z" },
+    { url = "https://files.pythonhosted.org/packages/92/eb/d8fbc97ce496f463679f821f71199e7dd8394b602924bdeeb245549c24f6/strawberry_django_hasura-0.7.1-py3-none-any.whl", hash = "sha256:f9173d88c1f9d6ecf14291a4508c7a924b2be16b83ac3766c434d94c63885cfd", size = 57167, upload-time = "2026-08-25T09:46:47.757Z" },
 ]
 
 [[package]]
