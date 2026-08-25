@@ -96,6 +96,9 @@ exclude = [
   ".venv",
   "node_modules",
   "**/runtime",
+  # Digest-pinned after materialization (see angee/compose/migrations.py);
+  # mechanical reformatting breaks composed hosts.
+  "**/runtime_migrations",
 ]
 
 [tool.ruff.lint]
