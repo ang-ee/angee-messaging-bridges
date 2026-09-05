@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from angee.base.mixins import AuditMixin, SqidMixin
+from angee.base.models import AngeeModel
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -39,8 +41,6 @@ from rebac import (
 )
 from rebac.actors import current_sudo_reason, is_sudo
 
-from angee.base.mixins import AuditMixin, SqidMixin
-from angee.base.models import AngeeModel
 from angee.graphql import publishing
 from angee.graphql.access import ChangeReadGate
 from angee.graphql.events import ChangePayload
@@ -106,7 +106,7 @@ _PersonMeta = getattr(AbstractPerson, "Meta", object)
 _AddressMeta = getattr(AbstractAddress, "Meta", object)
 
 
-class Directory(Integration, AbstractDirectory):
+class Directory(AbstractDirectory, Integration):
     """Concrete contacts directory (Integration child) used by messaging tests."""
 
     class Meta(AbstractDirectory.Meta):
@@ -145,7 +145,7 @@ class Party(AbstractParty):
         rebac_id_attr = "sqid"
 
 
-class Organization(Party, AbstractOrganization):
+class Organization(AbstractOrganization, Party):
     """Concrete organization matching the composer inheritance shape."""
 
     class Meta(_OrganizationMeta):
@@ -171,7 +171,7 @@ class Handle(AbstractHandle):
         rebac_id_attr = "sqid"
 
 
-class Person(Party, AbstractPerson):
+class Person(AbstractPerson, Party):
     """Concrete person used when messaging attributes a user-owned handle."""
 
     class Meta(_PersonMeta):

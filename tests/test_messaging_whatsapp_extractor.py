@@ -11,12 +11,12 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from angee.addons import addon_manifest
 from django.apps import apps
 from django.core.management import call_command
 from django.db import connection
 from rebac import system_context
 
-from angee.addons import addon_contract
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
@@ -170,7 +170,7 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
     """WhatsApp contributes its vendor extractor through the bridge's settings seam."""
 
     config = apps.get_app_config("messaging_integrate_whatsapp")
-    contract = addon_contract(config)
+    contract = addon_manifest(config)
 
     assert contract is not None
     assert "angee.workflows_integrate" in contract.depends_on

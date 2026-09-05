@@ -9,7 +9,7 @@ from typing import Any
 from hatch_angee import compile_dependencies, parse_manifest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ADDON_ROOTS = (PROJECT_ROOT / "addons", PROJECT_ROOT.parent / "angee-base" / "addons")
+ADDON_ROOTS = (PROJECT_ROOT / "addons", PROJECT_ROOT.parent / "angee" / "addons")
 
 
 def _read_toml(path: Path) -> dict[str, Any]:
