@@ -7,7 +7,7 @@ permissions, and web fragments with the bridge that owns them.
 
 The supported layout is a stack workspace slot: this checkout sits at
 `<stack>/workspaces/<ws>/angee-messaging-bridges` with the consolidated
-`angee/` repository as a sibling slot, and the stack root above owns
+`angee/` repository (core, `addons/`, `packages/`) as a sibling slot. The stack root owns
 the composed host — the `@angee/gql` fixture resolves from the stack root's
 `runtime/` (regenerate with `manage.py angee build` + web codegen there).
 Shared messaging behavior belongs in the base `angee.messaging` addon, not in
