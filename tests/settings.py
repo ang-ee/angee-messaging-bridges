@@ -6,6 +6,8 @@ from pathlib import Path
 
 from django.apps import AppConfig
 
+from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+
 
 class BareComposeConfig(AppConfig):
     """Register the core composer without emitting a generated runtime."""
@@ -52,9 +54,8 @@ INSTALLED_APPS = [
     "angee.messaging_integrate_matrix",
     "angee.messaging_integrate_discord",
 ]
-# Checkout-local (NOT a global tempdir) so parallel git worktrees / concurrent test
-# runs on the same machine never share one SQLite file and corrupt each other with
-# "disk I/O error". `.test-db/` is purpose-named, gitignored, and per-checkout.
+# Checkout-local so parallel git worktrees do not share one SQLite file.
+# Runs within this checkout must execute sequentially. `.test-db/` is gitignored.
 _TEST_DB_DIR = Path(__file__).resolve().parent.parent / ".test-db"
 _TEST_DB_DIR.mkdir(parents=True, exist_ok=True)
 _TEST_DB_FILE = str(_TEST_DB_DIR / "angee_pytest_db.sqlite3")
@@ -75,6 +76,8 @@ DATABASES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
+# The bare harness does not run the composer; retain IAM's declared admin policy.
+REBAC_UNIVERSAL_ADMIN_ROLE = IAM_SETTINGS["REBAC_UNIVERSAL_ADMIN_ROLE"]
 USE_TZ = True
 ANGEE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
