@@ -79,7 +79,7 @@ USE_TZ = True
 ANGEE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
     Path(__file__).resolve().parent.parent / "addons",
-    Path(__file__).resolve().parents[2] / "angee-base" / "addons",
+    Path(__file__).resolve().parents[2] / "angee" / "addons",
 )
 ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024

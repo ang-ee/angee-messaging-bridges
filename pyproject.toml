@@ -13,7 +13,7 @@ dev = [
   "ruff>=0.15.12",
 ]
 
-# Compiled from addons/ and ../angee-base/addons because the bridge test environment composes both roots.
+# Compiled from addons/ and ../angee/addons because the bridge test environment composes both roots.
 
 
 
@@ -31,7 +31,7 @@ addons = [
     "django-anymail>=15.1",
     "django-axes>=8.0",
     "django-import-export>=4.3",
-    "django-zed-rebac[strawberry-django]>=0.14",
+    "django-zed-rebac[strawberry-django] @ git+https://github.com/ang-ee/django-zed-rebac.git@43be603bc6624c9876e9b4bb04ce30c07a7d2541",
     "fastmcp>=3.4.2,<4",
     "httpcore>=1.0,<2",
     "httpx>=0.28.1,<0.29",
@@ -43,7 +43,10 @@ addons = [
     "neonize>=0.4.3.post0",
     "openai>=2.43.0",
     "phonenumbers>=9.0",
-    "pydantic-ai-slim[anthropic,mcp,openai]>=2.13",
+    "pydantic-ai-slim>=2.13",
+    "pydantic-ai-slim[anthropic]>=2.13",
+    "pydantic-ai-slim[mcp]>=2.13",
+    "pydantic-ai-slim[openai]>=2.13",
     "pydantic>=2.13",
     "pyjwt[crypto]>=2.12",
     "python-dateutil>=2.9",
@@ -52,8 +55,8 @@ addons = [
     "qrcode[pil]>=8.2",
     "ruamel.yaml>=0.18",
     "slack-sdk>=3.43.0",
-    "strawberry-django-aggregates>=0.10.0",
-    "strawberry-django-hasura>=0.7.1",
+    "strawberry-django-aggregates @ git+https://github.com/ang-ee/strawberry-django-aggregates.git@587fc099ae1db69c618f9d0d38d6dc1deec63142",
+    "strawberry-django-hasura @ git+https://github.com/ang-ee/strawberry-django-hasura.git@ac5559f367e575da55db7d2267df271490a3a50b",
     "strawberry-graphql @ git+https://github.com/ang-ee/strawberry.git@e4fa3198f704d81b3ca96b6dcac75420c5fee516",
     "strawberry-graphql-django>=0.86.7",
     "tablib>=3",
@@ -71,21 +74,21 @@ default-groups = ["dev", "addons"]
 python-olm = { CXXFLAGS = "-fdelayed-template-parsing" }
 
 [tool.uv.sources]
-django-angee = { path = "../angee-django", editable = true }
+django-angee = { path = "../angee", editable = true }
 
 [tool.pytest.ini_options]
 cache_dir = ".pytest_cache"
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
-pythonpath = [".", "addons", "../angee-base/addons"]
+pythonpath = [".", "addons", "../angee/addons"]
 addopts = "-ra --strict-markers --import-mode=importlib"
 
 [tool.ruff]
 line-length = 120
 target-version = "py314"
 cache-dir = ".ruff_cache"
-src = [".", "addons", "../angee-base/addons"]
+src = [".", "addons", "../angee/addons"]
 exclude = [
   ".angee",
   ".git",
