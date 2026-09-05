@@ -10,7 +10,6 @@ from typing import Any
 
 import pytest
 import strawberry
-import angee.parties.schema as parties_schema
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import connection
@@ -27,9 +26,9 @@ from rebac import (
 )
 from rebac.roles import grant
 
+import angee.parties.schema as parties_schema
 from angee.graphql.deletion import DeletePreview
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
-from angee.messaging.managers import ChannelManager
 from angee.messaging.models import Channel as AbstractChannel
 from angee.parties.mixins import LinkSource
 from tests import messaging_fixtures as messaging_models
@@ -52,10 +51,9 @@ from tests.conftest import result_data as _data
 _ChannelMeta = getattr(AbstractChannel, "Meta", object)
 
 
-class Channel(Integration, AbstractChannel):
+class Channel(AbstractChannel, Integration):
     """Concrete message channel used to import the messaging schema."""
 
-    objects = ChannelManager()
 
     class Meta(_ChannelMeta):
         abstract = False

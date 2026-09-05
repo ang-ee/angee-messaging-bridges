@@ -6,13 +6,13 @@ Meta export support. Each addon lives under `addons/angee/<name>` with its
 `addon.toml` contract and any colocated web fragment.
 
 The repository is a development environment, not a Python distribution. It
-uses sibling `angee-django`, `angee-base`, and `angee-react` checkouts.
+uses the consolidated sibling `angee/` checkout (core, `addons/`, `packages/`).
+The stack root owns the JS installation; never run `pnpm install` in a source slot.
 
 Run the checks from this directory:
 
 ```sh
 uv run pytest -q
-pnpm install
-pnpm -r typecheck
-pnpm -r test
+pnpm --config.verify-deps-before-run=false -r typecheck
+pnpm --config.verify-deps-before-run=false -r test
 ```
