@@ -95,9 +95,6 @@ ANGEE_STORAGE_TRASH_TTL_DAYS = 30
 ANGEE_STORAGE_BACKEND_CLASSES = {
     "local": "angee.storage.backends.LocalBackend",
 }
-ANGEE_INTEGRATION_IMPLS = {
-    "none": "angee.integrate.impl.NullIntegrationImpl",
-}
 ANGEE_RESOURCE_SOURCE_CLASSES = {
     "path": "angee.resources.sources.path_source",
     "url": "angee.integrate.resource_source.url_source",
