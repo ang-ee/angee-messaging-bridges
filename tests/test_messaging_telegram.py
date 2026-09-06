@@ -757,7 +757,8 @@ def test_telegram_connect_failure_latches_runtime_error_and_stops_redispatch(
     channel.refresh_from_db()
     assert channel.runtime_status == IntegrationRuntimeStatus.ERROR
     assert channel.sync_stage == Channel.SyncStage.FAILED
-    assert "application credentials were rejected" in channel.sync_error.lower()
+    assert channel.sync_error == "Integration operation failed."
+    assert "credentials" not in channel.sync_error.lower()
     assert tasks_module.ensure_bridge_sessions() == {"ok": True, "dispatched": 0}
 
 

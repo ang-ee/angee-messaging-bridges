@@ -87,7 +87,8 @@ def test_connect_whatsapp_channel_requires_seeded_vendor(messaging_graphql_table
 
     assert result.errors
     message = str(result.errors[0])
-    assert "whatsapp" in message and "resources load" in message
+    assert "An unexpected error occurred." in message
+    assert "resources load" not in message.lower()
     with system_context(reason="test.messaging.whatsapp.vendor.verify"):
         assert not Vendor.objects.filter(slug="whatsapp").exists()
 
