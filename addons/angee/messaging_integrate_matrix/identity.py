@@ -1,6 +1,6 @@
 """Pure Matrix room-event identity and message mapping rules.
 
-The worker converts mautrix objects into ordinary mappings before crossing this
+The worker converts nio objects into ordinary mappings before crossing this
 boundary. Keeping this module SDK-free lets the console import the backend and
 GraphQL declarations without loading Matrix crypto or its native bindings.
 """
@@ -90,7 +90,7 @@ def parsed_message(
 
     State events, edits, reactions, redactions, locations, and unsupported
     message types are deliberately ignored. Encrypted events reach this function
-    only after mautrix decrypts them into their original room-message shape.
+    only after nio decrypts them into their original room-message shape.
     """
 
     if text(event.get("type")) != "m.room.message" or "state_key" in event:

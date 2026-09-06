@@ -7,9 +7,9 @@ keywords = ["matrix", "chat", "sync", "e2ee"]
 category = "Integration"
 depends_on = ["angee.messaging", "angee.integrate", "angee.parties"]
 dependencies = [
-  "aiosqlite>=0.21",
-  "asyncpg>=0.30",
-  "mautrix[encryption]",
+  "matrix-nio[e2e]>=0.26",
+  "pycryptodome>=3.18",
+  "unpaddedbase64>=2.1",
 ]
 
 [resources]

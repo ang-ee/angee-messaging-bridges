@@ -18,9 +18,7 @@ BRIDGE_PACKAGES_ROOT = BRIDGE_ADDONS_ROOT / "angee"
 SOURCE_ROOTS = (ANGEE.parent, BASE_ADDONS_ROOT, BRIDGE_ADDONS_ROOT)
 
 # Derived from this repository's source tree so every new bridge is guarded.
-_BRIDGE_PACKAGES = tuple(
-    f"angee.{path.name}" for path in sorted(BRIDGE_PACKAGES_ROOT.iterdir()) if path.is_dir()
-)
+_BRIDGE_PACKAGES = tuple(f"angee.{path.name}" for path in sorted(BRIDGE_PACKAGES_ROOT.iterdir()) if path.is_dir())
 
 
 def _module_imports(path: Path) -> set[str]:
@@ -114,7 +112,7 @@ def test_framework_base_does_not_import_bridge_addons() -> None:
 def test_live_console_import_path_stays_vendor_free() -> None:
     """The full console import closure excludes worker-only and vendor libraries."""
 
-    forbidden = ("discord", "mautrix", "neonize", "olm", "telethon", "qrcode", "PIL", "Pillow")
+    forbidden = ("discord", "nio", "neonize", "vodozemac", "telethon", "qrcode", "PIL", "Pillow")
     console_entries = (
         "angee.integrate.live",
         "angee.integrate.impl",
@@ -156,4 +154,5 @@ def test_live_console_import_path_stays_vendor_free() -> None:
     assert "angee.messaging.session" not in closure
     assert "angee.messaging_integrate_signal.session" not in closure
     assert "angee.messaging_integrate_matrix.session" not in closure
+    assert "angee.messaging_integrate_matrix.recovery" not in closure
     assert "angee.messaging_integrate_discord.session" not in closure
