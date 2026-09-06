@@ -9,8 +9,6 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
 
-from angee.addons import AddonContract
-from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from django.apps import AppConfig
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -18,6 +16,7 @@ from django.db import connection, models
 from django.test import RequestFactory
 from rebac import actor_context, system_context
 
+from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.models import Credential as AbstractCredential
 from angee.integrate.models import ExternalAccount as AbstractExternalAccount
@@ -125,7 +124,7 @@ INTEGRATE_TEST_MODELS = (Vendor, Integration)
 """Concrete integration catalogue/integration models created on demand by integrate fixtures."""
 
 
-class VcsBridge(Integration, AbstractVcsBridge):
+class VcsBridge(AbstractVcsBridge, Integration):
     """Concrete VCS bridge used by source-addon tests.
 
     ``angee.integrate.schema`` binds the VCS console types at import time via
@@ -504,27 +503,6 @@ def SchemaAddon(schemas: dict[str, dict[str, tuple[object, ...]]]) -> AppConfig:
 
     return make_addon(schemas=schemas)
 
-
-def make_contract(**overrides: object) -> AddonContract:
-    """Build an AddonContract for fake addons, defaulting every unset seam to empty.
-
-    Attached to a stub app config as ``_addon_contract`` and surfaced by the
-    test-side contract-reader stub (see ``stub_contracts`` in ``test_compose``), so a
-    fake config with no ``addon.toml`` on disk still resolves a declared contract.
-    """
-
-    fields: dict[str, object] = {
-        "name": "tests.addon",
-        "depends_on": (),
-        "migrations": (),
-        "schemas": None,
-        "web": None,
-        "web_codegen": None,
-        "mcp_tools": None,
-        "resources": {},
-    }
-    fields.update(overrides)
-    return AddonContract(**fields)  # type: ignore[arg-type]
 
 
 def addon_schema(schemas: dict[str, Any], name: str) -> Any:

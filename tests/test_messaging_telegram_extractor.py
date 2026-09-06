@@ -11,10 +11,10 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from angee.addons import addon_manifest
 from django.apps import apps
 from telethon import types, utils
 
-from angee.addons import addon_contract
 from angee.messaging.backends import MediaItem
 from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from angee.messaging_integrate_telegram import extractor as extractor_module
@@ -426,7 +426,7 @@ def test_telegram_addon_registers_takeout_extractor_and_depends_on_bridge() -> N
     """Telegram contributes one extractor through workflows-integrate autoconfig."""
 
     config = apps.get_app_config("messaging_integrate_telegram")
-    contract = addon_contract(config)
+    contract = addon_manifest(config)
 
     assert contract is not None
     assert "angee.workflows_integrate" in contract.depends_on

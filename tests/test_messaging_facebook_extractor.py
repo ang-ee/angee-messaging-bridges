@@ -9,9 +9,9 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from angee.addons import addon_manifest
 from django.apps import apps
 
-from angee.addons import addon_contract
 from angee.messaging_integrate_facebook import extractor as extractor_module
 from angee.messaging_integrate_facebook.autoconfig import SETTINGS
 from angee.messaging_integrate_facebook.extractor import FacebookTakeoutExtractor
@@ -78,7 +78,7 @@ def test_execute_stages_and_delegates_to_the_one_facade(
 def test_addon_registers_backend_and_both_extractors() -> None:
     """Manifest dependencies and autoconfig expose the complete addon shape."""
 
-    contract = addon_contract(apps.get_app_config("messaging_integrate_facebook"))
+    contract = addon_manifest(apps.get_app_config("messaging_integrate_facebook"))
 
     assert contract is not None
     assert "angee.messaging_integrate_meta" in contract.depends_on
