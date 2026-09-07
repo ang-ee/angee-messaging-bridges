@@ -99,10 +99,7 @@ def test_console_resource_metadata_declares_message_surface() -> None:
     """The composed console schema reports Message's Hasura resource contract."""
 
     schema = _schema()
-    metadata = {
-        item.model_label: item
-        for item in schema.angee_resources
-    }["messaging.Message"]
+    metadata = {item.model_label: item for item in schema.angee_resources}["messaging.Message"]
 
     assert metadata.roots.list_name == "messages"
     assert metadata.roots.detail_name == "messages_by_pk"
@@ -111,54 +108,57 @@ def test_console_resource_metadata_declares_message_surface() -> None:
     assert metadata.roots.create_name is None
     assert metadata.roots.update_name == "update_messages_by_pk"
     assert metadata.roots.delete_name == "delete_messages_by_pk"
-    assert metadata.filter_fields == (
-        "id",
-        "status",
-        "message_type",
-        "subtype",
+    assert {name for name, field in metadata.query.fields.items() if field.filter} == {
         "platform",
-        "direction",
-        "thread",
-        "channel",
-        "sender",
-        "sent_at",
-        # The transcript's keyset "load older" cursors on (sent_at, created_at).
         "created_at",
-    )
-    assert metadata.order_fields == ("sent_at", "received_at", "created_at")
-    assert metadata.aggregate_fields == ("id",)
-    assert metadata.group_by_fields == (
+        "id",
+        "sent_at",
         "thread",
-        "thread__title__text",
         "sender",
-        "sender__display_name",
-        "channel",
-        "channel__display_name",
+        "direction",
         "status",
         "message_type",
+        "channel",
         "subtype",
-        "subtype__key",
-        "platform",
-        "metadata.mailbox",
+    }
+    assert {name for name, field in metadata.query.fields.items() if field.sort} == {
+        "thread_title",
+        "created_at",
+        "id",
         "sent_at",
-    )
+        "channel_vendor_name",
+        "title",
+        "status",
+        "received_at",
+        "sender_name",
+    }
+    assert metadata.aggregate_fields == ("id",)
+    assert set(metadata.query.axes) == {
+        "platform",
+        "sent_at",
+        "thread",
+        "sender",
+        "status",
+        "metadata.mailbox",
+        "message_type",
+        "channel",
+        "subtype",
+    }
     assert metadata.update_fields == ("status",)
     assert metadata.capabilities == ("list", "detail", "aggregate", "groups", "update", "delete", "changes")
     assert {
-        axis.field: (axis.model_label, axis.public_id_field, axis.label_axis)
-        for axis in metadata.relation_axes
+        name: (metadata.query.fields[name].relation.model, axis.server.label_key)
+        for name, axis in metadata.query.axes.items()
+        if axis.kind == "relation"
     } == {
-        "thread": ("messaging.Thread", "sqid", "thread__title__text"),
-        "sender": ("parties.Handle", "sqid", "sender__display_name"),
-        "channel": ("integrate.Integration", "sqid", "channel__display_name"),
-        "subtype": ("messaging.MessageSubtype", "sqid", "subtype__key"),
+        "thread": ("messaging.Thread", "thread__title__text"),
+        "sender": ("parties.Handle", "sender__display_name"),
+        "channel": ("integrate.Integration", "channel__display_name"),
+        "subtype": ("messaging.MessageSubtype", "subtype__key"),
     }
 
     serialized = schema._schema.extensions["angee"]["resources"]
-    message = {
-        item["modelLabel"]: item
-        for item in serialized
-    }["messaging.Message"]
+    message = {item["modelLabel"]: item for item in serialized}["messaging.Message"]
     assert message["roots"]["detail"] == "messages_by_pk"
     assert message["roots"]["aggregate"] == "messages_aggregate"
     assert message["roots"]["groups"] == "messages_groups"
@@ -169,40 +169,21 @@ def test_console_resource_metadata_declares_message_surface() -> None:
     assert message["roots"]["changes"] == "messageChanged"
     assert message["typeNames"]["filter"] == "messages_bool_exp"
     assert message["typeNames"]["order"] == "messages_order_by"
-    assert message["groupByFields"] == [
-        "thread",
-        "thread__title__text",
-        "sender",
-        "sender__display_name",
-        "channel",
-        "channel__display_name",
-        "status",
-        "message_type",
-        "subtype",
-        "subtype__key",
-        "platform",
-        "metadata.mailbox",
-        "sent_at",
-    ]
-    mailbox_dimension = {dimension["field"]: dimension for dimension in message["groupDimensions"]}["metadata.mailbox"]
-    assert mailbox_dimension["input"] == "METADATA__MAILBOX"
-    assert mailbox_dimension["key"] == "metadata__mailbox"
+    assert set(message["query"]["axes"]) == set(metadata.query.axes)
+    mailbox_dimension = message["query"]["axes"]["metadata.mailbox"]
+    assert mailbox_dimension["server"]["input"] == "METADATA__MAILBOX"
+    assert mailbox_dimension["server"]["key"] == "metadata__mailbox"
     assert mailbox_dimension["kind"] == "json"
-    assert mailbox_dimension["filter"] == {
-        "kind": "equality",
-        "field": "metadata",
-        "valueKey": "metadata__mailbox",
-        "rangeKey": None,
-        "lookup": "jsonContains",
-        "nullLookup": None,
-        "valueTransform": "jsonObject:mailbox",
-        "valueMap": [],
-    }
+    # The source does not declare metadata filterable: this axis is a summary.
+    assert mailbox_dimension["drill"] is None
     assert message["updateFields"] == ["status"]
     status_field = {field["name"]: field for field in message["fields"]}["status"]
-    assert status_field["filterable"] is True
-    assert status_field["groupable"] is True
+    assert message["query"]["fields"]["status"]["filter"] is not None
+    assert "status" in message["query"]["axes"]
     assert status_field["updatable"] is True
+    for name in ("sender_name", "thread_title", "channel_vendor_name"):
+        assert message["query"]["fields"][name]["sort"] is not None
+        assert message["query"]["fields"][name]["filter"] is None
 
 
 def test_console_resource_metadata_declares_thread_and_channel_surfaces() -> None:
@@ -217,7 +198,7 @@ def test_console_resource_metadata_declares_thread_and_channel_surfaces() -> Non
     assert thread.roots.delete_name == "delete_threads_by_pk"
     assert thread.create_fields == ()
     assert thread.update_fields == ("visibility",)
-    assert thread.group_by_fields == ("channel", "channel__display_name", "modality", "visibility", "last_message_at")
+    assert set(thread.query.axes) == {"channel", "modality", "visibility", "last_message_at"}
 
     channel = resources["messaging.Channel"]
     assert channel.roots.list_name == "channels"
