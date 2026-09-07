@@ -27,6 +27,8 @@ class WhatsAppChannelBackend(LiveChannelBackend):
     label = "WhatsApp"
     icon = "message-circle"
     session_queue = SESSION_QUEUE
+    session_isolation = "process"
+    """Keep each account's native Go runtime inside its own fresh process."""
     session_class = "angee.messaging_integrate_whatsapp.session.WhatsAppSession"
     state_identity_key = "own_jid"
 

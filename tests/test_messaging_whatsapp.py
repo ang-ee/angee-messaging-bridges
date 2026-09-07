@@ -327,9 +327,16 @@ def _run_session(channel: Any, *, script: tuple[Any, ...], stop_event: threading
 
 
 def _run_session_task(channel: Any) -> dict[str, Any]:
-    """Run the generic live-session task for one WhatsApp channel."""
+    """Run the child job inline so scripted vendor fakes stay in this process."""
 
-    return tasks_module.run_bridge_session(channel._meta.label_lower, channel.pk)
+    from angee.integrate.session_runner import run_bridge_session_job
+
+    return run_bridge_session_job(
+        channel._meta.label_lower,
+        channel.pk,
+        stop_event=threading.Event(),
+        in_child=True,
+    )
 
 
 def _await(predicate: Any, *, timeout: float = 10.0) -> None:
@@ -491,6 +498,37 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
         channel.stop_live()
     channel.refresh_from_db()
     assert channel.subscription_state["desired"] == Channel.LiveState.STOPPED
+
+
+@pytest.mark.django_db(transaction=True)
+def test_run_session_task_hosts_whatsapp_without_resolving_the_vendor_session(
+    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The queue worker dispatches a process before importing the native client."""
+
+    from angee.integrate.session_process import BridgeSessionProcess
+    from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
+
+    channel = _whatsapp_channel()
+    hosted: list[Any] = []
+    outcome = {"ok": True, "state": PairingState.PAIRED, "items": 0}
+
+    def run_process(process: Any) -> dict[str, Any]:
+        hosted.append(process)
+        return outcome
+
+    def resolve_vendor(_backend: Any) -> Any:
+        raise AssertionError("The parent worker must not resolve the WhatsApp session.")
+
+    monkeypatch.setattr(BridgeSessionProcess, "run", run_process)
+    monkeypatch.setattr(WhatsAppChannelBackend, "session_class_resolved", resolve_vendor)
+    # No child is spawned here; the production backend's cross-process lock
+    # requirement is exercised by the framework process-host tests.
+    monkeypatch.setattr("angee.integrate.session_runner.task_locks_are_cross_process", lambda: True)
+
+    assert channel.backend.session_isolation == "process"
+    assert tasks_module.run_bridge_session(channel._meta.label_lower, channel.pk) == outcome
+    assert len(hosted) == 1
 
 
 @pytest.mark.django_db(transaction=True)
