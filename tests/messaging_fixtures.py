@@ -70,6 +70,8 @@ from angee.messaging.models import ThreadNotification as AbstractThreadNotificat
 from angee.messaging.models import TrackingValue as AbstractTrackingValue
 from angee.parties.mixins import LinkSource
 from angee.parties.models import Address as AbstractAddress
+from angee.parties.models import Bank as AbstractBank
+from angee.parties.models import BankAccount as AbstractBankAccount
 from angee.parties.models import Circle as AbstractCircle
 from angee.parties.models import CircleMember as AbstractCircleMember
 from angee.parties.models import Directory as AbstractDirectory
@@ -143,6 +145,24 @@ class Party(AbstractParty):
         db_table = "test_parties_party"
         rebac_resource_type = "parties/party"
         rebac_id_attr = "sqid"
+
+
+class Bank(AbstractBank):
+    """Concrete bank directory for the bare parties schema harness."""
+
+    class Meta(AbstractBank.Meta):
+        abstract = False
+        app_label = "parties"
+        db_table = "test_parties_bank"
+
+
+class BankAccount(AbstractBankAccount):
+    """Concrete bank account without an implicit money addon dependency."""
+
+    class Meta(AbstractBankAccount.Meta):
+        abstract = False
+        app_label = "parties"
+        db_table = "test_parties_bank_account"
 
 
 class Organization(AbstractOrganization, Party):
