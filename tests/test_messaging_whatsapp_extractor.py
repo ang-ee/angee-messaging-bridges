@@ -233,7 +233,10 @@ def test_archive_import_resource_loads_published_valid_graph(
             "probe": "archive_probe",
         }
         assert steps["prepare"].config == {"mode": "prepare"}
-        assert steps["map"].config == {"items": "input", "target_step": "execute_unit"}
+        assert steps["map"].config == {
+            "items": "input", "target_step": "execute_unit",
+            "retry": None, "min_success_ratio": None, "all_must_succeed": False,
+        }
         assert steps["execute_unit"].config == {"mode": "unit"}
         assert [step.key for step in steps.values() if step.is_entry] == ["probe"]
         assert {

@@ -94,6 +94,44 @@ class StepRun(workflow_models.StepRun):
         rebac_id_attr = "sqid"
 
 
+class StepAttempt(workflow_models.StepAttempt):
+    """Concrete retained attempt model for source-addon runtime tests."""
+
+    class Meta(workflow_models.StepAttempt.Meta):
+        abstract = False
+        app_label = "workflows"
+        db_table = "test_workflows_step_attempt"
+        rebac_resource_type = "workflows/step_attempt"
+        rebac_id_attr = "sqid"
+
+
+class StepArtifact(workflow_models.StepArtifact):
+    """Concrete explicit result artifact model for source-addon runtime tests."""
+
+    class Meta(workflow_models.StepArtifact.Meta):
+        abstract = False
+        app_label = "workflows"
+        db_table = "test_workflows_step_artifact"
+
+
+class WorkflowTestFixture(workflow_models.WorkflowTestFixture):
+    """Concrete retained workflow test fixture model."""
+
+    class Meta(workflow_models.WorkflowTestFixture.Meta):
+        abstract = False
+        app_label = "workflows"
+        db_table = "test_workflows_test_fixture"
+
+
+class WorkflowRecoveryEvidence(workflow_models.WorkflowRecoveryEvidence):
+    """Concrete retained recovery evidence model."""
+
+    class Meta(workflow_models.WorkflowRecoveryEvidence.Meta):
+        abstract = False
+        app_label = "workflows"
+        db_table = "test_workflows_recovery_evidence"
+
+
 class Decision(workflow_models.Decision):
     """Concrete decision model for source-addon runtime tests."""
 
@@ -105,8 +143,27 @@ class Decision(workflow_models.Decision):
         rebac_id_attr = "sqid"
 
 
+class WorkflowDispatch(workflow_models.WorkflowDispatch):
+    """Concrete durable dispatch model for source-addon runtime tests."""
+
+    class Meta(workflow_models.WorkflowDispatch.Meta):
+        abstract = False
+        app_label = "workflows"
+        db_table = "test_workflows_dispatch"
+
+
 WORKFLOW_DEFINITION_MODELS = (Workflow, Step, Edge, Trigger)
-WORKFLOW_RUNTIME_MODELS = (*WORKFLOW_DEFINITION_MODELS, WorkflowRun, StepRun, Decision)
+WORKFLOW_RUNTIME_MODELS = (
+    *WORKFLOW_DEFINITION_MODELS,
+    WorkflowRun,
+    StepRun,
+    StepAttempt,
+    StepArtifact,
+    WorkflowTestFixture,
+    WorkflowRecoveryEvidence,
+    Decision,
+    WorkflowDispatch,
+)
 
 
 @contextmanager
@@ -158,6 +215,7 @@ def no_workflow_queue(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(engine, "enqueue_advance", lambda run_id: None)
     monkeypatch.setattr(engine, "enqueue_advance_at", lambda run_id, when: None)
     monkeypatch.setattr(engine, "enqueue_execute", lambda step_run_id: None)
+    monkeypatch.setattr(engine, "enqueue_dispatch_publisher", lambda: None)
     monkeypatch.setattr(engine, "enqueue_decision_escalation_at", lambda decision_id, attempt, when: None)
     monkeypatch.setattr(engine, "enqueue_decision_expiry_at", lambda decision_id, attempt, when: None)
 
@@ -165,6 +223,8 @@ def no_workflow_queue(monkeypatch: pytest.MonkeyPatch) -> None:
 def workflow_with_steps(
     *,
     name: str = "Engine",
+    key: str = "",
+    purpose: workflow_models.WorkflowPurpose = workflow_models.WorkflowPurpose.AUTOMATION,
     subject_declaration: str = "",
     max_steps: int = 1000,
     budget: dict[str, Any] | None = None,
@@ -175,7 +235,9 @@ def workflow_with_steps(
 
     with system_context(reason="test workflows definition"):
         draft = Workflow.objects.create(
+            key=key,
             name=name,
+            purpose=purpose,
             subject_declaration=subject_declaration,
             max_steps=max_steps,
             budget=budget or {},
@@ -188,6 +250,7 @@ def workflow_with_steps(
                 name=spec.get("name", spec["key"].replace("_", " ").title()),
                 step_class=spec.get("step_class", "handler"),
                 config=spec.get("config", {}),
+                input_binding=spec.get("input_binding"),
                 join_rule=spec.get("join_rule", workflow_models.JoinRule.ALL_SUCCESS),
                 is_entry=index == 0 if "is_entry" not in spec else spec["is_entry"],
             )
@@ -221,7 +284,21 @@ def execute_started(run: Any, *, now: Any | None = None, limit: int | None = Non
     if limit is not None:
         rows = rows[:limit]
     for row in rows:
-        if now is None:
+        with system_context(reason="test retained execute dispatch"):
+            attempt = row.current_attempt
+            dispatch = (
+                WorkflowDispatch.objects.filter(step_attempt=attempt).first()
+                if attempt is not None
+                else None
+            )
+        if dispatch is not None:
+            engine.execute_dispatch(
+                dispatch.pk,
+                attempt.pk,
+                attempt.lease_token,
+                now=now,
+            )
+        elif now is None:
             engine.execute(row.pk)
         else:
             engine.execute(row.pk, now=now)
