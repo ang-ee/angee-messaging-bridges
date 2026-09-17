@@ -60,15 +60,31 @@ def is_group_jid(jid: str) -> bool:
     return bare_jid(jid).partition("@")[2] in GROUP_SERVERS
 
 
-def handle_for_jid(jid: str, display_name: str = "") -> ParsedHandle:
-    """Return the whatsapp handle for a JID — phone as the value when derivable."""
+def is_lid_jid(jid: str) -> bool:
+    """Return whether a JID is a hidden-identity ``@lid`` address."""
+
+    return bare_jid(jid).partition("@")[2] == "lid"
+
+
+def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> ParsedHandle:
+    """Return the whatsapp handle for a JID — phone as the value when derivable.
+
+    ``phone_jid`` carries the phone-number JID a hidden ``@lid`` sender resolved
+    to (the session owns that vendor lookup); it lets the handle expose a real
+    E.164 ``value`` while ``external_id`` stays the bare LID — the stable, re-sync
+    idempotency key. When the JID is a LID the bare LID is also stamped into
+    ``metadata`` so it stays retrievable even if the row later merges into an
+    existing phone handle on the ``(platform, value)`` uniqueness.
+    """
 
     bare = bare_jid(jid)
+    metadata = {"lid": bare} if bare.partition("@")[2] == "lid" else {}
     return ParsedHandle(
         platform=PLATFORM,
-        value=phone_for_jid(bare) or bare,
+        value=phone_for_jid(bare) or phone_for_jid(phone_jid) or bare,
         display_name=display_name,
         external_id=bare,
+        metadata=metadata,
     )
 
 
@@ -88,6 +104,7 @@ class ChatMessage:
     chat_name: str = ""
     group: bool | None = None
     sender_jid: str = ""
+    sender_phone_jid: str = ""
     sender_name: str = ""
     from_me: bool = False
     timestamp: datetime | None = None
@@ -112,7 +129,11 @@ def parsed_message(message: ChatMessage) -> ParsedMessage:
         external_id=external_id(chat, stanza),
         platform=PLATFORM,
         direction=DIRECTION_OUTBOUND if message.from_me else DIRECTION_INBOUND,
-        sender=handle_for_jid(message.sender_jid, message.sender_name) if message.sender_jid else None,
+        sender=(
+            handle_for_jid(message.sender_jid, message.sender_name, phone_jid=message.sender_phone_jid)
+            if message.sender_jid
+            else None
+        ),
         sent_at=message.timestamp,
         in_reply_to=external_id(chat, message.quoted_stanza_id) if message.quoted_stanza_id else "",
         thread=ParsedThread(
