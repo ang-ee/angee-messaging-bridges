@@ -198,7 +198,7 @@ class WhatsAppSession(LiveChannelSession):
         except Exception:
             logger.info("WhatsApp contact lookup failed on channel %s.", self.bridge.sqid)
             return ""
-        for attr in ("PushName", "FullName", "FirstName", "BussinessName"):
+        for attr in ("PushName", "FullName", "FirstName", "BusinessName"):
             value = str(getattr(info, attr, "") or "").strip()
             if value:
                 return value
@@ -251,14 +251,20 @@ class WhatsAppSession(LiveChannelSession):
         stanza_id = str(info.ID or "")
         text, quoted, facts = _content_facts(content, stanza_id)
         sender_jid = _jid_str(source.Sender)
-        sender_phone_jid, sender_name = self._resolve_identity(sender_jid, str(getattr(info, "Pushname", "") or ""))
+        pushname = str(getattr(info, "Pushname", "") or "")
+        from_me = bool(source.IsFromMe)
+        if from_me:
+            # Our own JID never needs a phone/LID lookup — keep the push name as-is.
+            sender_phone_jid, sender_name = "", pushname
+        else:
+            sender_phone_jid, sender_name = self._resolve_identity(sender_jid, pushname)
         message = ChatMessage(
             chat_jid=_jid_str(source.Chat),
             stanza_id=stanza_id,
             sender_jid=sender_jid,
             sender_phone_jid=sender_phone_jid,
             sender_name=sender_name,
-            from_me=bool(source.IsFromMe),
+            from_me=from_me,
             timestamp=_timestamp(getattr(info, "Timestamp", 0)),
             text=text,
             quoted_stanza_id=quoted,

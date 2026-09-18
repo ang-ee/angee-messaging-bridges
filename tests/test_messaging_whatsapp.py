@@ -59,19 +59,22 @@ def test_handle_prefers_phone_value_and_keeps_jid_identity() -> None:
     assert hidden.external_id == "987654@lid"
 
 
-def test_handle_resolves_lid_to_phone_value_keeping_the_lid_identity() -> None:
-    """A resolved ``@lid`` exposes an E.164 value while the LID stays its identity."""
+def test_handle_resolves_lid_to_the_phone_jid_identity() -> None:
+    """A resolved ``@lid`` keys on the phone JID so it converges on the phone handle."""
 
     resolved = handle_for_jid("113352894324870@lid", "Bob", phone_jid="18583421935@s.whatsapp.net")
     assert resolved.value == "+18583421935"
-    assert resolved.external_id == "113352894324870@lid"
+    # Keyed like a phone-JID sender so it lands on the existing phone handle instead
+    # of a separate LID row that would collide on (platform, value) every message.
+    assert resolved.external_id == "18583421935@s.whatsapp.net"
     assert resolved.display_name == "Bob"
-    # The bare LID rides in metadata too, so it survives a later merge into a phone handle.
+    # The bare LID rides in metadata so the offline backfill can still merge it.
     assert resolved.metadata == {"lid": "113352894324870@lid"}
 
-    # An unresolved LID keeps the bare LID as its value but still records the lid.
+    # An unresolved LID keeps the bare LID as both its identity and its value.
     unresolved = handle_for_jid("113352894324870@lid")
     assert unresolved.value == "113352894324870@lid"
+    assert unresolved.external_id == "113352894324870@lid"
     assert unresolved.metadata == {"lid": "113352894324870@lid"}
 
     # A phone-JID sender is unchanged and carries no lid metadata.
@@ -1184,6 +1187,7 @@ def test_whatsapp_import_command_dry_run_counts(whatsapp_tables: Any, tmp_path: 
 
 from angee.messaging_integrate_whatsapp.management.commands.whatsapp_resolve_lids import (  # noqa: E402
     StoreResolver,
+    StoreUnreadable,
     resolve_channel_lids,
 )
 from tests.messaging_fixtures import Participant  # noqa: E402
@@ -1292,7 +1296,8 @@ def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_tables: Any) -
     )
     _run_lid_session(channel, script=script, stop_event=stop_event)
 
-    handle = Handle._base_manager.get(external_id="113352894324870@lid")
+    # The resolved LID is keyed on its phone JID (so it converges on the phone handle).
+    handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
     assert handle.value == "+18583421935"
     assert handle.display_name == "Bob Business"
     assert handle.metadata.get("lid") == "113352894324870@lid"
@@ -1315,6 +1320,22 @@ def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_tables: An
     assert session._resolve_identity("113352894324870@lid", "") == ("", "")
     # A named, non-hidden sender needs no vendor round-trip at all.
     assert session._resolve_identity("4917000001@s.whatsapp.net", "Ada") == ("", "Ada")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_contact_name_reads_the_business_name_field(whatsapp_tables: Any) -> None:
+    """A business contact whose only populated name is ``BusinessName`` still resolves."""
+
+    channel = _whatsapp_channel("whatsapp-bizname")
+    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event())
+
+    class _BusinessOnlyContact:
+        # A business account whose only set name field is BusinessName — the real
+        # neonize ``ContactInfo`` spelling (single 's'), which the old typo missed.
+        BusinessName = "Acme Corp"
+
+    session.client = _Namespace(contact=_FakeContactStore({"18583421935": _BusinessOnlyContact()}))
+    assert session._contact_name("18583421935@s.whatsapp.net") == "Acme Corp"
 
 
 def test_store_resolver_reads_lid_map_and_contacts(tmp_path: Any) -> None:
@@ -1343,6 +1364,39 @@ def test_store_resolver_reads_lid_map_and_contacts(tmp_path: Any) -> None:
     assert resolver.phone_for_lid("unknown@lid") == ""
     # A missing store yields an empty resolver instead of raising.
     assert StoreResolver.from_store(tmp_path / "absent.db").phone_for_lid("113352894324870@lid") == ""
+
+
+def test_store_resolver_flags_an_unreadable_store(tmp_path: Any) -> None:
+    """An unopenable or malformed store raises; only an empty-but-readable one is benign."""
+
+    # A file that exists but is not a valid sqlite database cannot be read.
+    corrupt = tmp_path / "session.db"
+    corrupt.write_bytes(b"this is not a sqlite database")
+    with pytest.raises(StoreUnreadable):
+        StoreResolver.from_store(corrupt)
+
+    # A readable store missing the whatsmeow_lid_map table is malformed, not "empty".
+    partial = tmp_path / "partial.db"
+    connection = sqlite3.connect(partial)
+    connection.executescript("CREATE TABLE whatsmeow_contacts (their_jid TEXT, full_name TEXT, push_name TEXT);")
+    connection.commit()
+    connection.close()
+    with pytest.raises(StoreUnreadable):
+        StoreResolver.from_store(partial)
+
+    # An existing, readable, but empty LID map is NOT an error — it resolves nothing.
+    empty = tmp_path / "empty.db"
+    connection = sqlite3.connect(empty)
+    connection.executescript(
+        "CREATE TABLE whatsmeow_lid_map (lid TEXT, pn TEXT);"
+        "CREATE TABLE whatsmeow_contacts (their_jid TEXT, full_name TEXT, push_name TEXT);"
+    )
+    connection.commit()
+    connection.close()
+    assert StoreResolver.from_store(empty).lid_to_pn == {}
+
+    # A missing file remains benign — nothing to resolve.
+    assert StoreResolver.from_store(tmp_path / "absent.db").lid_to_pn == {}
 
 
 class _FakeResolver:

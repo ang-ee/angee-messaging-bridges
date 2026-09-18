@@ -31,10 +31,19 @@ from django.db import transaction
 from rebac import system_context
 
 from angee.integrate.live import session_store_path
+from angee.integrate.session import LiveSession
 from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
 
 INDIVIDUAL_SERVER = "s.whatsapp.net"
-SESSION_DB_NAME = "session.db"
+
+
+class StoreUnreadable(Exception):
+    """The session store exists but could not be read (bad file, missing table, lock).
+
+    Distinct from an empty store: a store the backfill cannot open or query is an
+    operator problem the command surfaces as a non-zero ``CommandError``, whereas
+    an empty-but-readable LID map is a benign "nothing to resolve yet" warning.
+    """
 
 
 class LidResolver(Protocol):
@@ -69,9 +78,13 @@ class StoreResolver:
     def from_store(cls, db_path: Path) -> StoreResolver:
         """Read the LID map and contacts from a whatsmeow session store, read-only.
 
-        Opens the sqlite file in read-only mode so a live session may keep it
-        open, and tolerates a missing store, absent tables, or a transient lock by
-        yielding whatever it could read (an empty map simply resolves nothing).
+        Opens the sqlite file in read-only mode so a live session may keep it open.
+        A *missing* store is benign — there is simply nothing to resolve — so it
+        yields an empty resolver. But a store that exists yet cannot be opened, or
+        whose ``whatsmeow_lid_map`` table is absent or errors on read, is an
+        operator fault the command must surface (not silently mistake for "no
+        mappings"), so it raises :class:`StoreUnreadable`. An empty-but-readable
+        table is not an error: it yields an empty map.
         """
 
         lid_to_pn: dict[str, str] = {}
@@ -80,8 +93,8 @@ class StoreResolver:
             return cls(lid_to_pn, contacts)
         try:
             connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=1.0)
-        except sqlite3.Error:
-            return cls(lid_to_pn, contacts)
+        except sqlite3.Error as error:
+            raise StoreUnreadable(f"The session store at {db_path} could not be opened: {error}") from error
         try:
             for lid, pn in _read(connection, "SELECT lid, pn FROM whatsmeow_lid_map"):
                 lid_key = _lid_digits(str(lid or ""))
@@ -94,6 +107,8 @@ class StoreResolver:
                 digits = str(their_jid or "").split("@", 1)[0].strip()
                 if digits:
                     contacts[digits] = (str(push_name or "").strip(), str(full_name or "").strip())
+        except sqlite3.Error as error:
+            raise StoreUnreadable(f"The session store at {db_path} is unreadable: {error}") from error
         finally:
             connection.close()
         return cls(lid_to_pn, contacts)
@@ -111,12 +126,15 @@ def _lid_digits(lid: str) -> str:
 
 
 def _read(connection: sqlite3.Connection, sql: str) -> list[tuple[Any, ...]]:
-    """Run one read query, treating an absent table or lock as an empty result."""
+    """Run one read query and return its rows.
 
-    try:
-        return list(connection.execute(sql).fetchall())
-    except sqlite3.Error:
-        return []
+    An absent table, a lock, or a corrupt store raises ``sqlite3.Error``, which
+    the caller turns into :class:`StoreUnreadable`; only a readable-but-empty
+    table returns ``[]``. Distinguishing the two is the whole point — an
+    unreadable store must not masquerade as "no LID mappings yet".
+    """
+
+    return list(connection.execute(sql).fetchall())
 
 
 @dataclass
@@ -281,13 +299,16 @@ class Command(BaseCommand):
             channel = confirmed_whatsapp_channel(options["channel"])
         except ValidationError as error:
             raise CommandError(str(error)) from error
-        db_path = session_store_path(channel) / SESSION_DB_NAME
+        db_path = session_store_path(channel) / LiveSession.session_file_name
         if not db_path.exists():
             raise CommandError(
                 f"No WhatsApp session store for channel {options['channel']!r} at {db_path}. "
                 "Pair or sync the channel first, or run where its data dir is mounted."
             )
-        resolver = StoreResolver.from_store(db_path)
+        try:
+            resolver = StoreResolver.from_store(db_path)
+        except StoreUnreadable as error:
+            raise CommandError(str(error)) from error
         if not resolver.lid_to_pn:
             self.stdout.write(
                 self.style.WARNING(f"The session store at {db_path} holds no LID mappings yet; nothing to resolve.")

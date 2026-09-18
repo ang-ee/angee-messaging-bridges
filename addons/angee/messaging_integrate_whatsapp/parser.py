@@ -70,21 +70,31 @@ def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> 
     """Return the whatsapp handle for a JID — phone as the value when derivable.
 
     ``phone_jid`` carries the phone-number JID a hidden ``@lid`` sender resolved
-    to (the session owns that vendor lookup); it lets the handle expose a real
-    E.164 ``value`` while ``external_id`` stays the bare LID — the stable, re-sync
-    idempotency key. When the JID is a LID the bare LID is also stamped into
-    ``metadata`` so it stays retrievable even if the row later merges into an
-    existing phone handle on the ``(platform, value)`` uniqueness.
+    to (the session owns that vendor lookup). When it resolves, the handle is
+    keyed exactly like a phone-JID sender — ``external_id`` becomes the bare phone
+    JID and ``value`` the real E.164 — so it lands on the account's existing phone
+    handle instead of tripping the ``(platform, value)`` uniqueness on every
+    message (a LID-keyed row valued at the phone would collide with that phone
+    handle each time). The LID→phone mapping is stable, so re-sync stays
+    idempotent; a LID that only resolves later simply converges onto the phone
+    handle while the offline backfill merges the stale LID row. An *unresolved*
+    LID keeps the bare LID as both its ``external_id`` and ``value``. Either way
+    the bare LID is stamped into ``metadata['lid']`` so it stays retrievable.
     """
 
     bare = bare_jid(jid)
-    metadata = {"lid": bare} if bare.partition("@")[2] == "lid" else {}
+    is_lid = bare.partition("@")[2] == "lid"
+    phone_jid_bare = bare_jid(phone_jid)
+    phone_value = phone_for_jid(bare) or phone_for_jid(phone_jid_bare)
+    # A resolved LID keys on its phone JID (converging on the phone handle); an
+    # unresolved one keeps the bare LID as its identity.
+    identity = phone_jid_bare if is_lid and phone_value else bare
     return ParsedHandle(
         platform=PLATFORM,
-        value=phone_for_jid(bare) or phone_for_jid(phone_jid) or bare,
+        value=phone_value or bare,
         display_name=display_name,
-        external_id=bare,
-        metadata=metadata,
+        external_id=identity,
+        metadata={"lid": bare} if is_lid else {},
     )
 
 
