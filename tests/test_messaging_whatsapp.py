@@ -1248,23 +1248,24 @@ def _run_lid_session(channel: Any, *, script: tuple[Any, ...], stop_event: threa
         return session.run()
 
 
-def test_content_facts_names_unnamed_media_from_the_stanza_id() -> None:
-    """Media without a fileName gets a stanza-scoped name; a document keeps its own."""
+def test_content_facts_keeps_document_filename_and_leaves_media_unnamed() -> None:
+    """A document keeps its ``fileName``; nameless media flow through empty for the core to name."""
 
     content = _Namespace(imageMessage=_Namespace(mimetype="image/jpeg", caption="look"))
-    text, _quoted, facts = session_module._content_facts(content, "3EB0STANZA")
+    text, _quoted, facts = session_module._content_facts(content)
     assert text == "look"
     assert facts[0].mime == "image/jpeg"
-    assert facts[0].name == "3EB0STANZA.jpg"
+    # The bridge no longer synthesizes a stanza-scoped name; the core ingest owner
+    # derives the attachment name from the message's kind and external id.
+    assert facts[0].name == ""
 
     document = _Namespace(documentMessage=_Namespace(mimetype="application/pdf", fileName="contract.pdf"))
-    _text, _q, doc_facts = session_module._content_facts(document, "DOC1")
+    _text, _q, doc_facts = session_module._content_facts(document)
     assert doc_facts[0].name == "contract.pdf"
 
-    # Without a stanza id it degrades to the generic MIME-derived fallback name.
     audio = _Namespace(audioMessage=_Namespace(mimetype="audio/ogg"))
-    _t, _qq, audio_facts = session_module._content_facts(audio, "")
-    assert audio_facts[0].name == "attachment.ogg"
+    _t, _qq, audio_facts = session_module._content_facts(audio)
+    assert audio_facts[0].name == ""
 
 
 @pytest.mark.django_db(transaction=True)

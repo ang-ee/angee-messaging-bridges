@@ -22,7 +22,6 @@ from neonize.utils.jid import build_jid
 from angee.integrate.live import STOP_JOIN_SECONDS
 from angee.messaging.session import LiveChannelSession
 from angee.messaging_integrate_whatsapp.parser import INDIVIDUAL_SERVER, ChatMessage, bare_jid
-from angee.storage.uploads import attachment_extension, fallback_attachment_name
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +59,16 @@ class _MediaFact:
 _MEDIA_FIELDS = ("imageMessage", "videoMessage", "audioMessage", "stickerMessage", "documentMessage")
 
 
-def _media_name(stanza_id: str, mime: str, index: int) -> str:
-    """Synthesize a display name for media WhatsApp delivers without a ``fileName``.
+def _content_facts(content: Any) -> tuple[str, str, tuple[_MediaFact, ...]]:
+    """Read text, quoted stanza id, and media facts off a wire message payload.
 
     Only ``documentMessage`` carries a ``fileName``; images, video, audio, and
-    stickers arrive with a MIME type only, so without this they all landed as the
-    opaque ``attachment.bin``. The message's stanza id makes the name stable and
-    per-message unique (with an index for the rare multi-media stanza), while the
-    extension comes from the shared storage naming rule so the core ingest
-    fallback and this synthesis agree.
+    stickers arrive with a MIME type only and no name. Such nameless media flow
+    through with an empty ``name`` — the core ingest owner
+    (``Message.objects.ingest``) derives the stable per-message attachment name
+    from the message's kind and stanza-scoped ``external_id``, so every backend
+    shares one naming rule instead of each bridge synthesizing its own.
     """
-
-    if not stanza_id:
-        return fallback_attachment_name(mime)
-    suffix = f"-{index}" if index else ""
-    return f"{stanza_id}{suffix}{attachment_extension(mime)}"
-
-
-def _content_facts(content: Any, stanza_id: str = "") -> tuple[str, str, tuple[_MediaFact, ...]]:
-    """Read text, quoted stanza id, and media facts off a wire message payload."""
 
     text = getattr(content, "conversation", "") or ""
     extended = getattr(content, "extendedTextMessage", None)
@@ -93,7 +83,7 @@ def _content_facts(content: Any, stanza_id: str = "") -> tuple[str, str, tuple[_
         mime = getattr(node, "mimetype", "") or "" if node is not None else ""
         if not mime:
             continue
-        name = getattr(node, "fileName", "") or _media_name(stanza_id, mime, len(media))
+        name = getattr(node, "fileName", "") or ""
         media.append(_MediaFact(mime=mime, name=name))
         text = text or (getattr(node, "caption", "") or "")
         quoted = quoted or (getattr(getattr(node, "contextInfo", None), "stanzaID", "") or "")
@@ -249,7 +239,7 @@ class WhatsAppSession(LiveChannelSession):
         source = info.MessageSource
         content = event.Message
         stanza_id = str(info.ID or "")
-        text, quoted, facts = _content_facts(content, stanza_id)
+        text, quoted, facts = _content_facts(content)
         sender_jid = _jid_str(source.Sender)
         pushname = str(getattr(info, "Pushname", "") or "")
         from_me = bool(source.IsFromMe)
@@ -286,7 +276,7 @@ class WhatsAppSession(LiveChannelSession):
                 if key is None or content is None:
                     continue
                 stanza_id = str(getattr(key, "ID", "") or "")
-                text, quoted, facts = _content_facts(content, stanza_id)
+                text, quoted, facts = _content_facts(content)
                 if not (text or facts):
                     continue
                 if not stanza_id:
