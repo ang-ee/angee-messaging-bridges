@@ -59,6 +59,30 @@ def test_handle_prefers_phone_value_and_keeps_jid_identity() -> None:
     assert hidden.external_id == "987654@lid"
 
 
+def test_handle_resolves_lid_to_the_phone_jid_identity() -> None:
+    """A resolved ``@lid`` keys on the phone JID so it converges on the phone handle."""
+
+    resolved = handle_for_jid("113352894324870@lid", "Bob", phone_jid="18583421935@s.whatsapp.net")
+    assert resolved.value == "+18583421935"
+    # Keyed like a phone-JID sender so it lands on the existing phone handle instead
+    # of a separate LID row that would collide on (platform, value) every message.
+    assert resolved.external_id == "18583421935@s.whatsapp.net"
+    assert resolved.display_name == "Bob"
+    # The bare LID rides in metadata so the offline backfill can still merge it.
+    assert resolved.metadata == {"lid": "113352894324870@lid"}
+
+    # An unresolved LID keeps the bare LID as both its identity and its value.
+    unresolved = handle_for_jid("113352894324870@lid")
+    assert unresolved.value == "113352894324870@lid"
+    assert unresolved.external_id == "113352894324870@lid"
+    assert unresolved.metadata == {"lid": "113352894324870@lid"}
+
+    # A phone-JID sender is unchanged and carries no lid metadata.
+    phone = handle_for_jid("4917000001:2@s.whatsapp.net", "Ada")
+    assert phone.value == "+4917000001"
+    assert phone.metadata == {}
+
+
 def test_external_id_is_chat_scoped_and_normalized() -> None:
     """Stanza ids embed their (normalized) chat scope — the convergence key."""
 
@@ -170,6 +194,7 @@ import time  # noqa: E402
 from typing import Any, ClassVar, cast  # noqa: E402
 
 import pytest  # noqa: E402
+from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from django.db import connection  # noqa: E402
 from rebac import system_context  # noqa: E402
@@ -180,7 +205,6 @@ from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
-from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from angee.messaging_integrate_whatsapp import session as session_module  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
 from angee.messaging_integrate_whatsapp.session import WhatsAppSession  # noqa: E402
@@ -1157,3 +1181,300 @@ def test_whatsapp_import_command_dry_run_counts(whatsapp_tables: Any, tmp_path: 
 
     with pytest.raises(CommandError, match="No WhatsApp channel"):
         call_command("whatsapp_import", str(backup), "--channel", "int_missing")
+
+
+# --- (d) @lid sender resolution: live session + the store-backed backfill ---
+
+from angee.messaging_integrate_whatsapp.management.commands.whatsapp_resolve_lids import (  # noqa: E402
+    StoreResolver,
+    StoreUnreadable,
+    resolve_channel_lids,
+)
+from tests.messaging_fixtures import Participant  # noqa: E402
+
+
+class _FakeContactStore:
+    """Mirror of ``client.contact``: ``get_contact(jid)`` keyed by the JID user."""
+
+    def __init__(self, contacts: dict[str, Any]) -> None:
+        self._contacts = contacts
+
+    def get_contact(self, jid: Any) -> Any:
+        return self._contacts.get(getattr(jid, "User", ""), _Namespace())
+
+
+class FakeLidClient(FakeWhatsAppClient):
+    """A fake client that also answers the LID map and contact-store lookups."""
+
+    lid_map: ClassVar[dict[str, str]] = {}
+    contacts: ClassVar[dict[str, Any]] = {}
+
+    def __init__(self, store: str) -> None:
+        super().__init__(store)
+        self.contact = _FakeContactStore(type(self).contacts)
+
+    def get_pn_from_lid(self, jid: Any) -> Any:
+        phone = type(self).lid_map.get(getattr(jid, "User", ""))
+        if not phone:
+            raise ValueError("no LID mapping")
+        return _Namespace(User=phone, Server="s.whatsapp.net")
+
+
+def _lid_message_event(
+    *, stanza: str, chat_user: str, chat_server: str, lid_user: str, text: str, pushname: str = ""
+) -> _Namespace:
+    return _Namespace(
+        Info=_Namespace(
+            ID=stanza,
+            Pushname=pushname,
+            Timestamp=1_780_000_000,
+            MessageSource=_Namespace(
+                Chat=_jid(chat_user, chat_server),
+                Sender=_jid(lid_user, "lid"),
+                IsFromMe=False,
+            ),
+        ),
+        Message=_Namespace(conversation=text),
+    )
+
+
+def _run_lid_session(channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event) -> str:
+    FakeLidClient.script = script
+    FakeLidClient.instances = []
+    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=stop_event)
+    session.client_class = FakeLidClient
+    with system_context(reason="test whatsapp lid session run"), bridge_advisory_lock(channel) as acquired:
+        assert acquired
+        return session.run()
+
+
+def test_content_facts_keeps_document_filename_and_leaves_media_unnamed() -> None:
+    """A document keeps its ``fileName``; nameless media flow through empty for the core to name."""
+
+    content = _Namespace(imageMessage=_Namespace(mimetype="image/jpeg", caption="look"))
+    text, _quoted, facts = session_module._content_facts(content)
+    assert text == "look"
+    assert facts[0].mime == "image/jpeg"
+    # The bridge no longer synthesizes a stanza-scoped name; the core ingest owner
+    # derives the attachment name from the message's kind and external id.
+    assert facts[0].name == ""
+
+    document = _Namespace(documentMessage=_Namespace(mimetype="application/pdf", fileName="contract.pdf"))
+    _text, _q, doc_facts = session_module._content_facts(document)
+    assert doc_facts[0].name == "contract.pdf"
+
+    audio = _Namespace(audioMessage=_Namespace(mimetype="audio/ogg"))
+    _t, _qq, audio_facts = session_module._content_facts(audio)
+    assert audio_facts[0].name == ""
+
+
+@pytest.mark.django_db(transaction=True)
+def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_tables: Any) -> None:
+    """A hidden @lid group sender lands as a real phone value with an enriched name."""
+
+    channel = _whatsapp_channel("whatsapp-lid")
+    stop_event = threading.Event()
+    FakeLidClient.lid_map = {"113352894324870": "18583421935"}
+    FakeLidClient.contacts = {"18583421935": _Namespace(PushName="Bob Business")}
+
+    def finish(_client: Any) -> None:
+        _await(lambda: Message._base_manager.count() == 1)
+        stop_event.set()
+
+    script = (
+        lambda client: client.event.handlers["PairStatus"](client, _Namespace(ID=_jid("18580000000"))),
+        lambda client: client.event.handlers["Message"](
+            client,
+            _lid_message_event(
+                stanza="LID1",
+                chat_user="111-222",
+                chat_server="g.us",
+                lid_user="113352894324870",
+                text="hi from the group",
+            ),
+        ),
+        finish,
+    )
+    _run_lid_session(channel, script=script, stop_event=stop_event)
+
+    # The resolved LID is keyed on its phone JID (so it converges on the phone handle).
+    handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
+    assert handle.value == "+18583421935"
+    assert handle.display_name == "Bob Business"
+    assert handle.metadata.get("lid") == "113352894324870@lid"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_tables: Any) -> None:
+    """A failed LID/contact lookup falls back to empty; a named phone sender is skipped."""
+
+    channel = _whatsapp_channel("whatsapp-lid-miss")
+    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event())
+
+    class _RaisingClient:
+        contact = None
+
+        def get_pn_from_lid(self, _jid: Any) -> Any:
+            raise ValueError("no mapping")
+
+    session.client = _RaisingClient()
+    assert session._resolve_identity("113352894324870@lid", "") == ("", "")
+    # A named, non-hidden sender needs no vendor round-trip at all.
+    assert session._resolve_identity("4917000001@s.whatsapp.net", "Ada") == ("", "Ada")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_contact_name_reads_the_business_name_field(whatsapp_tables: Any) -> None:
+    """A business contact whose only populated name is ``BusinessName`` still resolves."""
+
+    channel = _whatsapp_channel("whatsapp-bizname")
+    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event())
+
+    class _BusinessOnlyContact:
+        # A business account whose only set name field is BusinessName — the real
+        # neonize ``ContactInfo`` spelling (single 's'), which the old typo missed.
+        BusinessName = "Acme Corp"
+
+    session.client = _Namespace(contact=_FakeContactStore({"18583421935": _BusinessOnlyContact()}))
+    assert session._contact_name("18583421935@s.whatsapp.net") == "Acme Corp"
+
+
+def test_store_resolver_reads_lid_map_and_contacts(tmp_path: Any) -> None:
+    """The backfill store reader returns LID→phone and phone→name, read-only."""
+
+    db_path = tmp_path / "session.db"
+    connection = sqlite3.connect(db_path)
+    connection.executescript(
+        "CREATE TABLE whatsmeow_lid_map (lid TEXT, pn TEXT);"
+        "CREATE TABLE whatsmeow_contacts (their_jid TEXT, full_name TEXT, push_name TEXT);"
+    )
+    connection.execute("INSERT INTO whatsmeow_lid_map VALUES (?, ?)", ("113352894324870@lid", "18583421935"))
+    connection.execute(
+        "INSERT INTO whatsmeow_contacts VALUES (?, ?, ?)", ("18583421935@s.whatsapp.net", "Bob Full", "Bob Push")
+    )
+    connection.execute(
+        "INSERT INTO whatsmeow_contacts VALUES (?, ?, ?)", ("18580000001@s.whatsapp.net", "Full Only", "")
+    )
+    connection.commit()
+    connection.close()
+
+    resolver = StoreResolver.from_store(db_path)
+    assert resolver.phone_for_lid("113352894324870@lid") == "18583421935"
+    assert resolver.name_for_phone("18583421935") == "Bob Push"  # push name preferred
+    assert resolver.name_for_phone("18580000001") == "Full Only"  # falls back to full name
+    assert resolver.phone_for_lid("unknown@lid") == ""
+    # A missing store yields an empty resolver instead of raising.
+    assert StoreResolver.from_store(tmp_path / "absent.db").phone_for_lid("113352894324870@lid") == ""
+
+
+def test_store_resolver_flags_an_unreadable_store(tmp_path: Any) -> None:
+    """An unopenable or malformed store raises; only an empty-but-readable one is benign."""
+
+    # A file that exists but is not a valid sqlite database cannot be read.
+    corrupt = tmp_path / "session.db"
+    corrupt.write_bytes(b"this is not a sqlite database")
+    with pytest.raises(StoreUnreadable):
+        StoreResolver.from_store(corrupt)
+
+    # A readable store missing the whatsmeow_lid_map table is malformed, not "empty".
+    partial = tmp_path / "partial.db"
+    connection = sqlite3.connect(partial)
+    connection.executescript("CREATE TABLE whatsmeow_contacts (their_jid TEXT, full_name TEXT, push_name TEXT);")
+    connection.commit()
+    connection.close()
+    with pytest.raises(StoreUnreadable):
+        StoreResolver.from_store(partial)
+
+    # An existing, readable, but empty LID map is NOT an error — it resolves nothing.
+    empty = tmp_path / "empty.db"
+    connection = sqlite3.connect(empty)
+    connection.executescript(
+        "CREATE TABLE whatsmeow_lid_map (lid TEXT, pn TEXT);"
+        "CREATE TABLE whatsmeow_contacts (their_jid TEXT, full_name TEXT, push_name TEXT);"
+    )
+    connection.commit()
+    connection.close()
+    assert StoreResolver.from_store(empty).lid_to_pn == {}
+
+    # A missing file remains benign — nothing to resolve.
+    assert StoreResolver.from_store(tmp_path / "absent.db").lid_to_pn == {}
+
+
+class _FakeResolver:
+    """A ``LidResolver`` backed by plain dicts for the backfill DB tests."""
+
+    def __init__(self, lid_to_pn: dict[str, str], contacts: dict[str, str]) -> None:
+        self._lid_to_pn = lid_to_pn
+        self._contacts = contacts
+
+    def phone_for_lid(self, bare_lid: str) -> str:
+        return self._lid_to_pn.get(bare_lid, "")
+
+    def name_for_phone(self, phone_digits: str) -> str:
+        return self._contacts.get(phone_digits, "")
+
+
+def _ingest_whatsapp(channel: Any, message: ChatMessage) -> None:
+    with system_context(reason="test whatsapp backfill ingest"):
+        Message.objects.ingest([parsed_message(message)], channel=channel, quote_edges=False)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> None:
+    """An unresolved @lid handle is rewritten to its phone value, name, and lid."""
+
+    channel = _whatsapp_channel("whatsapp-backfill")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="hi"),
+    )
+    lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
+    assert lid_handle.value == "113352894324870@lid"
+
+    resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": "Bob Biz"})
+    stats = resolve_channel_lids(channel, resolver)
+    assert (stats.resolved, stats.merged, stats.named) == (1, 0, 1)
+
+    lid_handle.refresh_from_db()
+    assert lid_handle.value == "+18583421935"
+    assert lid_handle.display_name == "Bob Biz"
+    assert lid_handle.metadata.get("lid") == "113352894324870@lid"
+
+    # Re-running finds nothing: the value no longer ends with @lid.
+    assert resolve_channel_lids(channel, resolver).candidates == 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tables: Any) -> None:
+    """A LID that resolves onto an existing phone handle merges, repointing messages."""
+
+    channel = _whatsapp_channel("whatsapp-merge")
+    # The same person as a direct phone-JID sender and as a hidden @lid group sender.
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(
+            chat_jid="18583421935@s.whatsapp.net",
+            stanza_id="D1",
+            sender_jid="18583421935@s.whatsapp.net",
+            sender_name="Bob",
+            text="direct",
+        ),
+    )
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
+    )
+    phone_handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
+    lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
+    group_participation = Participant._base_manager.get(handle=lid_handle)
+
+    resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": ""})
+    stats = resolve_channel_lids(channel, resolver)
+
+    assert stats.merged == 1
+    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    phone_handle.refresh_from_db()
+    assert phone_handle.metadata.get("lid") == "113352894324870@lid"
+    # The group participant now points at the surviving phone handle.
+    group_participation.refresh_from_db()
+    assert group_participation.handle_id == phone_handle.pk

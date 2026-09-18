@@ -147,15 +147,18 @@ addons = [
     { name = "channels-redis" },
     { name = "croniter" },
     { name = "cryptg" },
+    { name = "defusedxml" },
     { name = "discord-py" },
     { name = "django-anymail" },
     { name = "django-axes" },
+    { name = "django-countries" },
     { name = "django-import-export" },
     { name = "django-zed-rebac", extra = ["strawberry-django"] },
     { name = "fastmcp" },
     { name = "httpcore" },
     { name = "httpx" },
     { name = "imapclient" },
+    { name = "jsonschema" },
     { name = "mail-parser-reply" },
     { name = "markdown-it-py" },
     { name = "matrix-nio", extra = ["e2e"] },
@@ -163,10 +166,13 @@ addons = [
     { name = "neonize" },
     { name = "openai" },
     { name = "phonenumbers" },
+    { name = "pillow" },
+    { name = "pycountry" },
     { name = "pycryptodome" },
     { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "mcp", "openai"] },
     { name = "pyjwt", extra = ["crypto"] },
+    { name = "pypdfium2" },
     { name = "python-dateutil" },
     { name = "python-magic" },
     { name = "pyyaml" },
@@ -201,15 +207,18 @@ addons = [
     { name = "channels-redis", specifier = ">=4.2" },
     { name = "croniter", specifier = ">=6.0" },
     { name = "cryptg", specifier = ">=0.6.0" },
+    { name = "defusedxml", specifier = ">=0.7,<1" },
     { name = "discord-py", specifier = ">=2.7" },
     { name = "django-anymail", specifier = ">=15.1" },
     { name = "django-axes", specifier = ">=8.0" },
+    { name = "django-countries", specifier = ">=9,<10" },
     { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.15.2" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.17.2" },
     { name = "fastmcp", specifier = ">=3.4.2,<4" },
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "imapclient", specifier = ">=3.1.0" },
+    { name = "jsonschema", specifier = ">=4.26" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
     { name = "markdown-it-py", specifier = ">=4.2" },
     { name = "matrix-nio", extras = ["e2e"], specifier = ">=0.26" },
@@ -217,6 +226,8 @@ addons = [
     { name = "neonize", specifier = ">=0.4.3.post0" },
     { name = "openai", specifier = ">=2.43.0" },
     { name = "phonenumbers", specifier = ">=9.0" },
+    { name = "pillow", specifier = ">=11.0" },
+    { name = "pycountry", specifier = ">=26,<27" },
     { name = "pycryptodome", specifier = ">=3.18" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "pydantic-ai-slim", specifier = ">=2.13" },
@@ -224,6 +235,7 @@ addons = [
     { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
     { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
+    { name = "pypdfium2", specifier = ">=4.30" },
     { name = "python-dateutil", specifier = ">=2.9" },
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "pyyaml", specifier = ">=6" },
@@ -231,7 +243,7 @@ addons = [
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
     { name = "strawberry-django-aggregates", specifier = ">=0.12.0" },
-    { name = "strawberry-django-hasura", specifier = ">=0.10.0" },
+    { name = "strawberry-django-hasura", specifier = ">=0.11.0" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=e4fa3198f704d81b3ca96b6dcac75420c5fee516" },
     { name = "strawberry-graphql-django", specifier = ">=0.86.7" },
     { name = "tablib", specifier = ">=3" },
@@ -875,6 +887,15 @@ wheels = [
 ]
 
 [[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
+]
+
+[[package]]
 name = "diff-match-patch"
 version = "20241021"
 source = { registry = "https://pypi.org/simple" }
@@ -947,8 +968,8 @@ requires-dist = [
     { name = "django-simple-history", specifier = ">=3.7" },
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "django-zed-rebac", specifier = ">=0.15.2" },
-    { name = "hatch-angee", specifier = ">=0.2.3" },
+    { name = "django-zed-rebac", specifier = ">=0.17.2" },
+    { name = "hatch-angee", specifier = ">=0.2.4" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'", specifier = ">=3.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -961,25 +982,31 @@ addons = [
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
     { name = "croniter", specifier = ">=6.0" },
+    { name = "defusedxml", specifier = ">=0.7,<1" },
     { name = "django-anymail", specifier = ">=15.1" },
     { name = "django-axes", specifier = ">=8.0" },
+    { name = "django-countries", specifier = ">=9,<10" },
     { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.15.2" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.17.2" },
     { name = "fastmcp", specifier = ">=3.4.2,<4" },
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "imapclient", specifier = ">=3.1.0" },
+    { name = "jsonschema", specifier = ">=4.26" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
     { name = "markdown-it-py", specifier = ">=4.2" },
     { name = "mcp", specifier = ">=1.2" },
     { name = "openai", specifier = ">=2.43.0" },
     { name = "phonenumbers", specifier = ">=9.0" },
+    { name = "pillow", specifier = ">=11.0" },
+    { name = "pycountry", specifier = ">=26,<27" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "pydantic-ai-slim", specifier = ">=2.13" },
     { name = "pydantic-ai-slim", extras = ["anthropic"], specifier = ">=2.13" },
     { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
     { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
+    { name = "pypdfium2", specifier = ">=4.30" },
     { name = "python-dateutil", specifier = ">=2.9" },
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "pyyaml", specifier = ">=6" },
@@ -987,7 +1014,7 @@ addons = [
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
     { name = "strawberry-django-aggregates", specifier = ">=0.12.0" },
-    { name = "strawberry-django-hasura", specifier = ">=0.10.0" },
+    { name = "strawberry-django-hasura", specifier = ">=0.11.0" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=e4fa3198f704d81b3ca96b6dcac75420c5fee516" },
     { name = "strawberry-graphql-django", specifier = ">=0.86.7" },
     { name = "tablib", specifier = ">=3" },
@@ -1043,6 +1070,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3e/23/54749b86f605aafeaab81dc8e023968d95a7cc44434eac4df330e8e7f0d8/django_choices_field-4.0.0.tar.gz", hash = "sha256:7b07aacb2ad2b3ee3c8be78be98302ebbcb606285d20547a4163287819364954", size = 6346, upload-time = "2025-12-27T11:53:50.986Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3d/fd/2e0bb952961ba108bdb82efbb10eaeae5bbb5a687b6bdaf8427af181ac5d/django_choices_field-4.0.0-py3-none-any.whl", hash = "sha256:dfa59033685af989f5bc49d95a586e8de692999d3179bf1cb14ef99879e6ff45", size = 7035, upload-time = "2025-12-27T11:53:50.229Z" },
+]
+
+[[package]]
+name = "django-countries"
+version = "9.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/7e/54c144d213ccdd4f3e74e044c4b6cb7a0c2ccf2e738886fd61b9a0a376df/django_countries-9.1.0.tar.gz", hash = "sha256:c1027417e1d1ebad5ac8fbc45a7578fc400c4fc895d6b865e001c16ba4be0939", size = 614115, upload-time = "2026-09-10T22:24:18Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/86/f4a3a1bc0827e19bd0ec7267d80725e4f02916d34a279747672436a0aa5b/django_countries-9.1.0-py3-none-any.whl", hash = "sha256:18c9f6e1a8e32356656b1db5ee94121310cbc3b91dc78171052a9ef9d57d5318", size = 928029, upload-time = "2026-09-10T22:24:16.325Z" },
 ]
 
 [[package]]
@@ -1117,14 +1157,14 @@ wheels = [
 
 [[package]]
 name = "django-zed-rebac"
-version = "0.15.2"
+version = "0.17.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/df/5d4a416349b2775fea96e1f8ee9c8f6bb2dc2400722af03081917b284d3d/django_zed_rebac-0.15.2.tar.gz", hash = "sha256:175df10ee4b8eda6f328877b5199f50af56a3996c76a16747ca44ceac2ef2354", size = 255682, upload-time = "2026-09-05T18:23:55.76Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/de/b487d9883f48d578d94e79f0b021495e6158e8e74b0671c2699eba46c96f/django_zed_rebac-0.17.2.tar.gz", hash = "sha256:4b5a691e8a28e9433baf6b5dfee789fde01c99815e4c038a2522643947ae3901", size = 301600, upload-time = "2026-09-13T20:30:55.03Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/5a/9ec12843867a3ec5e2ccfd777bd53097cc5ee8990b0a0cc2b9b7b9a79d87/django_zed_rebac-0.15.2-py3-none-any.whl", hash = "sha256:09c63ce525972a01dc15bdcd9ba6ef2544c2a4b891383021bceacae30ac2b65c", size = 187562, upload-time = "2026-09-05T18:23:54.622Z" },
+    { url = "https://files.pythonhosted.org/packages/02/39/42af7fece6da44813059fac1bdf34f0f6eba990fa330d2ae0a08badf903b/django_zed_rebac-0.17.2-py3-none-any.whl", hash = "sha256:2cffc5ad24baf29d7d67238083f56037182810a277f77995f846abd4929bce8a", size = 205771, upload-time = "2026-09-13T20:30:53.842Z" },
 ]
 
 [package.optional-dependencies]
@@ -1343,16 +1383,16 @@ wheels = [
 
 [[package]]
 name = "hatch-angee"
-version = "0.2.3"
+version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "hatchling" },
     { name = "packaging" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/53/f99edfac4aee48562d739780e506f43749cd0a4b155010076c0429d593f2/hatch_angee-0.2.3.tar.gz", hash = "sha256:3fc9f441f0758c836849f0d0e6b3d64f7e4bf75a517c58b4310dedd8c02a00a7", size = 54322, upload-time = "2026-08-29T07:20:02.248Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/93/fa464284dc19b9c422741b8bd3d12468333d91308ef49a1928e685e75603/hatch_angee-0.2.4.tar.gz", hash = "sha256:55aa21e2cac8367cdf6073a70082f40733571770c093470fd5e985cb33422e6d", size = 54653, upload-time = "2026-09-18T09:25:39.413Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/84/461552bbe966819dc643ab1b2c536991508d8c429fd01ce28bc8353f372c/hatch_angee-0.2.3-py3-none-any.whl", hash = "sha256:d6b2bc0c4007b202364da3d1000057ba70ceee8ee33a9ad30a9b7d3fa0f3704f", size = 26749, upload-time = "2026-08-29T07:20:01.033Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/1a/07695b75f8e02912c0688758b290e6e1b7d68d81f622e56bb6e8a9bf935f/hatch_angee-0.2.4-py3-none-any.whl", hash = "sha256:a4367361e6ce4878dbe45777a4b70640e450a6096c0f7683483d306a7c0f10df", size = 26934, upload-time = "2026-09-18T09:25:38.408Z" },
 ]
 
 [[package]]
@@ -2233,6 +2273,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pycountry"
+version = "26.2.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/1d/061b9e7a48b85cfd69f33c33d2ef784a531c359399ad764243399673c8f5/pycountry-26.2.16.tar.gz", hash = "sha256:5b6027d453fcd6060112b951dd010f01f168b51b4bf8a1f1fc8c95c8d94a0801", size = 7711342, upload-time = "2026-02-17T03:42:52.367Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/42/7703bd45b62fecd44cd7d3495423097e2f7d28bc2e99e7c1af68892ab157/pycountry-26.2.16-py3-none-any.whl", hash = "sha256:115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a", size = 8044600, upload-time = "2026-02-17T03:42:49.777Z" },
+]
+
+[[package]]
 name = "pycparser"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2414,6 +2463,35 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3f/e8/7325d258199b159eb2c03fe32107533e2832e70e63f4fb88a6aa00023201/pyopenssl-26.4.0.tar.gz", hash = "sha256:28dfcce0162b9211413e26dfbfdf1d24317fbeba18fc93c12400a1856b2a0bc7", size = 182046, upload-time = "2026-08-01T19:50:50.512Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/ad/2cf6d3fa2fae5c79e1ed9960c0d42badd0f94d81dd12b50604cdc839e648/pyopenssl-26.4.0-py3-none-any.whl", hash = "sha256:f0eb0cb2d581d3ad2b9c489468485e7f2ab6727d08401bcf9d824c3caddf3c1c", size = 56026, upload-time = "2026-08-01T19:50:48.94Z" },
+]
+
+[[package]]
+name = "pypdfium2"
+version = "5.13.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/78/a52cb80611339ec95f35c7a10d7bfe7a6f97f3b50a35a9f94283d062512e/pypdfium2-5.13.0.tar.gz", hash = "sha256:7ca2d8e31bd8d0d40c496416b7d8bea423388669ffd494929f50e8c3a82326b8", size = 273639, upload-time = "2026-08-13T10:58:15.837Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/9c/a49050af85055054299c7fab658ac63f8fddde575774aecbf8f71c7a9e5f/pypdfium2-5.13.0-py3-none-android_23_arm64_v8a.whl", hash = "sha256:882f4bbd4b17a335b43603169a14cde9341de12b238acd5c39e690cbca7c4293", size = 3417299, upload-time = "2026-08-13T10:57:40.522Z" },
+    { url = "https://files.pythonhosted.org/packages/50/ad/f23027328843ee2bdd05afe16bb101f5906befd0c70de35fa8c53f60a5ff/pypdfium2-5.13.0-py3-none-android_23_armeabi_v7a.whl", hash = "sha256:d96929bde3bd64c771ab3558ca1ffd7704cc4d872ab92cd9f8f8b8a20f7f36b8", size = 2864708, upload-time = "2026-08-13T10:57:42.259Z" },
+    { url = "https://files.pythonhosted.org/packages/08/99/1fe58428b69d2722dcbcfaa08ce71834a332c5b518fd58874bcef936b823/pypdfium2-5.13.0-py3-none-macosx_13_0_arm64.whl", hash = "sha256:da5c7b74eebf40b5c1fbe1de01aa1edc8827a79fb1efd999616bc20dcaf77ba4", size = 3507415, upload-time = "2026-08-13T10:57:43.978Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/41/06e26da88a4f5b4ed289325868717a186020661b7b221aa6df622711d31b/pypdfium2-5.13.0-py3-none-macosx_13_0_x86_64.whl", hash = "sha256:2abedfb5c70992b19c780ed58d7f7b929e8ce8ee52c9140158f44317c90ec6c7", size = 3670979, upload-time = "2026-08-13T10:57:45.607Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/31/f8210d53775f142be934336665b1d60e800c3f176f28c29b4908d945c518/pypdfium2-5.13.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9ee8c2bb2e68b396ab4a763215ac100dacb6b96d0da5bebeb239a021aecc3a7e", size = 3676486, upload-time = "2026-08-13T10:57:47.267Z" },
+    { url = "https://files.pythonhosted.org/packages/94/50/d339fa09fbe592564b100bfc76833170a1104a764a458ac2abfffcb632f2/pypdfium2-5.13.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:07f58e91b8c45ca144a1ff3008faf3c73ef8a5e9fb32988831788363288228cd", size = 3400883, upload-time = "2026-08-13T10:57:49.189Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/e0/b10cf41b5e9f0212d014c40635659c6ab95bb4fcc6fc47f5d3c571f8d57f/pypdfium2-5.13.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:46b2f5be9e7ae941ee4216e3d20b66f9dc3d81944a3d57756272de5275204709", size = 3803912, upload-time = "2026-08-13T10:57:50.865Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/d8/25ba4ce9a9059ece82f4514df0658fde0aa9bbeafe135e76017c052bf56f/pypdfium2-5.13.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d96beb7f379e6c76d874ca93fcd182ac3168dd499056407070f9927fb1061b8e", size = 4218231, upload-time = "2026-08-13T10:57:52.525Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/7c/74a2fb48e5b0d2402d9ca64b39074c722d67e9a8a2c58449a843a8c2329a/pypdfium2-5.13.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:81df25c1ab4c13ff773102d3cbea1967511d079123b067fc077bd0c4d57d91d8", size = 3730077, upload-time = "2026-08-13T10:57:54.021Z" },
+    { url = "https://files.pythonhosted.org/packages/59/12/8c922f00518c26dc47d3676cc09c1d3c95e991c1977e31067d23cc2215cb/pypdfium2-5.13.0-py3-none-manylinux_2_27_s390x.manylinux_2_28_s390x.whl", hash = "sha256:d66a32d89fa5b4a2715810171239eb194df4aba604727483ab760512f3c6a851", size = 4031512, upload-time = "2026-08-13T10:57:55.736Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/48/a171d034c2dac01adcc57d3dad3c97ba11f19d916f421176002c9e02c904/pypdfium2-5.13.0-py3-none-manylinux_2_34_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:b90b0a5ac310bb34db8eb848e58fcab4e201e124e3cf3cb1ccb7b85293e034af", size = 3995485, upload-time = "2026-08-13T10:57:57.39Z" },
+    { url = "https://files.pythonhosted.org/packages/36/2e/dcb24776d409bb9e5b7fb26a0c62a87b98ab0e30dfcca645eaf31e35123b/pypdfium2-5.13.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:ada81c36483cd61d07e32bc7814620ee96256b4f421b913f566861bf91800248", size = 5016636, upload-time = "2026-08-13T10:57:59.181Z" },
+    { url = "https://files.pythonhosted.org/packages/93/24/1fab8470fc6de6f4481f009c90757b1a1ee0a61d8e864ed273f72ffca855/pypdfium2-5.13.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:3826e521e895648983cb9ee6b934d4bf51552600043984f84e9c2b3b14b696f3", size = 4555251, upload-time = "2026-08-13T10:58:00.753Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/ef/6e8dbea1eddcb55cf34172753ffccd39566333c803cc94d43c653f369f2f/pypdfium2-5.13.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:5c029d7163a91f264eafab51fb442a84a33efd9fd83d5a06c0136a7857a3cc8d", size = 5263483, upload-time = "2026-08-13T10:58:02.48Z" },
+    { url = "https://files.pythonhosted.org/packages/53/fe/2ff673730189a621c01f9193c74b0f6aa70d8740889fdf11949e1c541869/pypdfium2-5.13.0-py3-none-musllinux_1_2_ppc64le.whl", hash = "sha256:be2dccbde0ce7efe334ecd8f348df4308db360756ede4f0821d82dfc9a58caa8", size = 5144135, upload-time = "2026-08-13T10:58:04.351Z" },
+    { url = "https://files.pythonhosted.org/packages/19/0b/759b9037c007317fa5c990dd3f6eff2b99d3fbced251d1e2512be92f2e2e/pypdfium2-5.13.0-py3-none-musllinux_1_2_riscv64.whl", hash = "sha256:bcd81394fe101405e026eedb3e40bef84635c1e5d974dd6036420eb6937753c6", size = 4648156, upload-time = "2026-08-13T10:58:06.036Z" },
+    { url = "https://files.pythonhosted.org/packages/db/3b/ffe29679c52efe8eb02d77aa6656e6d6201395423329af018ebd5923a3d0/pypdfium2-5.13.0-py3-none-musllinux_1_2_s390x.whl", hash = "sha256:2ed32ff685f8e05e637c990bedbf5fca66727bf27718d8bc33eeab21ce0630d1", size = 5089852, upload-time = "2026-08-13T10:58:07.791Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/b6/cebacc1601ddfdcd1e6a1dc321533d215ceccf9b825fa9b91b11c6dc39fb/pypdfium2-5.13.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:9c777edba28d1d5fd15435ed3a78ee2fdb93dd069be37cb53b559bc122793770", size = 5074153, upload-time = "2026-08-13T10:58:09.396Z" },
+    { url = "https://files.pythonhosted.org/packages/54/40/cf14c4f534f817788966857afdedb90002198dca5ce4fe2c6ecb031955ae/pypdfium2-5.13.0-py3-none-win32.whl", hash = "sha256:d33ee7077db67478b75efe4b5ea9610fb96c5416a0bc4949227f0f59c34dfcd9", size = 3753164, upload-time = "2026-08-13T10:58:10.97Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/99/a37b6b902457569468ed5908c94e56cb6c4032541f02cf89f723d42a9148/pypdfium2-5.13.0-py3-none-win_amd64.whl", hash = "sha256:47dcca2a8d507b5fd24f94c3c9d48fb379430f097bc20f01beff6c963ffbcedb", size = 3885553, upload-time = "2026-08-13T10:58:12.709Z" },
+    { url = "https://files.pythonhosted.org/packages/50/7f/d39f6e64375c2ffd50ea100e3c73af79085c880c2791eb7203bc61d8913f/pypdfium2-5.13.0-py3-none-win_arm64.whl", hash = "sha256:554a0b23376460af1410e3c915906895e2dac67a086b9e6ccde0643a795d3b0d", size = 3700026, upload-time = "2026-08-13T10:58:14.206Z" },
 ]
 
 [[package]]
@@ -2929,7 +3007,7 @@ wheels = [
 
 [[package]]
 name = "strawberry-django-hasura"
-version = "0.10.0"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -2937,9 +3015,9 @@ dependencies = [
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/67/2d/e43d05a8c6d36e9047793780560b847d185ac025cbc8588d7654b1209362/strawberry_django_hasura-0.10.0.tar.gz", hash = "sha256:9bd0f6a3d403074133273bc01856bf42265922ad7020d104ee51588afa9bce45", size = 138147, upload-time = "2026-09-05T23:15:06.002Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/43/a7a24d3019e138e803f00e0db0894ba0660395d584519921dca332ccc4f6/strawberry_django_hasura-0.11.0.tar.gz", hash = "sha256:cffc90f492d8f26b43e975b6cadd986327e58e56baa24f891b11df97f963dbdc", size = 140835, upload-time = "2026-09-11T14:14:46.975Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/da/ca65361d1b3252a3215f15b6fd14084cb009f6ab78b289048874dd3714a1/strawberry_django_hasura-0.10.0-py3-none-any.whl", hash = "sha256:10e37f83b37cea47a22d862ca6954d3089488c2118f03749c818f3abb61f666a", size = 62841, upload-time = "2026-09-05T23:15:04.925Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/a1/1ff0e3e3498de8f81cc96935f964c94ee2daffddd4b228b266e36f850b8f/strawberry_django_hasura-0.11.0-py3-none-any.whl", hash = "sha256:1721373c20519326329752279bebd643a856d4e5b037c487540aeca4bb764ae9", size = 64341, upload-time = "2026-09-11T14:14:45.562Z" },
 ]
 
 [[package]]

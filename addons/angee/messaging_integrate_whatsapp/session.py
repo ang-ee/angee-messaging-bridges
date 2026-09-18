@@ -17,10 +17,11 @@ from neonize.events import (
     MessageEv,
     PairStatusEv,
 )
+from neonize.utils.jid import build_jid
 
 from angee.integrate.live import STOP_JOIN_SECONDS
 from angee.messaging.session import LiveChannelSession
-from angee.messaging_integrate_whatsapp.parser import ChatMessage
+from angee.messaging_integrate_whatsapp.parser import INDIVIDUAL_SERVER, ChatMessage, bare_jid
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,15 @@ _MEDIA_FIELDS = ("imageMessage", "videoMessage", "audioMessage", "stickerMessage
 
 
 def _content_facts(content: Any) -> tuple[str, str, tuple[_MediaFact, ...]]:
-    """Read text, quoted stanza id, and media facts off a wire message payload."""
+    """Read text, quoted stanza id, and media facts off a wire message payload.
+
+    Only ``documentMessage`` carries a ``fileName``; images, video, audio, and
+    stickers arrive with a MIME type only and no name. Such nameless media flow
+    through with an empty ``name`` — the core ingest owner
+    (``Message.objects.ingest``) derives the stable per-message attachment name
+    from the message's kind and stanza-scoped ``external_id``, so every backend
+    shares one naming rule instead of each bridge synthesizing its own.
+    """
 
     text = getattr(content, "conversation", "") or ""
     extended = getattr(content, "extendedTextMessage", None)
@@ -74,7 +83,8 @@ def _content_facts(content: Any) -> tuple[str, str, tuple[_MediaFact, ...]]:
         mime = getattr(node, "mimetype", "") or "" if node is not None else ""
         if not mime:
             continue
-        media.append(_MediaFact(mime=mime, name=getattr(node, "fileName", "") or ""))
+        name = getattr(node, "fileName", "") or ""
+        media.append(_MediaFact(mime=mime, name=name))
         text = text or (getattr(node, "caption", "") or "")
         quoted = quoted or (getattr(getattr(node, "contextInfo", None), "stanzaID", "") or "")
     return text, quoted, tuple(media)
@@ -116,6 +126,86 @@ class WhatsAppSession(LiveChannelSession):
             logger.info("WhatsApp media download failed for channel %s.", self.bridge.sqid)
             return None
 
+    def _resolve_identity(self, jid: str, name: str) -> tuple[str, str]:
+        """Resolve a sender's phone JID (for ``@lid``) and enrich a missing name.
+
+        Returns ``(phone_jid, name)``: ``phone_jid`` is the phone-number JID a
+        hidden ``@lid`` sender maps to (``""`` when it is not a LID or the mapping
+        is unknown), and ``name`` is the event's push name, or a contact-store
+        name when the event had none. Both lookups run here on the vendor callback
+        thread, where ``self.client`` and its local whatsmeow LID/contact stores
+        live — the session owns its own child process. Lookups are best-effort (a
+        miss logs at info and yields the empty resolution) and cached per bare JID,
+        so a chatty group costs one vendor round-trip per participant, not one per
+        message.
+        """
+
+        bare = bare_jid(jid)
+        if not bare:
+            return "", name
+        # A named, non-hidden sender has nothing to resolve — skip the round-trip.
+        if name and bare.partition("@")[2] != "lid":
+            return "", name
+        cache = self.__dict__.setdefault("_identity_cache", {})
+        if bare not in cache:
+            cache[bare] = self._lookup_identity(bare)
+        phone_jid, resolved_name = cache[bare]
+        return phone_jid, name or resolved_name
+
+    def _lookup_identity(self, bare: str) -> tuple[str, str]:
+        """Query the vendor stores once for a bare JID's phone mapping and name.
+
+        A LID resolves to its phone JID first; the name is then read for the phone
+        identity — whatsmeow keys contacts by the phone JID — falling back to the
+        original JID when the LID did not resolve.
+        """
+
+        phone_jid = self._lid_to_phone(bare) if bare.partition("@")[2] == "lid" else ""
+        return phone_jid, self._contact_name(phone_jid or bare)
+
+    def _lid_to_phone(self, jid: str) -> str:
+        """Return the phone-number JID a hidden LID maps to, or ``""``."""
+
+        resolver = getattr(self.client, "get_pn_from_lid", None)
+        proto = self._jid_proto(jid)
+        if resolver is None or proto is None:
+            return ""
+        try:
+            return _jid_str(resolver(proto))
+        except Exception:
+            logger.info("WhatsApp LID resolution failed on channel %s.", self.bridge.sqid)
+            return ""
+
+    def _contact_name(self, jid: str) -> str:
+        """Return a contact-store display name for a JID, or ``""``."""
+
+        getter = getattr(getattr(self.client, "contact", None), "get_contact", None)
+        proto = self._jid_proto(jid)
+        if getter is None or proto is None:
+            return ""
+        try:
+            info = getter(proto)
+        except Exception:
+            logger.info("WhatsApp contact lookup failed on channel %s.", self.bridge.sqid)
+            return ""
+        for attr in ("PushName", "FullName", "FirstName", "BusinessName"):
+            value = str(getattr(info, attr, "") or "").strip()
+            if value:
+                return value
+        return ""
+
+    @staticmethod
+    def _jid_proto(jid: str) -> Any:
+        """Build a vendor JID proto from a bare ``user@server`` string, or ``None``."""
+
+        user, _, server = bare_jid(jid).partition("@")
+        if not user:
+            return None
+        try:
+            return build_jid(user, server or INDIVIDUAL_SERVER)
+        except Exception:
+            return None
+
     def _build_client(self, store: Path) -> Any:
         """Instantiate the vendor client against the session store and wire events."""
 
@@ -148,13 +238,23 @@ class WhatsAppSession(LiveChannelSession):
         info = event.Info
         source = info.MessageSource
         content = event.Message
+        stanza_id = str(info.ID or "")
         text, quoted, facts = _content_facts(content)
+        sender_jid = _jid_str(source.Sender)
+        pushname = str(getattr(info, "Pushname", "") or "")
+        from_me = bool(source.IsFromMe)
+        if from_me:
+            # Our own JID never needs a phone/LID lookup — keep the push name as-is.
+            sender_phone_jid, sender_name = "", pushname
+        else:
+            sender_phone_jid, sender_name = self._resolve_identity(sender_jid, pushname)
         message = ChatMessage(
             chat_jid=_jid_str(source.Chat),
-            stanza_id=str(info.ID or ""),
-            sender_jid=_jid_str(source.Sender),
-            sender_name=str(getattr(info, "Pushname", "") or ""),
-            from_me=bool(source.IsFromMe),
+            stanza_id=stanza_id,
+            sender_jid=sender_jid,
+            sender_phone_jid=sender_phone_jid,
+            sender_name=sender_name,
+            from_me=from_me,
             timestamp=_timestamp(getattr(info, "Timestamp", 0)),
             text=text,
             quoted_stanza_id=quoted,
@@ -175,10 +275,10 @@ class WhatsAppSession(LiveChannelSession):
                 content = getattr(web_message, "message", None)
                 if key is None or content is None:
                     continue
+                stanza_id = str(getattr(key, "ID", "") or "")
                 text, quoted, facts = _content_facts(content)
                 if not (text or facts):
                     continue
-                stanza_id = str(getattr(key, "ID", "") or "")
                 if not stanza_id:
                     continue
                 from_me = bool(getattr(key, "fromMe", False))
@@ -187,11 +287,15 @@ class WhatsAppSession(LiveChannelSession):
                     sender = self.own_id
                 elif not sender:
                     sender = chat_jid
+                sender_phone_jid, sender_name = self._resolve_identity(
+                    sender, str(getattr(web_message, "pushName", "") or "")
+                )
                 message = ChatMessage(
                     chat_jid=chat_jid,
                     stanza_id=stanza_id,
                     sender_jid=sender,
-                    sender_name=str(getattr(web_message, "pushName", "") or ""),
+                    sender_phone_jid=sender_phone_jid,
+                    sender_name=sender_name,
                     from_me=from_me,
                     timestamp=_timestamp(getattr(web_message, "messageTimestamp", 0)),
                     text=text,

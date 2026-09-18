@@ -60,15 +60,41 @@ def is_group_jid(jid: str) -> bool:
     return bare_jid(jid).partition("@")[2] in GROUP_SERVERS
 
 
-def handle_for_jid(jid: str, display_name: str = "") -> ParsedHandle:
-    """Return the whatsapp handle for a JID — phone as the value when derivable."""
+def is_lid_jid(jid: str) -> bool:
+    """Return whether a JID is a hidden-identity ``@lid`` address."""
+
+    return bare_jid(jid).partition("@")[2] == "lid"
+
+
+def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> ParsedHandle:
+    """Return the whatsapp handle for a JID — phone as the value when derivable.
+
+    ``phone_jid`` carries the phone-number JID a hidden ``@lid`` sender resolved
+    to (the session owns that vendor lookup). When it resolves, the handle is
+    keyed exactly like a phone-JID sender — ``external_id`` becomes the bare phone
+    JID and ``value`` the real E.164 — so it lands on the account's existing phone
+    handle instead of tripping the ``(platform, value)`` uniqueness on every
+    message (a LID-keyed row valued at the phone would collide with that phone
+    handle each time). The LID→phone mapping is stable, so re-sync stays
+    idempotent; a LID that only resolves later simply converges onto the phone
+    handle while the offline backfill merges the stale LID row. An *unresolved*
+    LID keeps the bare LID as both its ``external_id`` and ``value``. Either way
+    the bare LID is stamped into ``metadata['lid']`` so it stays retrievable.
+    """
 
     bare = bare_jid(jid)
+    is_lid = bare.partition("@")[2] == "lid"
+    phone_jid_bare = bare_jid(phone_jid)
+    phone_value = phone_for_jid(bare) or phone_for_jid(phone_jid_bare)
+    # A resolved LID keys on its phone JID (converging on the phone handle); an
+    # unresolved one keeps the bare LID as its identity.
+    identity = phone_jid_bare if is_lid and phone_value else bare
     return ParsedHandle(
         platform=PLATFORM,
-        value=phone_for_jid(bare) or bare,
+        value=phone_value or bare,
         display_name=display_name,
-        external_id=bare,
+        external_id=identity,
+        metadata={"lid": bare} if is_lid else {},
     )
 
 
@@ -88,6 +114,7 @@ class ChatMessage:
     chat_name: str = ""
     group: bool | None = None
     sender_jid: str = ""
+    sender_phone_jid: str = ""
     sender_name: str = ""
     from_me: bool = False
     timestamp: datetime | None = None
@@ -112,7 +139,11 @@ def parsed_message(message: ChatMessage) -> ParsedMessage:
         external_id=external_id(chat, stanza),
         platform=PLATFORM,
         direction=DIRECTION_OUTBOUND if message.from_me else DIRECTION_INBOUND,
-        sender=handle_for_jid(message.sender_jid, message.sender_name) if message.sender_jid else None,
+        sender=(
+            handle_for_jid(message.sender_jid, message.sender_name, phone_jid=message.sender_phone_jid)
+            if message.sender_jid
+            else None
+        ),
         sent_at=message.timestamp,
         in_reply_to=external_id(chat, message.quoted_stanza_id) if message.quoted_stanza_id else "",
         thread=ParsedThread(
