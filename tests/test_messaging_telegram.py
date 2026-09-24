@@ -13,19 +13,19 @@ from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
-from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
-from rebac import system_context
-
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
-from angee.integrate.credentials import CredentialKind, handler_for
+from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
 from angee.integrate.locks import bridge_advisory_lock
 from angee.integrate.models import IntegrationRuntimeStatus
 from angee.integrate.sync import BridgeProgressReporter
 from angee.messaging.connect import submit_channel_password
 from angee.messaging.models import Thread
+from django.apps import apps
+from django.core.management import call_command
+from django.db import connection
+from rebac import system_context
+
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -256,7 +256,7 @@ def test_app_keys_credential_kind_owns_the_application_pair() -> None:
     app_keys = CredentialKind("app_keys")
     assert app_keys.value == "app_keys"
     assert app_keys.label == "App Keys"
-    handler = handler_for(app_keys)
+    handler = app_keys.handler
     assert handler.material_field == "app_secret"
     assert handler.input_material_fields() == ("app_id", "app_secret")
     with pytest.raises(ValueError, match="app_id and app_secret"):

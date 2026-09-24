@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from django.apps import AppConfig
-
 from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+from django.apps import AppConfig
 
 
 class BareComposeConfig(AppConfig):
@@ -21,6 +20,7 @@ class BareGraphQLConfig(AppConfig):
 
     name = "angee.graphql"
     label = "graphql"
+
 
 SECRET_KEY = "angee-tests"
 INSTALLED_APPS = [
@@ -103,7 +103,6 @@ ANGEE_VCS_BACKEND_CLASSES = {
     "local": "angee.integrate_vcs.backend.LocalVCSBackend",
 }
 ANGEE_WORKFLOW_STEP_CLASSES = {
-    "handler": "angee.workflows.steps.HandlerStep",
     "wait": "angee.workflows.steps.WaitStep",
     "gate": "angee.workflows.steps.GateStep",
     "map": "angee.workflows.steps.MapStep",

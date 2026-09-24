@@ -19,18 +19,7 @@ from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO, TextIO, cast
 
-from django.apps import apps
-from django.core.exceptions import ValidationError
-from rebac import system_context
-from telethon import types, utils
-
 from angee.messaging.backends import MediaItem, ParsedMessage
-from angee.messaging_integrate_telegram.backend import TelegramChannelBackend
-from angee.messaging_integrate_telegram.identity import (
-    export_peer_kind,
-    media_fact,
-    parsed_export_message,
-)
 from angee.workflows_integrate.archives import (
     ArchiveError,
     BoundedReader,
@@ -39,6 +28,17 @@ from angee.workflows_integrate.archives import (
     stage_subtree,
 )
 from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
+from django.apps import apps
+from django.core.exceptions import ValidationError
+from rebac import system_context
+from telethon import types, utils
+
+from angee.messaging_integrate_telegram.backend import TelegramChannelBackend
+from angee.messaging_integrate_telegram.identity import (
+    export_peer_kind,
+    media_fact,
+    parsed_export_message,
+)
 
 _ARCHIVE_RECOGNITION_READ_LIMIT = 16 * 1024 * 1024
 """Compressed bytes available to ZIP metadata and each ``result.json`` probe."""
@@ -501,6 +501,7 @@ def _import_result(
                 batch,
                 channel=channel,
                 quote_edges=False,
+                historical=True,
             )
         total += len(batch)
         batch.clear()

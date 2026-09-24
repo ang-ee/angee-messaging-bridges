@@ -27,10 +27,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from django.apps import apps
-from django.db.models import Max
-from rebac import system_context
-
 from angee.integrate_iphone.backup import (
     SQLITE_HEADER_LENGTH,
     BackupError,
@@ -38,6 +34,10 @@ from angee.integrate_iphone.backup import (
     is_sqlite_header,
 )
 from angee.messaging.backends import MediaItem
+from django.apps import apps
+from django.db.models import Max
+from rebac import system_context
+
 from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, parsed_message
 
 WHATSAPP_DOMAIN = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
@@ -314,6 +314,7 @@ class BackupImporter:
                         batch,
                         channel=self.channel,
                         quote_edges=False,
+                        historical=True,
                     )
             total += len(batch)
             if on_batch is not None:

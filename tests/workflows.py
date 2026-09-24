@@ -7,10 +7,6 @@ from contextlib import contextmanager
 from typing import Any
 
 import pytest
-from django.core.management import call_command
-from django.db import connection
-from rebac import system_context
-
 from angee.workflows import engine
 from angee.workflows import models as workflow_models
 from angee.workflows.models import (
@@ -25,6 +21,10 @@ from angee.workflows.models import (
 from angee.workflows.models import (
     Workflow as AbstractWorkflow,
 )
+from django.core.management import call_command
+from django.db import connection
+from rebac import system_context
+
 from tests.conftest import _clear_model_tables, _create_missing_tables
 
 
@@ -186,7 +186,7 @@ def workflow_with_steps(
                 workflow=draft,
                 key=spec["key"],
                 name=spec.get("name", spec["key"].replace("_", " ").title()),
-                step_class=spec.get("step_class", "handler"),
+                step_class=spec["step_class"],
                 config=spec.get("config", {}),
                 join_rule=spec.get("join_rule", workflow_models.JoinRule.ALL_SUCCESS),
                 is_entry=index == 0 if "is_entry" not in spec else spec["is_entry"],

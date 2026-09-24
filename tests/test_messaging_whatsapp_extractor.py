@@ -6,12 +6,15 @@ import hashlib
 import sqlite3
 import zipfile
 from collections.abc import Iterator
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from angee.addons import addon_manifest
+from angee.resources.entries import resource_manifest_for
+from angee.resources.models import Resource as AbstractResource
 from django.apps import apps
 from django.core.management import call_command
 from django.db import connection
@@ -21,8 +24,6 @@ from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
-from angee.resources.entries import resource_manifest_for
-from angee.resources.models import Resource as AbstractResource
 from tests.conftest import Vendor, _clear_model_tables, _create_missing_tables
 from tests.workflows import Edge, Step, Workflow
 
@@ -177,6 +178,26 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
     assert WHATSAPP_SETTINGS[
         "ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.whatsapp_iphone_backup"
     ] == "angee.messaging_integrate_whatsapp.extractor.WhatsAppIphoneBackupExtractor"
+
+
+def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Backup batches use the ingest owner's suppression of live notifications."""
+
+    channel = SimpleNamespace(subscription_state={})
+    message = SimpleNamespace(media=())
+    calls: list[dict[str, Any]] = []
+
+    def ingest(messages: list[Any], **kwargs: Any) -> None:
+        calls.append({"messages": list(messages), **kwargs})
+
+    manager = SimpleNamespace(ingest=ingest)
+    monkeypatch.setattr(backup, "apps", SimpleNamespace(get_model=lambda *_args: SimpleNamespace(objects=manager)))
+    monkeypatch.setattr(backup, "system_context", lambda **_kwargs: nullcontext())
+    monkeypatch.setattr(backup, "parsed_message", lambda item: item)
+    store = SimpleNamespace(messages=lambda **_kwargs: iter((message,)))
+
+    assert backup.BackupImporter(channel, store).run() == 1
+    assert calls == [{"messages": [message], "channel": channel, "quote_edges": False, "historical": True}]
 
 
 def test_archive_import_resource_loads_published_valid_graph(

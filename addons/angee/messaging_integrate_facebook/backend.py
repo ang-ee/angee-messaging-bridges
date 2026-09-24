@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from angee.messaging.backends import ChannelBackend, ParsedMessage
+from angee.messaging.backends import ChannelBackend
 
 
 class FacebookChannelBackend(ChannelBackend):
@@ -15,8 +15,3 @@ class FacebookChannelBackend(ChannelBackend):
     icon = "message-square"
 
     quote_edges: ClassVar[bool] = False
-
-    def fetch_messages(self) -> list[ParsedMessage]:
-        """Return nothing — takeout importers populate this channel."""
-
-        return []

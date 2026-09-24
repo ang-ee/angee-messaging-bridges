@@ -12,11 +12,11 @@ from typing import Any
 
 import pytest
 from angee.addons import addon_manifest
+from angee.messaging.backends import MediaItem
+from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from django.apps import apps
 from telethon import types, utils
 
-from angee.messaging.backends import MediaItem
-from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
 from angee.messaging_integrate_telegram.autoconfig import SETTINGS as TELEGRAM_SETTINGS
@@ -264,6 +264,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
     assert manager.calls[0]["channel"] is channel
     assert "message_kind" not in manager.calls[0]
     assert manager.calls[0]["quote_edges"] is False
+    assert manager.calls[0]["historical"] is True
     parsed = manager.calls[0]["messages"][0]
     assert parsed.external_id == f"{utils.get_peer_id(types.PeerChannel(42))}/17"
     assert parsed.thread is not None and parsed.thread.modality == "public_thread"
