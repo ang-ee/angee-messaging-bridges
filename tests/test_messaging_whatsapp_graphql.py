@@ -23,8 +23,6 @@ from tests.messaging_graphql_fixtures import (
     parties_schema,
 )
 
-pytest_plugins = ("tests.messaging_graphql_fixtures",)
-
 
 @pytest.fixture
 def whatsapp_graphql(
@@ -72,7 +70,7 @@ def test_connect_whatsapp_channel_starts_pairing(whatsapp_graphql: list[dict[str
     assert whatsapp_graphql == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk},
+            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk, "using": "default"},
             "queue": SESSION_QUEUE,
             "expires": 60.0,
         }

@@ -19,25 +19,26 @@ from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO, TextIO, cast
 
+from django.apps import apps
+from django.core.exceptions import ValidationError
+from rebac import system_context
+from telethon import types, utils
+
 from angee.messaging.backends import MediaItem, ParsedMessage
+from angee.messaging.backup_ingest import batch_ingest
+from angee.messaging_integrate_telegram.backend import TelegramChannelBackend
+from angee.messaging_integrate_telegram.identity import (
+    export_peer_kind,
+    media_fact,
+    parsed_export_message,
+)
+from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 from angee.workflows_integrate.archives import (
     ArchiveError,
     BoundedReader,
     archive_entries,
     safe_member_name,
     stage_subtree,
-)
-from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
-from django.apps import apps
-from django.core.exceptions import ValidationError
-from rebac import system_context
-from telethon import types, utils
-
-from angee.messaging_integrate_telegram.backend import TelegramChannelBackend
-from angee.messaging_integrate_telegram.identity import (
-    export_peer_kind,
-    media_fact,
-    parsed_export_message,
 )
 
 _ARCHIVE_RECOGNITION_READ_LIMIT = 16 * 1024 * 1024
@@ -156,9 +157,7 @@ class _JsonReader:
 
         actual = self.take()
         if actual != expected:
-            raise ArchiveError(
-                f"Telegram result.json expected {expected!r}, found {actual!r}."
-            )
+            raise ArchiveError(f"Telegram result.json expected {expected!r}, found {actual!r}.")
 
     def take(self) -> str:
         """Consume and return the next non-whitespace character."""
@@ -308,9 +307,7 @@ def _recognized_result(
     """Return the first bounded ``result.json`` proving Telegram takeout shape."""
 
     entries = archive_entries(archive)
-    candidates = sorted(
-        name for name in entries if PurePosixPath(name).name == "result.json"
-    )
+    candidates = sorted(name for name in entries if PurePosixPath(name).name == "result.json")
     for name in candidates:
         if budget is not None:
             budget.remaining = _ARCHIVE_RECOGNITION_READ_LIMIT
@@ -321,11 +318,9 @@ def _recognized_result(
                     limit=_RESULT_RECOGNITION_READ_LIMIT,
                 )
                 text_stream = codecs.getreader("utf-8")(bounded)
-                _position_at_chats_list(
-                    _JsonReader(cast(TextIO, text_stream), chunk_size=4096)
-                )
+                _position_at_chats_list(_JsonReader(cast(TextIO, text_stream), chunk_size=4096))
             return name
-        except (ArchiveError, json.JSONDecodeError, UnicodeError, ValueError):
+        except ArchiveError, json.JSONDecodeError, UnicodeError, ValueError:
             continue
     return None
 
@@ -460,9 +455,7 @@ def _import_archive(
         with file.open_stream() as stream, zipfile.ZipFile(stream) as archive:
             result_name = _recognized_result(archive)
             if result_name is None:
-                raise ArchiveError(
-                    "This archive contains no machine-readable Telegram Desktop export."
-                )
+                raise ArchiveError("This archive contains no machine-readable Telegram Desktop export.")
             parent = PurePosixPath(result_name).parent
             with stage_subtree(archive, parent) as export_root:
                 result_path = export_root / PurePosixPath(result_name).name
@@ -485,31 +478,13 @@ def _import_result(
 ) -> dict[str, Any]:
     """Batch streamed messages and report every recoverable skip category."""
 
-    message_model = apps.get_model("messaging", "Message")
     fallback_own_id = channel.subscription_state.get("own_id", "")
-    batch: list[ParsedMessage] = []
-    batch_bytes = 0
-    total = 0
     skipped = {"service": 0, "unknown_type": 0, "malformed": 0}
 
-    def flush() -> None:
-        nonlocal batch_bytes, total
-        if not batch:
-            return
-        with system_context(reason="messaging_integrate_telegram.takeout_import"):
-            message_model.objects.ingest(
-                batch,
-                channel=channel,
-                quote_edges=False,
-                historical=True,
-            )
-        total += len(batch)
-        batch.clear()
-        batch_bytes = 0
-        reporter.heartbeat()
-
-    with _export_messages(result_path) as (export_own_id, messages):
-        own_id = export_own_id or fallback_own_id
+    def parsed_messages(
+        messages: Iterator[tuple[dict[str, Any], dict[str, Any] | None]],
+        own_id: object,
+    ) -> Iterator[ParsedMessage]:
         for chat, message in messages:
             if message is None:
                 skipped["malformed"] += 1
@@ -535,11 +510,18 @@ def _import_result(
             except ValueError:
                 skipped["malformed"] += 1
                 continue
-            batch.append(parsed)
-            batch_bytes += _body_content_bytes(parsed.body)
-            if len(batch) >= _INGEST_BATCH_SIZE or batch_bytes >= _INGEST_BATCH_BYTES:
-                flush()
-    flush()
+            yield parsed
+
+    with _export_messages(result_path) as (export_own_id, messages):
+        total = batch_ingest(
+            channel,
+            parsed_messages(messages, export_own_id or fallback_own_id),
+            lambda message: message,
+            reason="messaging_integrate_telegram.takeout_import",
+            batch_size=_INGEST_BATCH_SIZE,
+            max_batch_bytes=_INGEST_BATCH_BYTES,
+            on_batch=lambda _total: reporter.heartbeat(),
+        )
     return {"imported": total, "skipped": skipped}
 
 
@@ -566,15 +548,6 @@ def _parse_export_message(
     metadata = dict(parsed.metadata)
     metadata.pop("_media_facts", None)
     return replace(parsed, metadata=metadata).with_media(media)
-
-
-def _body_content_bytes(part: Any | None) -> int:
-    """Return resolved content bytes retained by one neutral body tree."""
-
-    if part is None:
-        return 0
-    own = len(part.content) if part.content is not None else 0
-    return own + sum(_body_content_bytes(child) for child in part.children)
 
 
 def _media_items(

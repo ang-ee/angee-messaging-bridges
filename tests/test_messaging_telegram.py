@@ -13,6 +13,12 @@ from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
+from angee.addons import addon_manifest
+from django.apps import apps
+from django.core.management import call_command
+from django.db import connection
+from rebac import system_context
+
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
@@ -21,11 +27,6 @@ from angee.integrate.models import IntegrationRuntimeStatus
 from angee.integrate.sync import BridgeProgressReporter
 from angee.messaging.connect import submit_channel_password
 from angee.messaging.models import Thread
-from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
-from rebac import system_context
-
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -361,6 +362,9 @@ def test_create_telegram_channel_rejects_a_credential_of_another_kind(
 def test_telegram_backend_registration_and_pairing_projection(telegram_tables: Any) -> None:
     """Autoconfig registers a live backend whose projection prefers saved profile labels."""
 
+    contract = addon_manifest(apps.get_app_config("messaging_integrate_telegram"))
+    assert contract is not None
+    assert "angee.workflows_integrate" in contract.depends_on
     autoconfig = _telegram_module("autoconfig")
     backend_module = _telegram_module("backend")
     assert autoconfig.SETTINGS == {
@@ -738,7 +742,7 @@ def test_telegram_connect_failure_latches_runtime_error_and_stops_redispatch(
     from angee.integrate import tasks as tasks_module
 
     session_module = telegram_session_module
-    monkeypatch.setattr(tasks_module, "bridge_models", lambda _base: (Channel,))
+    monkeypatch.setattr(tasks_module, "models_with", lambda *, base: (Channel,))
     monkeypatch.setattr(session_module.TelegramSession, "client_class", _ConnectFailureClient)
     connect = _telegram_module("connect")
     admin = _platform_admin("msg-telegram-connect-failure-admin")

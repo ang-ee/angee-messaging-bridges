@@ -205,14 +205,22 @@ from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
-from angee.messaging_integrate_whatsapp import session as session_module  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
-from angee.messaging_integrate_whatsapp.session import WhatsAppSession  # noqa: E402
 from tests.conftest import _clear_model_tables, _create_missing_tables, make_integration  # noqa: E402
 from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message, Thread  # noqa: E402
 from tests.messaging_graphql_fixtures import Channel  # noqa: E402
 
 WHATSAPP_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
+
+
+@pytest.fixture
+def whatsapp_session() -> Any:
+    """Load the vendor session only for tests requiring the optional SDK."""
+
+    pytest.importorskip("neonize", reason="WhatsApp session tests require the optional Neonize SDK")
+    from angee.messaging_integrate_whatsapp import session
+
+    return session
 
 
 @pytest.fixture
@@ -225,7 +233,7 @@ def whatsapp_tables(settings: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatc
     """
 
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
-    monkeypatch.setattr("angee.integrate.tasks.bridge_models", lambda _base: (Channel,))
+    monkeypatch.setattr(tasks_module, "models_with", lambda *, base: (Channel,))
     created_models = _create_missing_tables(WHATSAPP_TEST_MODELS)
     call_command("rebac", "sync", verbosity=0)
     try:
@@ -334,12 +342,14 @@ class FakeWhatsAppClient:
         return media
 
 
-def _run_session(channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event | None = None) -> str:
+def _run_session(
+    whatsapp_session: Any, channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event | None = None
+) -> str:
     """Run one session against the fake client under a live reporter."""
 
     FakeWhatsAppClient.script = script
     FakeWhatsAppClient.instances = []
-    session = WhatsAppSession(
+    session = whatsapp_session.WhatsAppSession(
         channel,
         reporter=BridgeProgressReporter(channel),
         stop_event=stop_event or threading.Event(),
@@ -385,7 +395,7 @@ def _await(predicate: Any, *, timeout: float = 10.0) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_tables: Any) -> None:
+def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """QR → paired → live message → cooperative stop, all over one session.
 
     The QR report lands as a data URI, pairing clears it and records the own
@@ -429,7 +439,7 @@ def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_tables: Any) -> 
         ),
         finish,
     )
-    state = _run_session(channel, script=script, stop_event=stop_event)
+    state = _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
 
     assert state == PairingState.PAIRED
     qr_report, paired_report = seen
@@ -452,7 +462,7 @@ def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_tables: Any) -> 
 
 
 @pytest.mark.django_db(transaction=True)
-def test_session_media_failure_lands_marker_not_loss(whatsapp_tables: Any) -> None:
+def test_session_media_failure_lands_marker_not_loss(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """An expired media download degrades to the marker part; the row still lands."""
 
     channel = _whatsapp_channel()
@@ -473,7 +483,7 @@ def test_session_media_failure_lands_marker_not_loss(whatsapp_tables: Any) -> No
         lambda client: client.event.handlers["Message"](client, media_event),
         finish,
     )
-    _run_session(channel, script=script, stop_event=stop_event)
+    _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
 
     message = Message._base_manager.get()
     with system_context(reason="test whatsapp media assertions"):
@@ -483,13 +493,13 @@ def test_session_media_failure_lands_marker_not_loss(whatsapp_tables: Any) -> No
 
 
 @pytest.mark.django_db(transaction=True)
-def test_session_logged_out_raises_for_explicit_reset(whatsapp_tables: Any) -> None:
+def test_session_logged_out_raises_for_explicit_reset(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """A phone-side unlink surfaces as SessionLoggedOut — no silent re-pairing."""
 
     channel = _whatsapp_channel()
     script = (lambda client: client.event.handlers["LoggedOut"](client, _Namespace()),)
     with pytest.raises(SessionLoggedOut, match="The linked phone removed this device"):
-        _run_session(channel, script=script)
+        _run_session(whatsapp_session, channel, script=script)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -513,7 +523,7 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
     assert sent == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk},
+            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk, "using": "default"},
             "queue": SESSION_QUEUE,
             "expires": 60.0,
         }
@@ -570,7 +580,7 @@ def test_run_session_task_gates_on_desire_and_kind(whatsapp_tables: Any) -> None
 
 @pytest.mark.django_db(transaction=True)
 def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_lifecycle(
-    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A logged-out session records the failure and releases the claim, not the intent.
 
@@ -590,7 +600,7 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     store = session_store_path(channel)
     store.mkdir(parents=True, exist_ok=True)
     (store / "session.db").write_bytes(b"invalid-device")
-    monkeypatch.setattr(WhatsAppSession, "client_class", FakeWhatsAppClient)
+    monkeypatch.setattr(whatsapp_session.WhatsAppSession, "client_class", FakeWhatsAppClient)
     FakeWhatsAppClient.script = (lambda client: client.event.handlers["LoggedOut"](client, _Namespace()),)
 
     result = _run_session_task(channel)
@@ -670,7 +680,7 @@ def test_distinct_whatsapp_jids_can_connect_independently(whatsapp_tables: Any) 
 
 @pytest.mark.django_db(transaction=True)
 def test_duplicate_pairing_rejects_new_session_and_removes_only_its_store(
-    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A second channel cannot ingest one account; the established owner is untouched."""
 
@@ -692,7 +702,7 @@ def test_duplicate_pairing_rejects_new_session_and_removes_only_its_store(
     # would make it a *resumed* store, which discard_new_store must keep.
     assert not (rejected_store / "session.db").exists()
 
-    monkeypatch.setattr(WhatsAppSession, "client_class", FakeWhatsAppClient)
+    monkeypatch.setattr(whatsapp_session.WhatsAppSession, "client_class", FakeWhatsAppClient)
     FakeWhatsAppClient.script = (
         lambda client: client.event.handlers["PairStatus"](client, _Namespace(ID=_jid("4917000001"))),
         lambda client: client.stopped.set(),
@@ -728,7 +738,7 @@ def test_duplicate_pairing_rejects_new_session_and_removes_only_its_store(
 
 @pytest.mark.django_db(transaction=True)
 def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
-    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A rejected session that resumed a retained store keeps it — on every attempt.
 
@@ -762,7 +772,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     resumed_store.mkdir(parents=True, exist_ok=True)
     (resumed_store / "session.db").write_bytes(b"the device credential disconnect retained")
 
-    monkeypatch.setattr(WhatsAppSession, "client_class", FakeWhatsAppClient)
+    monkeypatch.setattr(whatsapp_session.WhatsAppSession, "client_class", FakeWhatsAppClient)
     FakeWhatsAppClient.script = (
         lambda client: client.event.handlers["PairStatus"](client, _Namespace(ID=_jid("4917000001"))),
         lambda client: client.stopped.set(),
@@ -791,7 +801,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
 
 @pytest.mark.django_db(transaction=True)
 def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
-    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A channel disconnected by its int_ sqid stays disconnected — no revert.
 
@@ -803,7 +813,7 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
     """
 
     channel = _whatsapp_channel()
-    session = WhatsAppSession(
+    session = whatsapp_session.WhatsAppSession(
         channel,
         reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
@@ -833,13 +843,13 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
 
 @pytest.mark.django_db(transaction=True)
 def test_shutdown_reports_whether_the_vendor_connection_unwound(
-    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The exit proof is the thread's liveness, never the join's return."""
 
-    monkeypatch.setattr(session_module, "STOP_JOIN_SECONDS", 0.05)
+    monkeypatch.setattr(whatsapp_session, "STOP_JOIN_SECONDS", 0.05)
     channel = _whatsapp_channel()
-    session = WhatsAppSession(
+    session = whatsapp_session.WhatsAppSession(
         channel,
         reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
@@ -1142,9 +1152,7 @@ def test_mount_backup_extractor_reuses_importer_per_domain(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_backup_import_resume_advances_past_imported_prefix(
-    whatsapp_tables: Any, tmp_path: Any
-) -> None:
+def test_backup_import_resume_advances_past_imported_prefix(whatsapp_tables: Any, tmp_path: Any) -> None:
     """A resumed import skips each chat's imported prefix and advances to completion.
 
     The failure a resume must avoid: a history larger than one task window would
@@ -1238,21 +1246,25 @@ def _lid_message_event(
     )
 
 
-def _run_lid_session(channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event) -> str:
+def _run_lid_session(
+    whatsapp_session: Any, channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event
+) -> str:
     FakeLidClient.script = script
     FakeLidClient.instances = []
-    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=stop_event)
+    session = whatsapp_session.WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=stop_event)
     session.client_class = FakeLidClient
     with system_context(reason="test whatsapp lid session run"), bridge_advisory_lock(channel) as acquired:
         assert acquired
         return session.run()
 
 
-def test_content_facts_keeps_document_filename_and_leaves_media_unnamed() -> None:
+def test_content_facts_keeps_document_filename_and_leaves_media_unnamed(
+    whatsapp_session: Any,
+) -> None:
     """A document keeps its ``fileName``; nameless media flow through empty for the core to name."""
 
     content = _Namespace(imageMessage=_Namespace(mimetype="image/jpeg", caption="look"))
-    text, _quoted, facts = session_module._content_facts(content)
+    text, _quoted, facts = whatsapp_session._content_facts(content)
     assert text == "look"
     assert facts[0].mime == "image/jpeg"
     # The bridge no longer synthesizes a stanza-scoped name; the core ingest owner
@@ -1260,16 +1272,16 @@ def test_content_facts_keeps_document_filename_and_leaves_media_unnamed() -> Non
     assert facts[0].name == ""
 
     document = _Namespace(documentMessage=_Namespace(mimetype="application/pdf", fileName="contract.pdf"))
-    _text, _q, doc_facts = session_module._content_facts(document)
+    _text, _q, doc_facts = whatsapp_session._content_facts(document)
     assert doc_facts[0].name == "contract.pdf"
 
     audio = _Namespace(audioMessage=_Namespace(mimetype="audio/ogg"))
-    _t, _qq, audio_facts = session_module._content_facts(audio)
+    _t, _qq, audio_facts = whatsapp_session._content_facts(audio)
     assert audio_facts[0].name == ""
 
 
 @pytest.mark.django_db(transaction=True)
-def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_tables: Any) -> None:
+def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """A hidden @lid group sender lands as a real phone value with an enriched name."""
 
     channel = _whatsapp_channel("whatsapp-lid")
@@ -1295,7 +1307,7 @@ def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_tables: Any) -
         ),
         finish,
     )
-    _run_lid_session(channel, script=script, stop_event=stop_event)
+    _run_lid_session(whatsapp_session, channel, script=script, stop_event=stop_event)
 
     # The resolved LID is keyed on its phone JID (so it converges on the phone handle).
     handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
@@ -1305,11 +1317,13 @@ def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_tables: Any) -
 
 
 @pytest.mark.django_db(transaction=True)
-def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_tables: Any) -> None:
+def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """A failed LID/contact lookup falls back to empty; a named phone sender is skipped."""
 
     channel = _whatsapp_channel("whatsapp-lid-miss")
-    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event())
+    session = whatsapp_session.WhatsAppSession(
+        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
+    )
 
     class _RaisingClient:
         contact = None
@@ -1324,11 +1338,13 @@ def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_tables: An
 
 
 @pytest.mark.django_db(transaction=True)
-def test_contact_name_reads_the_business_name_field(whatsapp_tables: Any) -> None:
+def test_contact_name_reads_the_business_name_field(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """A business contact whose only populated name is ``BusinessName`` still resolves."""
 
     channel = _whatsapp_channel("whatsapp-bizname")
-    session = WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event())
+    session = whatsapp_session.WhatsAppSession(
+        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
+    )
 
     class _BusinessOnlyContact:
         # A business account whose only set name field is BusinessName — the real

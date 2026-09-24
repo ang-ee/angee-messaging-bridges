@@ -22,6 +22,10 @@ from angee.integrate.models import Credential as AbstractCredential
 from angee.integrate.models import ExternalAccount as AbstractExternalAccount
 from angee.integrate.models import Integration as AbstractIntegration
 from angee.integrate.models import OAuthClient as AbstractOAuthClient
+from angee.integrate.models import RecordLink as AbstractRecordLink
+from angee.integrate.models import RecordRevision as AbstractRecordRevision
+from angee.integrate.models import SyncDiscrepancy as AbstractSyncDiscrepancy
+from angee.integrate.models import SyncStream as AbstractSyncStream
 from angee.integrate.models import Vendor as AbstractVendor
 from angee.integrate.models import WebhookSubscription as AbstractWebhookSubscription
 from angee.integrate_vcs.backend import RepoDescriptor, TreeEntry, VCSBackend
@@ -37,6 +41,8 @@ from angee.storage.models import FileAttachment as AbstractFileAttachment
 from angee.storage.models import Folder as AbstractFolder
 from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
+
+pytest_plugins = ("tests.messaging_graphql_fixtures",)
 
 
 class OAuthClient(AbstractOAuthClient):
@@ -115,6 +121,50 @@ class WebhookSubscription(AbstractWebhookSubscription):
         db_table = "test_integrate_webhook_subscription"
         rebac_resource_type = "integrate/webhook_subscription"
         rebac_id_attr = "sqid"
+
+
+class SyncStream(AbstractSyncStream):
+    """Concrete SyncStream model for bridge sync tests."""
+
+    class Meta(AbstractSyncStream.Meta):
+        abstract = False
+        app_label = "integrate"
+        db_table = "test_integrate_sync_stream"
+        rebac_resource_type = "integrate/sync_stream"
+
+
+class RecordLink(AbstractRecordLink):
+    """Concrete RecordLink model for bridge sync tests."""
+
+    class Meta(AbstractRecordLink.Meta):
+        abstract = False
+        app_label = "integrate"
+        db_table = "test_integrate_record_link"
+        rebac_resource_type = "integrate/record_link"
+
+
+class RecordRevision(AbstractRecordRevision):
+    """Concrete RecordRevision model for bridge sync tests."""
+
+    class Meta(AbstractRecordRevision.Meta):
+        abstract = False
+        app_label = "integrate"
+        db_table = "test_integrate_record_revision"
+        rebac_resource_type = "integrate/record_revision"
+
+
+class SyncDiscrepancy(AbstractSyncDiscrepancy):
+    """Concrete SyncDiscrepancy model for bridge sync tests."""
+
+    class Meta(AbstractSyncDiscrepancy.Meta):
+        abstract = False
+        app_label = "integrate"
+        db_table = "test_integrate_sync_discrepancy"
+        rebac_resource_type = "integrate/sync_discrepancy"
+
+
+RECORD_SYNC_TEST_MODELS = (SyncStream, RecordLink, RecordRevision, SyncDiscrepancy)
+"""Concrete integration record-sync models, in foreign-key creation order."""
 
 
 IAM_CONNECTION_TEST_MODELS = (OAuthClient, ExternalAccount, Credential)

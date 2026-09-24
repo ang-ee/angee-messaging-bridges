@@ -12,10 +12,11 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from angee.messaging.backends import ChannelBackend
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from rebac import system_context
+
+from angee.messaging.backends import ChannelBackend
 
 
 class ImessageChannelBackend(ChannelBackend):

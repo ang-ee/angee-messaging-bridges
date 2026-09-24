@@ -26,7 +26,6 @@ from rebac import (
 )
 from rebac.roles import grant
 
-import angee.parties.schema as parties_schema
 from angee.graphql.deletion import DeletePreview
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.messaging.models import Channel as AbstractChannel
@@ -63,6 +62,7 @@ class Channel(AbstractChannel, Integration):
         rebac_id_attr = "sqid"
 
 
+parties_schema = importlib.import_module("angee.parties.schema")
 messaging_schema = importlib.import_module("angee.messaging.schema")
 iam_schema = importlib.import_module("angee.iam.schema")
 integrate_schema = importlib.import_module("angee.integrate.schema")

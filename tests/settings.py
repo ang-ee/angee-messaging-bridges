@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
 from django.apps import AppConfig
+
+from angee import integrate
+from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+from angee.workflows_integrate.autoconfig import SETTINGS as WORKFLOWS_INTEGRATE_SETTINGS
 
 
 class BareComposeConfig(AppConfig):
@@ -83,7 +86,7 @@ USE_TZ = True
 ANGEE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
     Path(__file__).resolve().parent.parent / "addons",
-    Path(__file__).resolve().parents[2] / "angee" / "addons",
+    Path(integrate.__file__).resolve().parents[2],
 )
 ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
@@ -106,9 +109,9 @@ ANGEE_WORKFLOW_STEP_CLASSES = {
     "wait": "angee.workflows.steps.WaitStep",
     "gate": "angee.workflows.steps.GateStep",
     "map": "angee.workflows.steps.MapStep",
-    "archive_probe": "angee.workflows_integrate.steps.ArchiveProbeStepImpl",
-    "archive_gate": "angee.workflows_integrate.steps.ArchiveGateStepImpl",
-    "archive_execute": "angee.workflows_integrate.steps.ArchiveExecuteStepImpl",
+    "archive_probe": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_probe"],
+    "archive_gate": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_gate"],
+    "archive_execute": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_execute"],
 }
 # Directory/channel backends each addon's autoconfig normally contributes; declared
 # here so the ImplClassField registries are non-empty at model-import time.
