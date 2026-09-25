@@ -215,9 +215,8 @@ WHATSAPP_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 @pytest.fixture
 def whatsapp_session() -> Any:
-    """Load the vendor session only for tests requiring the optional SDK."""
+    """Load the worker session used by session tests."""
 
-    pytest.importorskip("neonize", reason="WhatsApp session tests require the optional Neonize SDK")
     from angee.messaging_integrate_whatsapp import session
 
     return session
@@ -523,7 +522,7 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
     assert sent == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk, "using": "default"},
+            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk},
             "queue": SESSION_QUEUE,
             "expires": 60.0,
         }

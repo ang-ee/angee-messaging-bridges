@@ -8,13 +8,6 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-
-pytest.importorskip("nio", reason="Matrix recovery requires the optional matrix-nio SDK")
-pytest.importorskip("Crypto", reason="Matrix recovery requires optional pycryptodome")
-pytest.importorskip("unpaddedbase64", reason="Matrix recovery requires optional unpaddedbase64")
-
-# The worker imports follow the explicit optional-SDK checks.
-# ruff: noqa: E402
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Signature import eddsa
 from unpaddedbase64 import decode_base64, encode_base64

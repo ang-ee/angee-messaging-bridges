@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 import zipfile
-from collections.abc import Iterator
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,8 +13,6 @@ from typing import Any
 import pytest
 from angee.addons import addon_manifest
 from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 
 from angee.messaging import backup_ingest
@@ -25,8 +22,7 @@ from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_S
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
 from angee.resources.models import Resource as AbstractResource
-from tests.conftest import Vendor, _clear_model_tables, _create_missing_tables
-from tests.workflows import WORKFLOW_RUNTIME_MODELS, Workflow
+from angee.workflows.testing.models import Workflow
 
 
 class ArchiveResourceLedger(AbstractResource):
@@ -40,9 +36,6 @@ class ArchiveResourceLedger(AbstractResource):
         db_table = "test_archive_workflow_resource"
 
 
-_WORKFLOW_RESOURCE_MODELS = (Vendor, *WORKFLOW_RUNTIME_MODELS, ArchiveResourceLedger)
-
-
 class _BackupArchiveFile:
     """Minimal storage.File-shaped object opening one ZIP-wrapped backup."""
 
@@ -53,24 +46,6 @@ class _BackupArchiveFile:
         """Open the stored backup bytes for extractor recognition/execution."""
 
         return self.path.open("rb")
-
-
-@pytest.fixture()
-def archive_workflow_resource_tables(transactional_db: Any) -> Iterator[None]:
-    """Create the vendor, workflow-definition, and resource-ledger tables."""
-
-    del transactional_db
-    created_models = _create_missing_tables(_WORKFLOW_RESOURCE_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    _clear_model_tables(_WORKFLOW_RESOURCE_MODELS)
-    try:
-        yield
-    finally:
-        _clear_model_tables(_WORKFLOW_RESOURCE_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def test_whatsapp_iphone_backup_recognizes_manifest_resolved_chat_store(
@@ -192,7 +167,6 @@ def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -
         calls.append({"messages": list(messages), **kwargs})
 
     manager = SimpleNamespace(ingest=ingest)
-    manager.db_manager = lambda using: manager if using == "default" else pytest.fail("Wrong write alias")
     monkeypatch.setattr(
         backup_ingest, "apps", SimpleNamespace(get_model=lambda *_args: SimpleNamespace(objects=manager))
     )
@@ -212,13 +186,13 @@ def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -
     ),
 )
 def test_archive_import_resource_loads_published_valid_graph(
-    archive_workflow_resource_tables: None,
+    composed_tables: None,
     addon: str,
     workflow_names: tuple[str, str],
 ) -> None:
     """The ledger loads, validates and idempotently publishes all stock archive graphs."""
 
-    del archive_workflow_resource_tables
+    del composed_tables
     config = apps.get_app_config(addon)
     manifest = resource_manifest_for(config)
 

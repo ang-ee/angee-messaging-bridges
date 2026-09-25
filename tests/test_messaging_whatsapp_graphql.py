@@ -70,7 +70,7 @@ def test_connect_whatsapp_channel_starts_pairing(whatsapp_graphql: list[dict[str
     assert whatsapp_graphql == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk, "using": "default"},
+            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk},
             "queue": SESSION_QUEUE,
             "expires": 60.0,
         }

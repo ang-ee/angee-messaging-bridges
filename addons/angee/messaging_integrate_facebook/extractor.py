@@ -9,13 +9,13 @@ from typing import Any, BinaryIO, cast
 from angee.messaging_integrate_facebook.archive import ACTIVITY_DIRECTORY, MARKER_RELATIVE_PATHS
 from angee.messaging_integrate_facebook.connect import confirmed_facebook_channel
 from angee.messaging_integrate_facebook.importer import import_archive
-from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 from angee.workflows_integrate.archives import (
     ArchiveError,
     BoundedReader,
     archive_entries,
     stage_subtree,
 )
+from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
 
 _RECOGNITION_READ_LIMIT = 16 * 1024 * 1024
 

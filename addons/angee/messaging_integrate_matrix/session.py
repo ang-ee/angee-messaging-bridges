@@ -85,7 +85,7 @@ class MatrixSession(AsyncioLiveSession):
         self._session_path = session_path
         self._session_facts = _read_session_facts(session_path)
         if not self._session_facts.get("access_token"):
-            credential = self._fresh_credential()
+            credential = self.bridge.fresh_credential()
             if credential is None:
                 raise ValueError("This Matrix channel has no basic-auth credential.")
             self._login_material = matrix_login(credential)

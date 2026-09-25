@@ -23,7 +23,7 @@ from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging_integrate_imessage.backend import confirmed_imessage_channel
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import has_sms_store
-from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
+from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
 
 _MANIFEST_NAME = "Manifest.db"
 

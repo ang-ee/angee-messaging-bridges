@@ -11,17 +11,13 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
 from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
-
-pytest.importorskip("telethon", reason="Telegram bridge tests require the optional Telethon SDK")
-
-from telethon import types, utils  # noqa: E402
-
-from angee.messaging_integrate_telegram import extractor as extractor_module  # noqa: E402
-from angee.messaging_integrate_telegram import identity  # noqa: E402
-from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor  # noqa: E402
+from angee.messaging_integrate_telegram import extractor as extractor_module
+from angee.messaging_integrate_telegram import identity
+from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
 
 
 class _TakeoutArchiveFile:
@@ -42,13 +38,6 @@ class _RecordingMessageManager:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
         self.landed: dict[str, object] = {}
-        self.aliases: list[str] = []
-
-    def db_manager(self, using: str) -> _RecordingMessageManager:
-        """Record the shared import owner's database binding."""
-
-        self.aliases.append(using)
-        return self
 
     def ingest(self, parsed_messages: list[Any], **kwargs: Any) -> list[Any]:
         """Record one batch and mimic channel-scoped idempotent landing."""
@@ -270,7 +259,6 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
     assert "message_kind" not in manager.calls[0]
     assert manager.calls[0]["quote_edges"] is False
     assert manager.calls[0]["historical"] is True
-    assert manager.aliases == ["default"]
     parsed = manager.calls[0]["messages"][0]
     assert parsed.external_id == f"{utils.get_peer_id(types.PeerChannel(42))}/17"
     assert parsed.thread is not None and parsed.thread.modality == "public_thread"

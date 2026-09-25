@@ -21,7 +21,7 @@ from rebac import system_context
 
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
-from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
+from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
 
 _MANIFEST_NAME = "Manifest.db"
 

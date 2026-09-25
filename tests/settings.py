@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "angee.messaging_integrate_signal",
     "angee.messaging_integrate_matrix",
     "angee.messaging_integrate_discord",
+    "angee.integrate.testing",
+    "angee.workflows.testing",
 ]
 # Checkout-local so parallel git worktrees do not share one SQLite file.
 # Runs within this checkout must execute sequentially. `.test-db/` is gitignored.
