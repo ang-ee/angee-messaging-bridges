@@ -196,7 +196,6 @@ from typing import Any, ClassVar, cast  # noqa: E402
 import pytest  # noqa: E402
 from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from django.core.management import call_command  # noqa: E402
-from django.db import connection  # noqa: E402
 from rebac import system_context  # noqa: E402
 
 from angee.integrate import tasks as tasks_module  # noqa: E402
@@ -206,11 +205,9 @@ from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
-from tests.conftest import _clear_model_tables, _create_missing_tables, make_integration  # noqa: E402
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message, Thread  # noqa: E402
+from tests.conftest import make_integration  # noqa: E402
+from tests.messaging_fixtures import Message, Thread  # noqa: E402
 from tests.messaging_graphql_fixtures import Channel  # noqa: E402
-
-WHATSAPP_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 
 @pytest.fixture
@@ -223,26 +220,14 @@ def whatsapp_session() -> Any:
 
 
 @pytest.fixture
-def whatsapp_tables(settings: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Create the concrete messaging tables plus the Channel child.
+def whatsapp_tables(
+    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the composed tables and isolate session storage."""
 
-    Also points ``ANGEE_DATA_DIR`` (a composed default absent from the bare
-    test settings) at the test's tmp dir, so session stores never touch the
-    repository tree.
-    """
-
+    del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     monkeypatch.setattr(tasks_module, "models_with", lambda *, base: (Channel,))
-    created_models = _create_missing_tables(WHATSAPP_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(WHATSAPP_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def _whatsapp_channel(slug: str = "whatsapp") -> Any:

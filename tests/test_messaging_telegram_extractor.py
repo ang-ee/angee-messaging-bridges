@@ -443,7 +443,6 @@ def _install_messaging_doubles(
         sqid="int_confirmed",
         owner_id=99,
         subscription_state=subscription_state or {},
-        _state=SimpleNamespace(adding=False, db="default"),
     )
     filters: list[dict[str, str]] = []
 

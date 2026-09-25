@@ -23,7 +23,6 @@ from typing import Any
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
-from django.db import connection
 from rebac import system_context
 
 from angee.integrate_iphone.backup import BackupError, IosBackup
@@ -45,13 +44,11 @@ from angee.messaging_integrate_imessage.store import (
     ImessageStore,
     has_sms_store,
 )
-from tests.conftest import Vendor, _clear_model_tables, _create_missing_tables, make_integration
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Handle, Message, Thread, _storage_drive
+from tests.conftest import Vendor, make_integration
+from tests.messaging_fixtures import Handle, Message, Thread, _storage_drive
 from tests.messaging_graphql_fixtures import Channel
 
 UTC = timezone.utc
-
-IMESSAGE_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 _DM_SECONDS = 700_000_000.0  # Core Data seconds — the epoch-conversion pin (~2023)
 
@@ -183,20 +180,10 @@ def test_attributed_body_decodes_uint32_form_and_survives_a_decoy_tag() -> None:
 
 
 @pytest.fixture
-def imessage_tables(transactional_db: Any) -> Any:
-    """Create the concrete messaging tables plus the Channel child."""
+def imessage_tables(composed_tables: None) -> None:
+    """Use the composed tables for importer integration."""
 
-    del transactional_db
-    created_models = _create_missing_tables(IMESSAGE_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(IMESSAGE_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
+    del composed_tables
 
 
 def test_backup_import_lands_threads_identities_and_media(

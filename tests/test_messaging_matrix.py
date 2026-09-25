@@ -17,8 +17,6 @@ import pytest
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Signature import eddsa
 from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 from unpaddedbase64 import decode_base64, encode_base64
 
@@ -35,12 +33,10 @@ from angee.messaging_integrate_matrix.identity import MatrixMediaFact, parsed_me
 from tests.conftest import (
     SchemaAddon,
     Vendor,
-    _clear_model_tables,
-    _create_missing_tables,
     execute_schema,
     result_data,
 )
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message
+from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
     Channel,
     _platform_admin,
@@ -52,7 +48,6 @@ from tests.messaging_graphql_fixtures import (
 )
 
 Credential = apps.get_model("integrate", "Credential")
-MATRIX_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 
 def _event(
@@ -170,21 +165,14 @@ def test_matrix_backend_declares_worker_and_transient_material_contracts() -> No
 
 
 @pytest.fixture
-def matrix_tables(tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Create concrete messaging tables and isolate Matrix session storage."""
+def matrix_tables(
+    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the composed tables and isolate session storage."""
 
+    del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
-    created_models = _create_missing_tables(MATRIX_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(MATRIX_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def _matrix_channel(user: Any, *, history_seeded: bool = False) -> Any:

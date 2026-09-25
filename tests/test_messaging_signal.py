@@ -10,14 +10,12 @@ import signal
 import subprocess
 import threading
 import time
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
 import pytest
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
@@ -27,12 +25,10 @@ from angee.integrate.sync import BridgeProgressReporter
 from tests.conftest import (
     SchemaAddon,
     Vendor,
-    _clear_model_tables,
-    _create_missing_tables,
     execute_schema,
     result_data,
 )
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message, Part, _storage_drive
+from tests.messaging_fixtures import Message, Part, _storage_drive
 from tests.messaging_graphql_fixtures import (
     Channel,
     _platform_admin,
@@ -42,8 +38,6 @@ from tests.messaging_graphql_fixtures import (
     messaging_schema,
     parties_schema,
 )
-
-SIGNAL_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 _PEER_UUID = "11111111-1111-4111-8111-111111111111"
 _OTHER_UUID = "22222222-2222-4222-8222-222222222222"
@@ -62,25 +56,14 @@ def _signal_module(name: str) -> ModuleType:
 
 @pytest.fixture
 def signal_tables(
-    tmp_path: Path,
-    settings: Any,
-    monkeypatch: pytest.MonkeyPatch,
-) -> Iterator[None]:
-    """Create concrete messaging tables and isolate Signal session storage."""
+    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the composed tables and isolate session storage."""
 
+    del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     settings.SIGNAL_CLI_BIN = "/opt/angee/bin/signal-cli"
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
-    created_models = _create_missing_tables(SIGNAL_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(SIGNAL_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def _inbound(

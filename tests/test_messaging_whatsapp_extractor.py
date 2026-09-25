@@ -159,7 +159,7 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
 def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -> None:
     """Backup batches use the ingest owner's suppression of live notifications."""
 
-    channel = SimpleNamespace(subscription_state={}, _state=SimpleNamespace(adding=False, db="default"))
+    channel = SimpleNamespace(subscription_state={})
     message = SimpleNamespace(body=None)
     calls: list[dict[str, Any]] = []
 

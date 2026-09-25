@@ -8,6 +8,7 @@ from django.apps import AppConfig
 
 from angee import integrate
 from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+from angee.workflows.autoconfig import SETTINGS as WORKFLOWS_SETTINGS
 from angee.workflows_integrate.autoconfig import SETTINGS as WORKFLOWS_INTEGRATE_SETTINGS
 
 
@@ -108,12 +109,12 @@ ANGEE_VCS_BACKEND_CLASSES = {
     "local": "angee.integrate_vcs.backend.LocalVCSBackend",
 }
 ANGEE_WORKFLOW_STEP_CLASSES = {
-    "wait": "angee.workflows.steps.WaitStep",
-    "gate": "angee.workflows.steps.GateStep",
-    "map": "angee.workflows.steps.MapStep",
-    "archive_probe": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_probe"],
-    "archive_gate": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_gate"],
-    "archive_execute": WORKFLOWS_INTEGRATE_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES.archive_execute"],
+    **WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES"],
+    **{
+        key.removeprefix("ANGEE_WORKFLOW_STEP_CLASSES."): value
+        for key, value in WORKFLOWS_INTEGRATE_SETTINGS.items()
+        if key.startswith("ANGEE_WORKFLOW_STEP_CLASSES.")
+    },
 }
 # Directory/channel backends each addon's autoconfig normally contributes; declared
 # here so the ImplClassField registries are non-empty at model-import time.

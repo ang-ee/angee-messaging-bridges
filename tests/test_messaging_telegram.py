@@ -9,14 +9,13 @@ import sys
 import threading
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
 from angee.addons import addon_manifest
 from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
@@ -30,12 +29,10 @@ from angee.messaging.models import Thread
 from tests.conftest import (
     SchemaAddon,
     Vendor,
-    _clear_model_tables,
-    _create_missing_tables,
     execute_schema,
     result_data,
 )
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message
+from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
     Channel,
     _platform_admin,
@@ -45,8 +42,6 @@ from tests.messaging_graphql_fixtures import (
     messaging_schema,
     parties_schema,
 )
-
-TELEGRAM_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 Credential = apps.get_model("integrate", "Credential")
 
@@ -71,24 +66,13 @@ def _telegram_module(name: str) -> ModuleType:
 
 @pytest.fixture
 def telegram_tables(
-    tmp_path: Any,
-    settings: Any,
-    monkeypatch: pytest.MonkeyPatch,
-) -> Any:
-    """Create concrete messaging tables and isolate Telegram session storage."""
+    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the composed tables and isolate session storage."""
 
+    del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
-    created_models = _create_missing_tables(TELEGRAM_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(TELEGRAM_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def _message(**fields: Any) -> SimpleNamespace:
