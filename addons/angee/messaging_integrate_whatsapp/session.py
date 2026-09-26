@@ -242,7 +242,7 @@ class WhatsAppSession(LiveChannelSession):
         try:
             groups = client.get_joined_groups()
         except Exception:
-            logger.info("WhatsApp joined-group lookup failed on channel %s.", self.bridge.sqid)
+            logger.info("WhatsApp joined-group lookup failed on channel %s.", self.bridge.sqid, exc_info=True)
             return {}
         titles = {}
         for group in groups:

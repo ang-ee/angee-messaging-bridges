@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from angee.messaging.backends import MediaItem
+from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
@@ -454,8 +454,6 @@ def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_session: Any, wh
 def test_session_names_group_threads_from_joined_group_subjects(whatsapp_session: Any, whatsapp_tables: Any) -> None:
     """Connect names untitled groups; live group messages carry the subject; DMs stay untitled."""
 
-    from angee.messaging.backends import ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
-
     channel = _whatsapp_channel()
     with system_context(reason="test earlier untitled group traffic"):
         Message.objects.ingest(
@@ -475,7 +473,7 @@ def test_session_names_group_threads_from_joined_group_subjects(whatsapp_session
         _Namespace(JID=_jid("120363000002", "g.us"), GroupName=_Namespace(Name="Book club")),
     )
     stop_event = threading.Event()
-    prefix = f"chat:{channel.pk}:"
+    prefix = Thread.objects.chat_key_prefix(channel)
 
     def title(external_id: str) -> Any:
         thread = Thread._base_manager.filter(external_id=f"{prefix}{external_id}").select_related("title").first()
