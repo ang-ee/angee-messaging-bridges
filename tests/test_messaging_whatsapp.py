@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from angee.messaging.backends import MediaItem
+from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
@@ -319,6 +319,11 @@ class FakeWhatsAppClient:
     def stop(self) -> None:
         self.stopped.set()
 
+    groups: ClassVar[tuple[Any, ...]] = ()
+
+    def get_joined_groups(self) -> tuple[Any, ...]:
+        return type(self).groups
+
     def download_any(self, payload: Any) -> bytes:
         media = type(self).media
         if media is None:
@@ -443,6 +448,75 @@ def test_session_pairs_ingests_and_stops_cooperatively(whatsapp_session: Any, wh
     assert message.external_id == "4917000002@s.whatsapp.net/3EB0AF"
     thread = Thread._base_manager.get(pk=message.thread_id)
     assert thread.external_id == f"chat:{channel.pk}:4917000002@s.whatsapp.net"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_session_names_group_threads_from_joined_group_subjects(whatsapp_session: Any, whatsapp_tables: Any) -> None:
+    """Connect names untitled groups; live group messages carry the subject; DMs stay untitled."""
+
+    channel = _whatsapp_channel()
+    with system_context(reason="test earlier untitled group traffic"):
+        Message.objects.ingest(
+            [
+                ParsedMessage(
+                    external_id="120363000001@g.us/OLD1",
+                    platform="whatsapp",
+                    sender=ParsedHandle(platform="whatsapp", value="+4917000003"),
+                    body=ParsedPart(type="text/plain", role="body", text="Earlier"),
+                    thread=ParsedThread(external_id="120363000001@g.us", modality="group"),
+                )
+            ],
+            channel=channel,
+        )
+    FakeWhatsAppClient.groups = (
+        _Namespace(JID=_jid("120363000001", "g.us"), GroupName=_Namespace(Name="Climbers")),
+        _Namespace(JID=_jid("120363000002", "g.us"), GroupName=_Namespace(Name="Book club")),
+    )
+    stop_event = threading.Event()
+    prefix = Thread.objects.chat_key_prefix(channel)
+
+    def title(external_id: str) -> Any:
+        thread = Thread._base_manager.filter(external_id=f"{prefix}{external_id}").select_related("title").first()
+        return thread.title.text if thread is not None and thread.title_id else None
+
+    def group_message(client: Any) -> None:
+        client.event.handlers["Message"](
+            client,
+            _Namespace(
+                Info=_Namespace(
+                    ID="3EB0G2",
+                    Pushname="Bea",
+                    Timestamp=1_780_000_000,
+                    MessageSource=_Namespace(
+                        Chat=_jid("120363000002", "g.us"), Sender=_jid("4917000004"), IsFromMe=False
+                    ),
+                ),
+                Message=_Namespace(conversation="Chapter 3 tonight?"),
+            ),
+        )
+
+    def finish(_client: Any) -> None:
+        _await(lambda: Message._base_manager.count() == 3)
+        stop_event.set()
+
+    script = (
+        lambda client: client.event.handlers["Connected"](client, _Namespace()),
+        lambda _client: _await(lambda: title("120363000001@g.us") == "Climbers"),
+        group_message,
+        lambda client: client.event.handlers["Message"](
+            client,
+            _message_event(stanza="3EB0D1", chat_user="4917000005", sender_user="4917000005", text="Hi"),
+        ),
+        finish,
+    )
+    try:
+        _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
+    finally:
+        FakeWhatsAppClient.groups = ()
+
+    assert title("120363000001@g.us") == "Climbers"
+    assert title("120363000002@g.us") == "Book club"
+    assert title("4917000005@s.whatsapp.net") is None
 
 
 @pytest.mark.django_db(transaction=True)
