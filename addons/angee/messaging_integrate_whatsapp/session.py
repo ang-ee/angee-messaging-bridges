@@ -21,7 +21,7 @@ from neonize.utils.jid import build_jid
 
 from angee.integrate.live import STOP_JOIN_SECONDS
 from angee.messaging.session import LiveChannelSession
-from angee.messaging_integrate_whatsapp.parser import INDIVIDUAL_SERVER, ChatMessage, bare_jid
+from angee.messaging_integrate_whatsapp.parser import INDIVIDUAL_SERVER, ChatMessage, bare_jid, is_group_jid
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +227,31 @@ class WhatsAppSession(LiveChannelSession):
         if me is not None:
             jid = _jid_str(getattr(me, "JID", None))
         self.events.put(("paired", jid))
+        titles = self._joined_group_titles(client)
+        if titles:
+            self.events.put(("chat_titles", titles))
+
+    def _group_titles(self) -> dict[str, str]:
+        """Group subjects known to this session, keyed by bare group JID."""
+
+        return self.__dict__.setdefault("_group_title_cache", {})
+
+    def _joined_group_titles(self, client: Any) -> dict[str, str]:
+        """Read every joined group's subject once per connection (best-effort)."""
+
+        try:
+            groups = client.get_joined_groups()
+        except Exception:
+            logger.info("WhatsApp joined-group lookup failed on channel %s.", self.bridge.sqid)
+            return {}
+        titles = {}
+        for group in groups:
+            jid = bare_jid(_jid_str(getattr(group, "JID", None)))
+            name = str(getattr(getattr(group, "GroupName", None), "Name", "") or "").strip()
+            if jid and name:
+                titles[jid] = name
+        self._group_titles().update(titles)
+        return titles
 
     def _on_pair_status(self, _client: Any, event: Any) -> None:
         self.events.put(("paired", _jid_str(getattr(event, "ID", None))))
@@ -248,8 +273,10 @@ class WhatsAppSession(LiveChannelSession):
             sender_phone_jid, sender_name = "", pushname
         else:
             sender_phone_jid, sender_name = self._resolve_identity(sender_jid, pushname)
+        chat_jid = _jid_str(source.Chat)
         message = ChatMessage(
-            chat_jid=_jid_str(source.Chat),
+            chat_jid=chat_jid,
+            chat_name=self._group_titles().get(bare_jid(chat_jid), ""),
             stanza_id=stanza_id,
             sender_jid=sender_jid,
             sender_phone_jid=sender_phone_jid,
@@ -267,6 +294,12 @@ class WhatsAppSession(LiveChannelSession):
         batch: list[tuple[ChatMessage, Any]] = []
         for conversation in getattr(getattr(event, "Data", None), "conversations", ()) or ():
             chat_jid = str(getattr(conversation, "ID", "") or "")
+            # Direct chats stay untitled; the thread label names the counterpart.
+            chat_name = (
+                str(getattr(conversation, "name", "") or "").strip() or self._group_titles().get(bare_jid(chat_jid), "")
+                if is_group_jid(chat_jid)
+                else ""
+            )
             for item in getattr(conversation, "messages", ()) or ():
                 web_message = getattr(item, "message", None)
                 if web_message is None:
@@ -292,6 +325,7 @@ class WhatsAppSession(LiveChannelSession):
                 )
                 message = ChatMessage(
                     chat_jid=chat_jid,
+                    chat_name=chat_name,
                     stanza_id=stanza_id,
                     sender_jid=sender,
                     sender_phone_jid=sender_phone_jid,
