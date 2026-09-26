@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 
 from angee.messaging.backup_ingest import ContentKeyCounter
@@ -24,7 +21,7 @@ from angee.messaging_integrate_facebook.parser import (
     parsed_comment,
     parsed_message,
 )
-from tests.conftest import _clear_model_tables, _create_missing_tables, make_integration
+from tests.conftest import make_integration
 from tests.messaging_fixtures import (
     Handle,
     Message,
@@ -35,30 +32,16 @@ from tests.messaging_fixtures import (
     RelationshipKind,
     Thread,
 )
-from tests.messaging_graphql_fixtures import MESSAGING_GRAPHQL_MODELS, Channel
+from tests.messaging_graphql_fixtures import Channel
 
 _AT = datetime(2026, 1, 2, tzinfo=timezone.utc)
 
 
 @pytest.fixture
-def facebook_tables(transactional_db: object) -> Iterator[None]:
-    """Create messaging/posts/parties concrete tables for importer integration."""
+def facebook_tables(composed_tables: None) -> None:
+    """Use the composed tables for importer integration."""
 
-    del transactional_db
-    # The graphql model set includes the concrete Channel this file creates —
-    # a fixture that creates a row must own that row's table end to end, or
-    # teardown leaves an orphan that fails the schema editor's FK check and
-    # poisons every later module in the same process.
-    created = _create_missing_tables(MESSAGING_GRAPHQL_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(MESSAGING_GRAPHQL_MODELS)
-        if created:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created):
-                    schema_editor.delete_model(model)
+    del composed_tables
 
 
 def test_message_parser_maps_direction_identity_and_thread_folder(tmp_path: Path) -> None:

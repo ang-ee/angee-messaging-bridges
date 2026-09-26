@@ -12,7 +12,6 @@ from typing import Any, cast
 from django.apps import AppConfig
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.db import connection, models
 from django.test import RequestFactory
 from rebac import actor_context, system_context
 
@@ -37,6 +36,8 @@ from angee.storage.models import FileAttachment as AbstractFileAttachment
 from angee.storage.models import Folder as AbstractFolder
 from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
+
+pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
 
 
 class OAuthClient(AbstractOAuthClient):
@@ -117,13 +118,6 @@ class WebhookSubscription(AbstractWebhookSubscription):
         rebac_id_attr = "sqid"
 
 
-IAM_CONNECTION_TEST_MODELS = (OAuthClient, ExternalAccount, Credential)
-"""Concrete integration connection models created on demand by connection test fixtures."""
-
-INTEGRATE_TEST_MODELS = (Vendor, Integration)
-"""Concrete integration catalogue/integration models created on demand by integrate fixtures."""
-
-
 class VcsBridge(AbstractVcsBridge, Integration):
     """Concrete VCS bridge used by source-addon tests.
 
@@ -183,9 +177,6 @@ class Template(AbstractTemplate):
         rebac_resource_type = "integrate_vcs/template"
         rebac_id_attr = "sqid"
 
-
-VCS_TEST_MODELS = (VcsBridge, Repository, Source, Template)
-"""Concrete VCS inventory models created on demand by VCS test fixtures."""
 
 def make_integration(
     slug: str,
@@ -384,71 +375,17 @@ class StorageRole(AbstractStorageRole):
         rebac_resource_type = "storage/role"
 
 
-STORAGE_TEST_MODELS = (Backend, Drive, Folder, MimeType, File, FileAttachment)
-"""Concrete storage models created on demand by storage test fixtures."""
-
-
 class PostMetrics(AbstractPostMetrics):
-    """Concrete rolled-up engagement counters used by posts tests."""
+    """Concrete engagement counters managed by native test database setup."""
 
     class Meta(AbstractPostMetrics.Meta):
         """Django model options for the canonical test post metrics."""
 
         abstract = False
-        managed = False
         app_label = "posts"
         db_table = "test_posts_post_metrics"
         rebac_resource_type = "posts/post_metrics"
         rebac_id_attr = "sqid"
-
-
-def _create_missing_tables(
-    test_models: tuple[type[models.Model], ...] = IAM_CONNECTION_TEST_MODELS,
-) -> list[type[models.Model]]:
-    """Create concrete source-addon test tables when pytest did not sync them."""
-
-    existing_tables = set(connection.introspection.table_names())
-    missing = []
-    for model in test_models:
-        if model._meta.db_table in existing_tables:
-            continue
-        missing.append(model)
-        existing_tables.add(model._meta.db_table)
-    if not missing:
-        return []
-    with connection.schema_editor() as schema_editor:
-        for model in missing:
-            schema_editor.create_model(model)
-    return missing
-
-
-def _clear_model_tables(test_models: tuple[type[models.Model], ...]) -> None:
-    """Delete rows from schema-editor-created model tables without dropping them.
-
-    Source-addon tests share concrete unmanaged tables across modules. Keeping the
-    schema lets post-migrate hooks see registered models; clearing rows before
-    pytest-django flushes the managed tables prevents dangling FKs and uniqueness
-    leaks when a later fixture reuses an already-created table.
-    """
-
-    existing_tables = set(connection.introspection.table_names())
-    table_names = []
-    for model in test_models:
-        table_name = model._meta.db_table
-        if table_name not in existing_tables:
-            continue
-        table_names.append(table_name)
-        for field in model._meta.many_to_many:
-            through_table_name = field.remote_field.through._meta.db_table
-            if through_table_name in existing_tables:
-                table_names.append(through_table_name)
-
-    if not table_names:
-        return
-
-    with connection.constraint_checks_disabled(), connection.cursor() as cursor:
-        for table_name in reversed(tuple(dict.fromkeys(table_names))):
-            cursor.execute(f"DELETE FROM {connection.ops.quote_name(table_name)}")
 
 
 def create_user(username: str) -> Any:
@@ -499,7 +436,6 @@ def SchemaAddon(schemas: dict[str, dict[str, tuple[object, ...]]]) -> AppConfig:
     """Build an addon stand-in whose manifest exposes the given GraphQL schemas."""
 
     return make_addon(schemas=schemas)
-
 
 
 def addon_schema(schemas: dict[str, Any], name: str) -> Any:

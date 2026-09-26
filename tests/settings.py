@@ -6,7 +6,10 @@ from pathlib import Path
 
 from django.apps import AppConfig
 
+from angee import integrate
 from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+from angee.workflows.autoconfig import SETTINGS as WORKFLOWS_SETTINGS
+from angee.workflows_integrate.autoconfig import SETTINGS as WORKFLOWS_INTEGRATE_SETTINGS
 
 
 class BareComposeConfig(AppConfig):
@@ -21,6 +24,7 @@ class BareGraphQLConfig(AppConfig):
 
     name = "angee.graphql"
     label = "graphql"
+
 
 SECRET_KEY = "angee-tests"
 INSTALLED_APPS = [
@@ -54,6 +58,8 @@ INSTALLED_APPS = [
     "angee.messaging_integrate_signal",
     "angee.messaging_integrate_matrix",
     "angee.messaging_integrate_discord",
+    "angee.integrate.testing",
+    "angee.workflows.testing",
 ]
 # Checkout-local so parallel git worktrees do not share one SQLite file.
 # Runs within this checkout must execute sequentially. `.test-db/` is gitignored.
@@ -83,7 +89,7 @@ USE_TZ = True
 ANGEE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
     Path(__file__).resolve().parent.parent / "addons",
-    Path(__file__).resolve().parents[2] / "angee" / "addons",
+    Path(integrate.__file__).resolve().parents[2],
 )
 ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
@@ -103,13 +109,12 @@ ANGEE_VCS_BACKEND_CLASSES = {
     "local": "angee.integrate_vcs.backend.LocalVCSBackend",
 }
 ANGEE_WORKFLOW_STEP_CLASSES = {
-    "handler": "angee.workflows.steps.HandlerStep",
-    "wait": "angee.workflows.steps.WaitStep",
-    "gate": "angee.workflows.steps.GateStep",
-    "map": "angee.workflows.steps.MapStep",
-    "archive_probe": "angee.workflows_integrate.steps.ArchiveProbeStepImpl",
-    "archive_gate": "angee.workflows_integrate.steps.ArchiveGateStepImpl",
-    "archive_execute": "angee.workflows_integrate.steps.ArchiveExecuteStepImpl",
+    **WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES"],
+    **{
+        key.removeprefix("ANGEE_WORKFLOW_STEP_CLASSES."): value
+        for key, value in WORKFLOWS_INTEGRATE_SETTINGS.items()
+        if key.startswith("ANGEE_WORKFLOW_STEP_CLASSES.")
+    },
 }
 # Directory/channel backends each addon's autoconfig normally contributes; declared
 # here so the ImplClassField registries are non-empty at model-import time.

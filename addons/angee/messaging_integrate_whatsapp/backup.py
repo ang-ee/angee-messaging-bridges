@@ -38,6 +38,7 @@ from angee.integrate_iphone.backup import (
     is_sqlite_header,
 )
 from angee.messaging.backends import MediaItem
+from angee.messaging.backup_ingest import batch_ingest
 from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, parsed_message
 
 WHATSAPP_DOMAIN = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
@@ -162,9 +163,7 @@ class ChatStorage:
 
         self._db.execute("DROP TABLE IF EXISTS temp._wm")
         self._db.execute("CREATE TEMP TABLE _wm(jid TEXT PRIMARY KEY, since REAL)")
-        self._db.executemany(
-            "INSERT OR REPLACE INTO _wm(jid, since) VALUES (?, ?)", sorted(watermarks.items())
-        )
+        self._db.executemany("INSERT OR REPLACE INTO _wm(jid, since) VALUES (?, ?)", sorted(watermarks.items()))
 
     def _row_message(self, row: tuple[Any, ...], *, own_jid: str) -> ChatMessage | None:
         """Map one joined ZWAMESSAGE row onto the neutral shape."""
@@ -276,9 +275,7 @@ class BackupImporter:
         watermarks: dict[str, float] = {}
         with system_context(reason="messaging_integrate_whatsapp.backup_import.watermarks"):
             rows = (
-                message_model._base_manager.filter(
-                    thread__channel=self.channel, sent_at__isnull=False
-                )
+                message_model._base_manager.filter(thread__channel=self.channel, sent_at__isnull=False)
                 .values("thread__external_id")
                 .annotate(latest=Max("sent_at"))
             )
@@ -291,49 +288,25 @@ class BackupImporter:
         return watermarks
 
     def run(self, *, on_batch: Any = None) -> int:
-        """Import (or, dry-run, count) every selected message; return the total.
+        """Import (or, dry-run, count) selected messages through shared batching."""
 
-        A batch flushes at ``batch_size`` messages **or** ``max_batch_bytes`` of
-        buffered media, whichever comes first — the 500-message default is fine
-        for text but a run of large videos would otherwise hold gigabytes of
-        media bytes resident before the first ingest.
-        """
-
-        message_model = apps.get_model("messaging", "Message")
-        total = 0
-        batch: list[Any] = []
-        batch_bytes = 0
-
-        def flush() -> None:
-            nonlocal total, batch_bytes
-            if not batch:
-                return
-            if not self.dry_run:
-                with system_context(reason="messaging_integrate_whatsapp.backup_import"):
-                    message_model.objects.ingest(
-                        batch,
-                        channel=self.channel,
-                        quote_edges=False,
-                    )
-            total += len(batch)
-            if on_batch is not None:
-                on_batch(total)
-            batch.clear()
-            batch_bytes = 0
-
-        for message in self.chat_storage.messages(
+        messages = self.chat_storage.messages(
             own_jid=self.own_jid,
             chats=self.chats,
             since=self.since,
             limit=self.limit,
             watermarks=self._resume_watermarks(),
-        ):
-            batch.append(parsed_message(message))
-            batch_bytes += sum(len(item.content) for item in message.media if item.content)
-            if len(batch) >= self.batch_size or batch_bytes >= self.max_batch_bytes:
-                flush()
-        flush()
-        return total
+        )
+        return batch_ingest(
+            self.channel,
+            messages,
+            parsed_message,
+            reason="messaging_integrate_whatsapp.backup_import",
+            batch_size=self.batch_size,
+            max_batch_bytes=self.max_batch_bytes,
+            dry_run=self.dry_run,
+            on_batch=on_batch,
+        )
 
 
 def open_chat_storage(backup_dir: Path | str, *, domain: str = WHATSAPP_DOMAIN) -> ChatStorage:

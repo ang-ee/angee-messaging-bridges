@@ -16,6 +16,7 @@ rows:
       key: gate
       name: Map backup targets
       step_class: archive_gate
+      input_binding: {kind: step_output, step_key: probe, path: []}
       config: {}
       join_rule: all_success
       is_entry: false
@@ -26,6 +27,7 @@ rows:
       key: prepare
       name: Prepare backup mappings
       step_class: archive_execute
+      input_binding: {kind: step_output, step_key: gate, path: []}
       config:
         mode: prepare
       join_rule: all_success
@@ -37,6 +39,7 @@ rows:
       key: map
       name: Import mapped backups
       step_class: map
+      input_binding: {kind: step_output, step_key: prepare, path: []}
       config:
         target_step: execute_unit
         items: input
@@ -49,6 +52,7 @@ rows:
       key: execute_unit
       name: Execute backup import
       step_class: archive_execute
+      input_binding: {kind: map_item, path: []}
       config:
         mode: unit
       join_rule: all_success

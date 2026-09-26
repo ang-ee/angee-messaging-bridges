@@ -11,8 +11,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from angee.messaging._wire import mapping, millis_to_utc, sequence, text
 from angee.messaging.backends import ParsedHandle, ParsedMessage, ParsedThread, body_part
+from angee.messaging.identity import mapping, millis_to_utc, sequence, text
 
 PLATFORM = "discord"
 

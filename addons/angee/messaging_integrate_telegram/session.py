@@ -62,7 +62,7 @@ class TelegramSession(AsyncioLiveSession):
     def _build_client(self, store: Path) -> Any:
         """Build Telethon from freshly revealed per-channel application keys."""
 
-        credential = self._fresh_credential()
+        credential = self.bridge.fresh_credential()
         if credential is None:
             raise ValueError("This Telegram channel has no application-key credential.")
         api_id, api_hash = telegram_app_keys(credential)

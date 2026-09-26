@@ -23,8 +23,6 @@ from tests.messaging_graphql_fixtures import (
     parties_schema,
 )
 
-pytest_plugins = ("tests.messaging_graphql_fixtures",)
-
 
 @pytest.fixture
 def whatsapp_graphql(

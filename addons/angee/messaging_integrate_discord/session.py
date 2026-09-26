@@ -45,7 +45,7 @@ class DiscordSession(AsyncioLiveSession):
     def _build_client(self, store: Path) -> Any:
         """Build a minimal-intent Discord client and retain a store marker."""
 
-        credential = self._fresh_credential()
+        credential = self.bridge.fresh_credential()
         if credential is None:
             raise ValueError("This Discord channel has no bot-token credential.")
         self._token = discord_bot_token(credential)

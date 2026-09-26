@@ -1,4 +1,4 @@
-"""Tests for the Matrix bridge over a transport stub on the real matrix-nio client."""
+"""Identity, connection, console and worker session contracts."""
 
 from __future__ import annotations
 
@@ -17,8 +17,6 @@ import pytest
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Signature import eddsa
 from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 from unpaddedbase64 import decode_base64, encode_base64
 
@@ -35,12 +33,10 @@ from angee.messaging_integrate_matrix.identity import MatrixMediaFact, parsed_me
 from tests.conftest import (
     SchemaAddon,
     Vendor,
-    _clear_model_tables,
-    _create_missing_tables,
     execute_schema,
     result_data,
 )
-from tests.messaging_fixtures import MESSAGING_TEST_MODELS, Message
+from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
     Channel,
     _platform_admin,
@@ -52,7 +48,6 @@ from tests.messaging_graphql_fixtures import (
 )
 
 Credential = apps.get_model("integrate", "Credential")
-MATRIX_TEST_MODELS = (*MESSAGING_TEST_MODELS, Channel)
 
 
 def _event(
@@ -169,13 +164,193 @@ def test_matrix_backend_declares_worker_and_transient_material_contracts() -> No
     assert MatrixChannelBackend.transient_material_keys == ("recovery_key",)
 
 
-def test_matrix_real_crypto_store_round_trips_the_vodozemac_account(tmp_path: Path) -> None:
-    """nio's peewee ``DefaultStore`` persists and reloads a vodozemac Olm account.
+@pytest.fixture
+def matrix_tables(
+    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the composed tables and isolate session storage."""
 
-    This replaces the old libolm importorskip round trip: with matrix-nio + vodozemac
-    the E2EE store is a pure-Python wheel dependency of the Matrix addon, so the
-    boundary is always installed and the assertion never has to skip.
-    """
+    del composed_tables
+    settings.ANGEE_DATA_DIR = str(tmp_path / "data")
+    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
+
+
+def _matrix_channel(user: Any, *, history_seeded: bool = False) -> Any:
+    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
+    with system_context(reason="test.messaging.matrix.vendor.seed"):
+        Vendor.objects.get_or_create(slug="matrix", defaults={"display_name": "Matrix"})
+    channel = connect.create_matrix_channel(
+        user,
+        "https://8.8.8.8/",
+        "@ada:example.com",
+        "durable-login-password",
+    )
+    if history_seeded:
+        with system_context(reason="test.messaging.matrix.history.seed"):
+            channel.merge_subscription_state(history_seeded=True)
+    return channel
+
+
+@pytest.mark.django_db(transaction=True)
+def test_create_matrix_channel_validates_and_starts_basic_auth(
+    matrix_tables: Any,
+) -> None:
+    """Connect persists the normalized homeserver and selected durable credential."""
+
+    admin = _platform_admin("msg-matrix-connect-admin")
+    channel = _matrix_channel(admin)
+
+    with system_context(reason="test.messaging.matrix.connect.verify"):
+        channel.refresh_from_db()
+        assert channel.vendor.slug == "matrix"
+        assert channel.backend_class == "matrix"
+        assert channel.display_name == "@ada:example.com"
+        assert channel.lifecycle == "connected"
+        assert channel.subscription_state["homeserver"] == "https://8.8.8.8"
+        assert channel.subscription_state["desired"] == Channel.LiveState.LIVE
+        assert channel.credential.kind == CredentialKind.BASIC_AUTH
+
+
+@pytest.mark.django_db(transaction=True)
+def test_create_matrix_channel_rejects_non_http_homeserver_before_persisting(
+    matrix_tables: Any,
+) -> None:
+    """A malformed homeserver fails before a Matrix channel row is created."""
+
+    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
+    admin = _platform_admin("msg-matrix-invalid-url-admin")
+    with system_context(reason="test.messaging.matrix.invalid_url.seed"):
+        Vendor.objects.create(slug="matrix", display_name="Matrix")
+    with pytest.raises(ValueError, match="valid Matrix homeserver URL"):
+        connect.create_matrix_channel(
+            admin,
+            "matrix.example.com",
+            "@ada:example.com",
+            "durable-login-password",
+        )
+
+    assert Channel._base_manager.filter(backend_class="matrix").count() == 0
+    assert Credential._base_manager.filter(user=admin, name="Matrix - @ada:example.com").count() == 0
+
+
+@pytest.mark.parametrize("homeserver", ["http://169.254.169.254", "http://224.0.0.1", "http://0.0.0.0"])
+def test_matrix_homeserver_rejects_ssrf_escapes(homeserver: str) -> None:
+    """Metadata/link-local/multicast targets are refused even for a self-hosted verb."""
+
+    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
+
+    with pytest.raises(ValueError, match="metadata, link-local, or multicast"):
+        connect.matrix_homeserver_url(homeserver)
+
+
+@pytest.mark.parametrize("homeserver", ["http://127.0.0.1:8008", "http://192.168.1.10", "http://10.0.0.5:8448"])
+def test_matrix_homeserver_allows_self_hosted_private_addresses(homeserver: str) -> None:
+    """Self-hosted homeservers on private/loopback networks are permitted (allow_private)."""
+
+    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
+
+    assert connect.matrix_homeserver_url(homeserver) == homeserver
+
+
+@pytest.mark.django_db(transaction=True)
+def test_create_matrix_channel_reuses_named_credential_on_retry(matrix_tables: Any) -> None:
+    """A repeated connect reuses the credential row instead of deadlocking on its name."""
+
+    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
+    admin = _platform_admin("msg-matrix-retry-admin")
+    with system_context(reason="test.messaging.matrix.retry.seed"):
+        Vendor.objects.create(slug="matrix", display_name="Matrix")
+
+    first = connect.create_matrix_channel(
+        admin,
+        "https://8.8.8.8/",
+        "@ada:example.com",
+        "first-password",
+    )
+    second = connect.create_matrix_channel(
+        admin,
+        "https://8.8.8.8/",
+        "@ada:example.com",
+        "second-password",
+    )
+
+    credentials = Credential._base_manager.filter(user=admin, name="Matrix - @ada:example.com")
+    assert credentials.count() == 1
+    assert first.credential_id == second.credential_id == credentials.get().pk
+    with system_context(reason="test.messaging.matrix.retry.verify"):
+        assert credentials.get().reveal()["password"] == "second-password"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_connect_matrix_channel_mutation_dispatches_to_the_service(matrix_tables: Any) -> None:
+    """The Matrix mutation selects a credential and returns the shared Channel."""
+
+    admin = _platform_admin("msg-matrix-graphql-admin")
+    with system_context(reason="test.messaging.matrix.graphql.seed"):
+        Vendor.objects.create(slug="matrix", display_name="Matrix")
+    matrix_schema = importlib.import_module("angee.messaging_integrate_matrix.schema")
+    addons = [
+        SchemaAddon({"console": {key: tuple(module.schemas["console"].get(key, ())) for key in SCHEMA_PART_KEYS}})
+        for module in (iam_schema, integrate_schema, parties_schema, messaging_schema, matrix_schema)
+    ]
+    schema = GraphQLSchemas(addons).build("console")
+
+    result = execute_schema(
+        schema,
+        """
+        mutation ConnectMatrix($homeserver: String!, $username: String!, $password: String!) {
+          connect_matrix_channel(homeserver: $homeserver, username: $username, password: $password) {
+            id
+            display_name
+            backend_class
+            lifecycle
+          }
+        }
+        """,
+        {
+            "homeserver": "https://8.8.8.8/",
+            "username": "@ada:example.com",
+            "password": "durable-login-password",
+        },
+        request=_request(admin),
+    )
+
+    assert result_data(result)["connect_matrix_channel"] == {
+        "id": result_data(result)["connect_matrix_channel"]["id"],
+        "display_name": "@ada:example.com",
+        "backend_class": "MATRIX",
+        "lifecycle": "CONNECTED",
+    }
+
+
+@pytest.mark.django_db(transaction=True)
+def test_matrix_reset_wipes_only_recovery_key(
+    matrix_tables: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The backend declaration preserves the durable BASIC_AUTH password on reset."""
+
+    from angee.messaging import connect as messaging_connect
+
+    admin = _platform_admin("msg-matrix-reset-admin")
+    channel = _matrix_channel(admin)
+    channel.credential.update_material(recovery_key="transient-recovery-key")
+    monkeypatch.setattr(messaging_connect, "await_session_exit", lambda _channel: None)
+    monkeypatch.setattr(messaging_connect, "reset_session_store", lambda _channel: None)
+    monkeypatch.setattr(messaging_connect, "resume_channel_pairing", lambda _channel: None)
+
+    messaging_connect.reset_channel_pairing(channel)
+
+    with system_context(reason="test.messaging.matrix.reset.verify"):
+        material = Credential.objects.get(pk=channel.credential_id).reveal()
+        assert material == {
+            "username": "@ada:example.com",
+            "password": "durable-login-password",
+        }
+
+
+def test_matrix_real_crypto_store_round_trips_the_vodozemac_account(tmp_path: Path) -> None:
+    """nio's peewee ``DefaultStore`` persists and reloads a vodozemac Olm account."""
 
     from nio.crypto import OlmAccount
     from nio.store import DefaultStore
@@ -189,9 +364,6 @@ def test_matrix_real_crypto_store_round_trips_the_vodozemac_account(tmp_path: Pa
     loaded = reopened.load_account()
     assert loaded is not None
     assert loaded.identity_keys == account.identity_keys
-
-
-# --- Test-side SSSS + cross-signing fixtures (mirror the recovery module's crypto) ---
 
 
 def _b58encode(data: bytes) -> str:
@@ -475,40 +647,6 @@ def matrix_session_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     return module
 
 
-@pytest.fixture
-def matrix_tables(tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Create concrete messaging tables and isolate Matrix session storage."""
-
-    settings.ANGEE_DATA_DIR = str(tmp_path / "data")
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
-    created_models = _create_missing_tables(MATRIX_TEST_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(MATRIX_TEST_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
-
-
-def _matrix_channel(user: Any, *, history_seeded: bool = False) -> Any:
-    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
-    with system_context(reason="test.messaging.matrix.vendor.seed"):
-        Vendor.objects.get_or_create(slug="matrix", defaults={"display_name": "Matrix"})
-    channel = connect.create_matrix_channel(
-        user,
-        "https://8.8.8.8/",
-        "@ada:example.com",
-        "durable-login-password",
-    )
-    if history_seeded:
-        with system_context(reason="test.messaging.matrix.history.seed"):
-            channel.merge_subscription_state(history_seeded=True)
-    return channel
-
-
 def _session_facts(channel: Any) -> dict[str, Any]:
     """Read the persisted worker session facts, or an empty envelope."""
 
@@ -517,138 +655,6 @@ def _session_facts(channel: Any) -> dict[str, Any]:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-
-
-@pytest.mark.django_db(transaction=True)
-def test_create_matrix_channel_validates_and_starts_basic_auth(
-    matrix_tables: Any,
-) -> None:
-    """Connect persists the normalized homeserver and selected durable credential."""
-
-    admin = _platform_admin("msg-matrix-connect-admin")
-    channel = _matrix_channel(admin)
-
-    with system_context(reason="test.messaging.matrix.connect.verify"):
-        channel.refresh_from_db()
-        assert channel.vendor.slug == "matrix"
-        assert channel.backend_class == "matrix"
-        assert channel.display_name == "@ada:example.com"
-        assert channel.lifecycle == "connected"
-        assert channel.subscription_state["homeserver"] == "https://8.8.8.8"
-        assert channel.subscription_state["desired"] == Channel.LiveState.LIVE
-        assert channel.credential.kind == CredentialKind.BASIC_AUTH
-
-
-@pytest.mark.django_db(transaction=True)
-def test_create_matrix_channel_rejects_non_http_homeserver_before_persisting(
-    matrix_tables: Any,
-) -> None:
-    """A malformed homeserver fails before a Matrix channel row is created."""
-
-    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
-    admin = _platform_admin("msg-matrix-invalid-url-admin")
-    with system_context(reason="test.messaging.matrix.invalid_url.seed"):
-        Vendor.objects.create(slug="matrix", display_name="Matrix")
-    with pytest.raises(ValueError, match="valid Matrix homeserver URL"):
-        connect.create_matrix_channel(
-            admin,
-            "matrix.example.com",
-            "@ada:example.com",
-            "durable-login-password",
-        )
-
-    assert Channel._base_manager.filter(backend_class="matrix").count() == 0
-    assert Credential._base_manager.filter(user=admin, name="Matrix - @ada:example.com").count() == 0
-
-
-@pytest.mark.parametrize("homeserver", ["http://169.254.169.254", "http://224.0.0.1", "http://0.0.0.0"])
-def test_matrix_homeserver_rejects_ssrf_escapes(homeserver: str) -> None:
-    """Metadata/link-local/multicast targets are refused even for a self-hosted verb."""
-
-    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
-
-    with pytest.raises(ValueError, match="metadata, link-local, or multicast"):
-        connect.matrix_homeserver_url(homeserver)
-
-
-@pytest.mark.parametrize("homeserver", ["http://127.0.0.1:8008", "http://192.168.1.10", "http://10.0.0.5:8448"])
-def test_matrix_homeserver_allows_self_hosted_private_addresses(homeserver: str) -> None:
-    """Self-hosted homeservers on private/loopback networks are permitted (allow_private)."""
-
-    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
-
-    assert connect.matrix_homeserver_url(homeserver) == homeserver
-
-
-@pytest.mark.django_db(transaction=True)
-def test_create_matrix_channel_reuses_named_credential_on_retry(matrix_tables: Any) -> None:
-    """A repeated connect reuses the credential row instead of deadlocking on its name."""
-
-    connect = importlib.import_module("angee.messaging_integrate_matrix.connect")
-    admin = _platform_admin("msg-matrix-retry-admin")
-    with system_context(reason="test.messaging.matrix.retry.seed"):
-        Vendor.objects.create(slug="matrix", display_name="Matrix")
-
-    first = connect.create_matrix_channel(
-        admin,
-        "https://8.8.8.8/",
-        "@ada:example.com",
-        "first-password",
-    )
-    second = connect.create_matrix_channel(
-        admin,
-        "https://8.8.8.8/",
-        "@ada:example.com",
-        "second-password",
-    )
-
-    credentials = Credential._base_manager.filter(user=admin, name="Matrix - @ada:example.com")
-    assert credentials.count() == 1
-    assert first.credential_id == second.credential_id == credentials.get().pk
-    with system_context(reason="test.messaging.matrix.retry.verify"):
-        assert credentials.get().reveal()["password"] == "second-password"
-
-
-@pytest.mark.django_db(transaction=True)
-def test_connect_matrix_channel_mutation_dispatches_to_the_service(matrix_tables: Any) -> None:
-    """The Matrix mutation selects a credential and returns the shared Channel."""
-
-    admin = _platform_admin("msg-matrix-graphql-admin")
-    with system_context(reason="test.messaging.matrix.graphql.seed"):
-        Vendor.objects.create(slug="matrix", display_name="Matrix")
-    matrix_schema = importlib.import_module("angee.messaging_integrate_matrix.schema")
-    addons = [
-        SchemaAddon({"console": {key: tuple(module.schemas["console"].get(key, ())) for key in SCHEMA_PART_KEYS}})
-        for module in (iam_schema, integrate_schema, parties_schema, messaging_schema, matrix_schema)
-    ]
-    schema = GraphQLSchemas(addons).build("console")
-
-    result = execute_schema(
-        schema,
-        """
-        mutation ConnectMatrix($homeserver: String!, $username: String!, $password: String!) {
-          connect_matrix_channel(homeserver: $homeserver, username: $username, password: $password) {
-            id
-            display_name
-            backend_class
-            lifecycle
-          }
-        }
-        """,
-        {
-            "homeserver": "https://8.8.8.8/",
-            "username": "@ada:example.com",
-            "password": "durable-login-password",
-        },
-        request=_request(admin),
-    )
-
-    assert result_data(result)["connect_matrix_channel"] == {
-        "id": result_data(result)["connect_matrix_channel"]["id"],
-        "display_name": "@ada:example.com",
-        "backend_class": "MATRIX",
-        "lifecycle": "CONNECTED",
-    }
 
 
 def _wait_until(predicate: Any, *, timeout: float = 3.0) -> None:
@@ -961,29 +967,3 @@ def test_matrix_download_authenticates_and_decrypts_encrypted_attachment(
 
     assert content == b"secret-plaintext"
     assert session.client.download_calls == ["mxc://example.com/encrypted"]
-
-
-@pytest.mark.django_db(transaction=True)
-def test_matrix_reset_wipes_only_recovery_key(
-    matrix_tables: Any,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The backend declaration preserves the durable BASIC_AUTH password on reset."""
-
-    from angee.messaging import connect as messaging_connect
-
-    admin = _platform_admin("msg-matrix-reset-admin")
-    channel = _matrix_channel(admin)
-    channel.credential.update_material(recovery_key="transient-recovery-key")
-    monkeypatch.setattr(messaging_connect, "await_session_exit", lambda _channel: None)
-    monkeypatch.setattr(messaging_connect, "reset_session_store", lambda _channel: None)
-    monkeypatch.setattr(messaging_connect, "resume_channel_pairing", lambda _channel: None)
-
-    messaging_connect.reset_channel_pairing(channel)
-
-    with system_context(reason="test.messaging.matrix.reset.verify"):
-        material = Credential.objects.get(pk=channel.credential_id).reveal()
-        assert material == {
-            "username": "@ada:example.com",
-            "password": "durable-login-password",
-        }

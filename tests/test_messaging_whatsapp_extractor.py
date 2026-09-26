@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 import zipfile
-from collections.abc import Iterator
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -13,32 +13,27 @@ from typing import Any
 import pytest
 from angee.addons import addon_manifest
 from django.apps import apps
-from django.core.management import call_command
-from django.db import connection
 from rebac import system_context
 
+from angee.messaging import backup_ingest
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
 from angee.resources.models import Resource as AbstractResource
-from tests.conftest import Vendor, _clear_model_tables, _create_missing_tables
-from tests.workflows import Edge, Step, Workflow
+from angee.workflows.testing.models import Workflow
 
 
-class WhatsAppResourceLedger(AbstractResource):
-    """Concrete resource ledger for the stock WhatsApp workflow fixture."""
+class ArchiveResourceLedger(AbstractResource):
+    """Concrete resource ledger for the stock messaging archive workflow fixtures."""
 
     class Meta(AbstractResource.Meta):
         """Keep this test ledger isolated from composed runtime output."""
 
         abstract = False
         app_label = "base"
-        db_table = "test_whatsapp_workflow_resource"
-
-
-_WORKFLOW_RESOURCE_MODELS = (Vendor, Workflow, Step, Edge, WhatsAppResourceLedger)
+        db_table = "test_archive_workflow_resource"
 
 
 class _BackupArchiveFile:
@@ -51,24 +46,6 @@ class _BackupArchiveFile:
         """Open the stored backup bytes for extractor recognition/execution."""
 
         return self.path.open("rb")
-
-
-@pytest.fixture()
-def whatsapp_workflow_resource_tables(transactional_db: Any) -> Iterator[None]:
-    """Create the vendor, workflow-definition, and resource-ledger tables."""
-
-    del transactional_db
-    created_models = _create_missing_tables(_WORKFLOW_RESOURCE_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    _clear_model_tables(_WORKFLOW_RESOURCE_MODELS)
-    try:
-        yield
-    finally:
-        _clear_model_tables(_WORKFLOW_RESOURCE_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
 
 
 def test_whatsapp_iphone_backup_recognizes_manifest_resolved_chat_store(
@@ -179,13 +156,44 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
     ] == "angee.messaging_integrate_whatsapp.extractor.WhatsAppIphoneBackupExtractor"
 
 
-def test_archive_import_resource_loads_published_valid_graph(
-    whatsapp_workflow_resource_tables: None,
-) -> None:
-    """Install-tier resources load and publish the stock archive workflow graph."""
+def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Backup batches use the ingest owner's suppression of live notifications."""
 
-    del whatsapp_workflow_resource_tables
-    config = apps.get_app_config("messaging_integrate_whatsapp")
+    channel = SimpleNamespace(subscription_state={})
+    message = SimpleNamespace(body=None)
+    calls: list[dict[str, Any]] = []
+
+    def ingest(messages: list[Any], **kwargs: Any) -> None:
+        calls.append({"messages": list(messages), **kwargs})
+
+    manager = SimpleNamespace(ingest=ingest)
+    monkeypatch.setattr(
+        backup_ingest, "apps", SimpleNamespace(get_model=lambda *_args: SimpleNamespace(objects=manager))
+    )
+    monkeypatch.setattr(backup_ingest, "system_context", lambda **_kwargs: nullcontext())
+    monkeypatch.setattr(backup, "parsed_message", lambda item: item)
+    store = SimpleNamespace(messages=lambda **_kwargs: iter((message,)))
+
+    assert backup.BackupImporter(channel, store).run() == 1
+    assert calls == [{"messages": [message], "channel": channel, "quote_edges": False, "historical": True}]
+
+
+@pytest.mark.parametrize(
+    ("addon", "workflow_names"),
+    (
+        ("messaging_integrate_whatsapp", ("Archive import", "Backup import")),
+        ("messaging_integrate_facebook", ("Facebook archive import", "Facebook takeout import")),
+    ),
+)
+def test_archive_import_resource_loads_published_valid_graph(
+    composed_tables: None,
+    addon: str,
+    workflow_names: tuple[str, str],
+) -> None:
+    """The ledger loads, validates and idempotently publishes all stock archive graphs."""
+
+    del composed_tables
+    config = apps.get_app_config(addon)
     manifest = resource_manifest_for(config)
 
     assert tuple(entry["path"] for entry in manifest["install"]) == (
@@ -196,76 +204,45 @@ def test_archive_import_resource_loads_published_valid_graph(
         "resources/install/111_workflows.step.yaml",
         "resources/install/112_workflows.edge.yaml",
     )
-
-    result = WhatsAppResourceLedger.objects.load_addons(
-        (config,),
-        tiers=[AbstractResource.Tier.INSTALL],
+    result = ArchiveResourceLedger.objects.load_addons(
+        (config,), tiers=[AbstractResource.Tier.INSTALL],
     )
-
-    # Both the archive (file) and backup (drive) workflow graphs load: two
-    # workflows, ten steps, six edges, and one published version.
     assert result.loaded == 19
-
-    # Re-loading the install tier must be a no-op: no duplicate rows and no
-    # second published version minted by publish-on-load.
-    reloaded = WhatsAppResourceLedger.objects.load_addons(
-        (config,),
-        tiers=[AbstractResource.Tier.INSTALL],
+    reloaded = ArchiveResourceLedger.objects.load_addons(
+        (config,), tiers=[AbstractResource.Tier.INSTALL],
     )
     assert reloaded.loaded == 0
-    with system_context(reason="test whatsapp archive workflow reload"):
-        assert Workflow._base_manager.filter(name="Archive import").count() == 2
-    with system_context(reason="test whatsapp archive workflow fixture"):
-        draft = Workflow._base_manager.get(name="Archive import", published_from__isnull=True)
-        published = Workflow.objects.current_published_for(draft)
-        assert published is not None
-        assert published.subject_declaration == "storage.file"
-        steps = {step.key: step for step in published.steps.order_by("key")}
-        edges = list(published.edges.select_related("source", "target"))
-        assert {
-            key: str(getattr(step.step_class, "value", step.step_class))
-            for key, step in steps.items()
-        } == {
-            "execute_unit": "archive_execute",
-            "gate": "archive_gate",
-            "map": "map",
-            "prepare": "archive_execute",
-            "probe": "archive_probe",
-        }
-        assert steps["prepare"].config == {"mode": "prepare"}
-        assert steps["map"].config == {"items": "input", "target_step": "execute_unit"}
-        assert steps["execute_unit"].config == {"mode": "unit"}
-        assert [step.key for step in steps.values() if step.is_entry] == ["probe"]
-        assert {
-            (edge.source.key, edge.target.key, edge.condition)
-            for edge in edges
-        } == {
-            ("gate", "prepare", "completed"),
-            ("prepare", "map", "prepared"),
-            ("probe", "gate", "recognized"),
-        }
-        for step in steps.values():
-            step.full_clean()
-        for edge in edges:
-            edge.full_clean()
 
-    with system_context(reason="test whatsapp backup workflow fixture"):
-        backup_draft = Workflow._base_manager.get(
-            name="Backup import", published_from__isnull=True
-        )
-        backup_published = Workflow.objects.current_published_for(backup_draft)
-        assert backup_published is not None
-        assert backup_published.subject_declaration == "storage.drive"
-        assert {
-            step.key: str(getattr(step.step_class, "value", step.step_class))
-            for step in backup_published.steps.all()
-        } == {
-            "probe": "archive_probe",
-            "gate": "archive_gate",
-            "prepare": "archive_execute",
-            "map": "map",
-            "execute_unit": "archive_execute",
-        }
+    with system_context(reason="test messaging archive workflow resources"):
+        for name, subject in zip(workflow_names, ("storage.file", "storage.drive"), strict=True):
+            assert Workflow._base_manager.filter(name=name).count() == 2
+            draft = Workflow._base_manager.get(name=name, published_from__isnull=True)
+            published = Workflow.objects.current_published_for(draft)
+            assert published is not None
+            assert published.subject_declaration == subject
+            steps = {step.key: step for step in published.steps.order_by("key")}
+            edges = list(published.edges.select_related("source", "target"))
+            assert {key: step.step_class.value for key, step in steps.items()} == {
+                "execute_unit": "archive_execute",
+                "gate": "archive_gate",
+                "map": "map",
+                "prepare": "archive_execute",
+                "probe": "archive_probe",
+            }
+            assert steps["prepare"].config["mode"] == "prepare"
+            assert steps["map"].config["items"] == "input"
+            assert steps["map"].config["target_step"] == "execute_unit"
+            assert steps["execute_unit"].config["mode"] == "unit"
+            assert [step.key for step in steps.values() if step.is_entry] == ["probe"]
+            assert {(edge.source.key, edge.target.key, edge.condition) for edge in edges} == {
+                ("gate", "prepare", "completed"),
+                ("prepare", "map", "prepared"),
+                ("probe", "gate", "recognized"),
+            }
+            for step in steps.values():
+                step.full_clean()
+            for edge in edges:
+                edge.full_clean()
 
 
 def _minimal_backup_layout(

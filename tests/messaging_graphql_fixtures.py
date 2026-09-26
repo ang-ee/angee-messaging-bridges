@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Iterator
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -11,7 +10,6 @@ from typing import Any
 import pytest
 import strawberry
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.db import connection
 from django.test import RequestFactory, override_settings
 from django.test.utils import CaptureQueriesContext
@@ -26,7 +24,6 @@ from rebac import (
 )
 from rebac.roles import grant
 
-import angee.parties.schema as parties_schema
 from angee.graphql.deletion import DeletePreview
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.messaging.models import Channel as AbstractChannel
@@ -38,8 +35,6 @@ from tests.conftest import (
     Integration,
     MimeType,
     SchemaAddon,
-    _clear_model_tables,
-    _create_missing_tables,
     execute_schema,
     make_integration,
 )
@@ -63,22 +58,11 @@ class Channel(AbstractChannel, Integration):
         rebac_id_attr = "sqid"
 
 
+parties_schema = importlib.import_module("angee.parties.schema")
 messaging_schema = importlib.import_module("angee.messaging.schema")
 iam_schema = importlib.import_module("angee.iam.schema")
 integrate_schema = importlib.import_module("angee.integrate.schema")
 User = get_user_model()
-
-MESSAGING_GRAPHQL_MODELS = (
-    *messaging_models.MESSAGING_TEST_MODELS,
-    Channel,
-)
-
-# Confirming a channel delete runs `channel.delete()`, whose Django collector queries
-# every reverse FK to the shared Integration parent — including other addons' tables
-# (posts, agents, webhooks, VCS). Those tables must exist for the cascade query to run,
-# so the end-to-end confirm test needs the same comprehensive set the integration-delete
-# test uses, plus the messaging Channel.
-CHANNEL_PURGE_MODELS = MESSAGING_GRAPHQL_MODELS
 
 
 @strawberry.type
@@ -2820,41 +2804,21 @@ def test_activity_agenda_bare_assignee_gets_pointer_not_parent(
 
 
 @pytest.fixture()
-def messaging_graphql_tables(transactional_db: Any) -> Iterator[None]:
-    """Create concrete messaging GraphQL tables and sync REBAC."""
+def messaging_graphql_tables(composed_tables: None) -> None:
+    """Use the framework's composed tables and native per-test database cleanup."""
 
-    del transactional_db
-    created_models = _create_missing_tables(MESSAGING_GRAPHQL_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(MESSAGING_GRAPHQL_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
+    del composed_tables
 
 
 @pytest.fixture
-def channel_purge_tables(transactional_db: Any) -> Iterator[None]:
-    """Create the messaging GraphQL tables plus every Integration-referencing table.
+def channel_purge_tables(composed_tables: None) -> None:
+    """Use all composed tables, including every Integration-referencing table.
 
     Deleting a channel cascades through the shared Integration parent, so the collector
     touches other addons' reverse-FK tables; they must exist for the confirm path.
     """
 
-    del transactional_db
-    created_models = _create_missing_tables(CHANNEL_PURGE_MODELS)
-    call_command("rebac", "sync", verbosity=0)
-    try:
-        yield
-    finally:
-        _clear_model_tables(CHANNEL_PURGE_MODELS)
-        if created_models:
-            with connection.schema_editor() as schema_editor:
-                for model in reversed(created_models):
-                    schema_editor.delete_model(model)
+    del composed_tables
 
 
 def _schema() -> Any:

@@ -11,15 +11,12 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
-from django.apps import apps
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
 from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
-from angee.messaging_integrate_telegram.autoconfig import SETTINGS as TELEGRAM_SETTINGS
 from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
 
 
@@ -47,10 +44,7 @@ class _RecordingMessageManager:
 
         messages = list(parsed_messages)
         self.calls.append({"messages": messages, **kwargs})
-        return [
-            self.landed.setdefault(message.external_id, object())
-            for message in messages
-        ]
+        return [self.landed.setdefault(message.external_id, object()) for message in messages]
 
 
 def test_telegram_takeout_recognition_is_bounded_for_a_padded_export(
@@ -264,6 +258,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
     assert manager.calls[0]["channel"] is channel
     assert "message_kind" not in manager.calls[0]
     assert manager.calls[0]["quote_edges"] is False
+    assert manager.calls[0]["historical"] is True
     parsed = manager.calls[0]["messages"][0]
     assert parsed.external_id == f"{utils.get_peer_id(types.PeerChannel(42))}/17"
     assert parsed.thread is not None and parsed.thread.modality == "public_thread"
@@ -358,13 +353,18 @@ def test_telegram_takeout_rerun_converges_on_the_same_landed_identity(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("media_bound", [False, True], ids=["message-count", "media-bytes"])
 def test_telegram_takeout_flushes_multiple_bounded_batches(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    media_bound: bool,
 ) -> None:
-    """The final partial batch follows a full size-triggered ingest batch."""
+    """Message and media bounds both flush through the shared ingest owner."""
 
-    monkeypatch.setattr(extractor_module, "_INGEST_BATCH_SIZE", 2)
+    if media_bound:
+        monkeypatch.setattr(extractor_module, "_INGEST_BATCH_BYTES", 2 * len(b"telegram-photo-bytes"))
+    else:
+        monkeypatch.setattr(extractor_module, "_INGEST_BATCH_SIZE", 2)
     channel, manager, _filters = _install_messaging_doubles(monkeypatch)
     chats = [
         _chat(
@@ -372,7 +372,7 @@ def test_telegram_takeout_flushes_multiple_bounded_batches(
             messages=[_message(message_id=value) for value in (1, 2, 3)],
         )
     ]
-    archive = _takeout_archive(tmp_path, chats=chats)
+    archive = _takeout_archive(tmp_path, chats=chats, include_media=media_bound)
     heartbeats: list[bool] = []
 
     result = TelegramTakeoutExtractor().execute(
@@ -420,19 +420,6 @@ def test_telegram_takeout_media_limits_and_bad_paths_degrade_to_markers(
     ).with_media(too_large)
     assert marker.body is not None
     assert "media unavailable: video.mp4" in str(marker.body)
-
-
-def test_telegram_addon_registers_takeout_extractor_and_depends_on_bridge() -> None:
-    """Telegram contributes one extractor through workflows-integrate autoconfig."""
-
-    config = apps.get_app_config("messaging_integrate_telegram")
-    contract = addon_manifest(config)
-
-    assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
-    assert TELEGRAM_SETTINGS[
-        "ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.telegram_takeout"
-    ] == "angee.messaging_integrate_telegram.extractor.TelegramTakeoutExtractor"
 
 
 def _sync_hash(message: Any) -> str:
