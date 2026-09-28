@@ -240,6 +240,85 @@ def test_create_signal_channel_uses_seeded_vendor_without_credential(signal_tabl
 
 
 @pytest.mark.django_db(transaction=True)
+def test_create_signal_channel_resets_newest_unfinished_channel(
+    signal_tables: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A rejected account's retained directory is wiped before pairing restarts."""
+
+    connect = _signal_module("connect")
+    monkeypatch.setattr("angee.integrate.live.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.messaging.connect.task_locks_are_cross_process", lambda: True)
+    admin = _platform_admin("msg-signal-retry-admin")
+    with system_context(reason="test.messaging.signal.retry.seed"):
+        Vendor.objects.create(slug="signal", display_name="Signal")
+        Channel.objects.create_disconnected(admin, name="Older attempt", backend_class="signal")
+        reusable = Channel.objects.create_disconnected(admin, name="Latest attempt", backend_class="signal")
+        reusable.report_status("error")
+        # Duplicate rejection releases the claim (the report keeps the rejected
+        # id) but cannot discard a pre-existing signal-cli directory, which may
+        # now contain the rejected account.
+        reusable.sync_progress = {"details": {"pairing": {"state": "duplicate_account", "own_id": "+420700000001"}}}
+        reusable.save(update_fields=["sync_progress", "updated_at"])
+        linked = Channel.objects.create_disconnected(admin, name="Linked", backend_class="signal")
+        assert linked.backend.claim_account("+420700000000")
+    store = session_store_path(reusable)
+    store.mkdir(parents=True)
+    marker = store / "retained-config"
+    marker.write_bytes(b"linked account rejected as a duplicate")
+
+    channel = connect.create_signal_channel(admin)
+    repeated = connect.create_signal_channel(admin)
+
+    assert channel.pk == repeated.pk == reusable.pk
+    assert not store.exists()
+    with system_context(reason="test.messaging.signal.retry.verify"):
+        channel.refresh_from_db()
+        assert Channel.objects.count() == 3
+        assert channel.display_name == "Latest attempt"
+        assert channel.lifecycle == "connected"
+        assert channel.runtime_status == "ok"
+        assert channel.subscription_state["desired"] == Channel.LiveState.LIVE
+        assert "own_id" not in channel.subscription_state
+        assert "pairing" not in channel.sync_progress.get("details", {})
+        assert channel.backend.pairing().state == PairingState.STARTING
+
+
+@pytest.mark.parametrize("existing_state", ["linked", "disconnected", "history", "other_user", "paused"])
+@pytest.mark.django_db(transaction=True)
+def test_create_signal_channel_preserves_ineligible_channel(signal_tables: None, existing_state: str) -> None:
+    """Identity, message history, another owner, or an operator pause prevents reuse."""
+
+    connect = _signal_module("connect")
+    admin = _platform_admin(f"msg-signal-new-{existing_state}")
+    owner = _platform_admin("msg-signal-other-owner") if existing_state == "other_user" else admin
+    with system_context(reason="test.messaging.signal.ineligible.seed"):
+        Vendor.objects.create(slug="signal", display_name="Signal")
+        existing = Channel.objects.create_disconnected(owner, name="Existing", backend_class="signal")
+        if existing_state in {"linked", "disconnected"}:
+            assert existing.backend.claim_account("+420700000000")
+            existing.set_lifecycle("connected")
+            if existing_state == "disconnected":
+                existing.backend.mark_disconnected(clear_identity=False)
+        elif existing_state == "history":
+            Message.objects.create(channel=existing, external_id="retained-message", created_by=admin)
+        elif existing_state == "paused":
+            existing.set_lifecycle("connected")
+            existing.set_lifecycle("paused")
+
+    channel = connect.create_signal_channel(admin)
+
+    assert channel.pk != existing.pk
+    with system_context(reason="test.messaging.signal.ineligible.verify"):
+        assert Channel.objects.count() == 2
+        assert channel.owner_id == admin.pk
+        assert channel.backend_class == "signal"
+        assert channel.lifecycle == "connected"
+        existing.refresh_from_db()
+        assert existing.display_name == "Existing"
+        assert existing.owner_id == owner.pk
+
+
+@pytest.mark.django_db(transaction=True)
 def test_connect_signal_channel_mutation_dispatches_to_service(signal_tables: None) -> None:
     """The no-input vendor mutation returns the shared Channel projection."""
 
@@ -552,14 +631,49 @@ def test_signal_stdout_eof_reports_disconnected(
     session.client.shutdown(0.1)
 
 
-def test_signal_link_timeout_rotates_qr(scripted_signal_cli: type[_ScriptedPopen], tmp_path: Path) -> None:
-    """A timed-out finishLink response starts a fresh URI and publishes a new QR."""
+@pytest.mark.parametrize(
+    ("message", "elapsed", "expired"),
+    [
+        ("Link request timed out, please try again.", 0.0, True),
+        ("Link request error: Connection closed! (IOException)", 10.0, True),
+        ("Link request error: Connection closed!", 30.0, True),
+        ("Link request error: Connection closed! (IOException)", 9.9, False),
+        ("Link request error: Connection refused (IOException)", 30.0, False),
+        ("Unknown device link uri.", 30.0, False),
+    ],
+)
+def test_signal_link_attempt_expired_predicate(message: str, elapsed: float, expired: bool) -> None:
+    """Timeouts always expire; a closed provisioning socket only after a real wait."""
+
+    session_module = _signal_module("session")
+    error = session_module.SignalCliRpcError({"code": -3, "message": message, "data": None})
+
+    assert error.link_attempt_expired(elapsed=elapsed) is expired
+
+
+@pytest.mark.parametrize(
+    ("code", "message", "close_expiry_seconds"),
+    [
+        # A timeout rotates even though the scripted finishLink returns at once.
+        (-1, "Link request timed out, please try again.", None),
+        (-3, "Link request error: Connection closed! (IOException)", 0.0),
+    ],
+)
+def test_signal_link_expiry_rotates_qr(
+    scripted_signal_cli: type[_ScriptedPopen],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    code: int,
+    message: str,
+    close_expiry_seconds: float | None,
+) -> None:
+    """A timeout or slow provisioning close publishes a fresh QR and then pairs."""
 
     session_module = _signal_module("session")
     scripted_signal_cli.scripts.append(
         [
             _response(1, {"deviceLinkUri": "sgnl://linkdevice?uuid=first"}),
-            _response(2, error={"code": -1, "message": "Link request timed out", "data": None}),
+            _response(2, error={"code": code, "message": message, "data": None}),
             _response(3, {"deviceLinkUri": "sgnl://linkdevice?uuid=second"}),
             _response(4, {}),
             _response(5, ["+420700000000"]),
@@ -574,11 +688,67 @@ def test_signal_link_timeout_rotates_qr(scripted_signal_cli: type[_ScriptedPopen
     )
     session.client = session._build_client(tmp_path)
 
+    if close_expiry_seconds is not None:
+        monkeypatch.setattr(session_module, "LINK_CLOSE_EXPIRY_SECONDS", close_expiry_seconds)
     account = session._pair()
 
     assert session.events.get_nowait() == ("qr", b"sgnl://linkdevice?uuid=first")
     assert session.events.get_nowait() == ("qr", b"sgnl://linkdevice?uuid=second")
     assert account == "+420700000000"
+    assert [record["method"] for record in _rpc_transcript(scripted_signal_cli.instances[-1])] == [
+        "startLink",
+        "finishLink",
+        "startLink",
+        "finishLink",
+        "listAccounts",
+        "sendSyncRequest",
+    ]
+    session.client.shutdown(0.1)
+
+
+@pytest.mark.parametrize(
+    ("code", "message", "data"),
+    [
+        # The scripted close arrives at once: an immediate close is a failure.
+        (-3, "Link request error: Connection closed! (IOException)", None),
+        (-3, "Link request error: Connection refused (IOException)", None),
+        (-3, "Link request error: Network unreachable (IOException)", {"type": "java.io.IOException"}),
+        (-1, "Unknown device link uri.", None),
+    ],
+)
+def test_signal_non_expiry_link_error_fails_session(
+    scripted_signal_cli: type[_ScriptedPopen],
+    tmp_path: Path,
+    code: int,
+    message: str,
+    data: Mapping[str, Any] | None,
+) -> None:
+    """Immediate closes and other finishLink failures surface without retrying."""
+
+    session_module = _signal_module("session")
+    scripted_signal_cli.scripts.append(
+        [
+            _response(1, []),
+            _response(2, {"deviceLinkUri": "sgnl://linkdevice?uuid=first"}),
+            _response(3, error={"code": code, "message": message, "data": data}),
+        ]
+    )
+    session = session_module.SignalSession(
+        _BareBridge(tmp_path), reporter=_NoopReporter(), stop_event=threading.Event()
+    )
+    session.client = session._build_client(tmp_path)
+
+    session._connect()
+
+    assert isinstance(session.outcome_error, session_module.SignalCliRpcError)
+    assert str(session.outcome_error) == message
+    assert session.events.get_nowait() == ("qr", b"sgnl://linkdevice?uuid=first")
+    assert session.events.get_nowait() == ("disconnected", None)
+    assert [record["method"] for record in _rpc_transcript(scripted_signal_cli.instances[-1])] == [
+        "listAccounts",
+        "startLink",
+        "finishLink",
+    ]
     session.client.shutdown(0.1)
 
 
