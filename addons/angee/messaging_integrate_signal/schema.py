@@ -17,7 +17,7 @@ class MessagingSignalMutation:
 
     @strawberry.mutation(permission_classes=ADMIN_PERMISSION_CLASSES)
     def connect_signal_channel(self, info: strawberry.Info) -> ChannelType:
-        """Create a Signal channel and start linked-device QR pairing."""
+        """Restart QR pairing on your newest unfinished, non-paused Signal channel or create one."""
 
         return cast(ChannelType, create_signal_channel(session_user(info)))
 
