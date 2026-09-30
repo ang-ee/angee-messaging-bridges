@@ -145,7 +145,6 @@ addons = [
     { name = "authlib" },
     { name = "channels" },
     { name = "channels-redis" },
-    { name = "croniter" },
     { name = "cryptg" },
     { name = "defusedxml" },
     { name = "discord-py" },
@@ -158,7 +157,7 @@ addons = [
     { name = "httpcore" },
     { name = "httpx" },
     { name = "imapclient" },
-    { name = "jsonschema", extra = ["format-nongpl"] },
+    { name = "jsonpointer" },
     { name = "mail-parser-reply" },
     { name = "markdown-it-py" },
     { name = "matrix-nio", extra = ["e2e"] },
@@ -176,7 +175,6 @@ addons = [
     { name = "python-magic" },
     { name = "pyyaml" },
     { name = "qrcode", extra = ["pil"] },
-    { name = "referencing" },
     { name = "ruamel-yaml" },
     { name = "slack-sdk" },
     { name = "strawberry-django-aggregates" },
@@ -205,7 +203,6 @@ addons = [
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
-    { name = "croniter", specifier = ">=6.0" },
     { name = "cryptg", specifier = ">=0.6.0" },
     { name = "defusedxml", specifier = ">=0.7,<1" },
     { name = "discord-py", specifier = ">=2.7" },
@@ -218,7 +215,7 @@ addons = [
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "imapclient", specifier = ">=3.1.0" },
-    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
+    { name = "jsonpointer", specifier = ">=3.1" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
     { name = "markdown-it-py", specifier = ">=4.2" },
     { name = "matrix-nio", extras = ["e2e"], specifier = ">=0.26" },
@@ -239,11 +236,10 @@ addons = [
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
-    { name = "referencing", specifier = ">=0.37" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "strawberry-django-aggregates", specifier = ">=0.12.0" },
-    { name = "strawberry-django-hasura", specifier = ">=0.11.0" },
+    { name = "strawberry-django-aggregates", specifier = ">=0.13.0" },
+    { name = "strawberry-django-hasura", specifier = ">=0.12.1" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
     { name = "strawberry-graphql-django", specifier = ">=0.89.2" },
     { name = "tablib", specifier = ">=3" },
@@ -779,15 +775,12 @@ wheels = [
 ]
 
 [[package]]
-name = "croniter"
-version = "6.2.4"
+name = "cron-descriptor"
+version = "1.4.5"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/37/57/2e2a65aee2a70483cb28e2b7e15a072d00a523207593b44400d4717bb100/croniter-6.2.4.tar.gz", hash = "sha256:fc124f751b1b04805c2a04b061898b436b45ab2320b045e1e052ea895de65189", size = 166267, upload-time = "2026-07-10T09:52:59.955Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/83/70bd410dc6965e33a5460b7da84cf0c5a7330a68d6d5d4c3dfdb72ca117e/cron_descriptor-1.4.5.tar.gz", hash = "sha256:f51ce4ffc1d1f2816939add8524f206c376a42c87a5fca3091ce26725b3b1bca", size = 30666, upload-time = "2024-08-24T18:16:48.654Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/ba/d678e5bd329646ca51d3c92addbc77804e86d21f4b6b6a027218e6abb010/croniter-6.2.4-py3-none-any.whl", hash = "sha256:8ef3d544107a5c05a150a2d78f8bf5a8eb9c5c4d93405a736b824109574e3f4d", size = 46677, upload-time = "2026-07-10T09:52:58.425Z" },
+    { url = "https://files.pythonhosted.org/packages/88/20/2cfe598ead23a715a00beb716477cfddd3e5948cf203c372d02221e5b0c6/cron_descriptor-1.4.5-py3-none-any.whl", hash = "sha256:736b3ae9d1a99bc3dbfc5b55b5e6e7c12031e7ba5de716625772f8b02dcd6013", size = 50370, upload-time = "2024-08-24T18:16:46.783Z" },
 ]
 
 [[package]]
@@ -949,10 +942,12 @@ name = "django-angee"
 version = "0.2.0"
 source = { editable = "../angee" }
 dependencies = [
+    { name = "billiard" },
     { name = "celery", extra = ["redis"] },
     { name = "channels" },
     { name = "cryptography" },
     { name = "django" },
+    { name = "django-celery-beat" },
     { name = "django-choices-field" },
     { name = "django-environ" },
     { name = "django-reversion" },
@@ -974,10 +969,12 @@ postgres = [
 
 [package.metadata]
 requires-dist = [
+    { name = "billiard", specifier = ">=4.2.1,<4.3" },
     { name = "celery", extras = ["redis"], specifier = ">=5.5" },
     { name = "channels", specifier = ">=4.0" },
     { name = "cryptography", specifier = ">=44" },
     { name = "django", specifier = ">=6.0,<6.1" },
+    { name = "django-celery-beat", specifier = ">=2.9" },
     { name = "django-choices-field", specifier = ">=4.0.0" },
     { name = "django-environ", specifier = ">=0.12" },
     { name = "django-reversion", specifier = ">=5.1" },
@@ -1000,7 +997,6 @@ addons = [
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
-    { name = "croniter", specifier = ">=6.0" },
     { name = "defusedxml", specifier = ">=0.7,<1" },
     { name = "django-anymail", specifier = ">=15.1" },
     { name = "django-axes", specifier = ">=8.0" },
@@ -1011,7 +1007,7 @@ addons = [
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "imapclient", specifier = ">=3.1.0" },
-    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
+    { name = "jsonpointer", specifier = ">=3.1" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
     { name = "markdown-it-py", specifier = ">=4.2" },
     { name = "mcp", specifier = ">=1.2" },
@@ -1029,11 +1025,10 @@ addons = [
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
-    { name = "referencing", specifier = ">=0.37" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "strawberry-django-aggregates", specifier = ">=0.12.0" },
-    { name = "strawberry-django-hasura", specifier = ">=0.11.0" },
+    { name = "strawberry-django-aggregates", specifier = ">=0.13.0" },
+    { name = "strawberry-django-hasura", specifier = ">=0.12.1" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
     { name = "strawberry-graphql-django", specifier = ">=0.89.2" },
     { name = "tablib", specifier = ">=3" },
@@ -1046,6 +1041,8 @@ dev = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-django", specifier = ">=4.8" },
+    { name = "pytest-randomly", specifier = ">=3.16" },
+    { name = "pytest-xdist", specifier = ">=3.6" },
     { name = "ruff", specifier = ">=0.15.12" },
     { name = "vulture", specifier = ">=2.16" },
 ]
@@ -1076,6 +1073,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f0/b4/00c701a22d46288e3eb1340a1c141f5b4002572ce836a3e8d069f1e1de8a/django_axes-8.3.1.tar.gz", hash = "sha256:d57e923c0ba33cf45275253dd1313c3a3ff04bec686b38d677beb2b3d43c7bcd", size = 254715, upload-time = "2026-02-11T20:19:52.172Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/f6/777a5df7d5698eeb23c7c496cc268c0181f0489dbc5b5f2b235b30e5d8dd/django_axes-8.3.1-py3-none-any.whl", hash = "sha256:f7887582fd12713064f1602091ff6152752becae5e891a15bf802746cab0f51a", size = 74213, upload-time = "2026-02-11T20:19:48.646Z" },
+]
+
+[[package]]
+name = "django-celery-beat"
+version = "2.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "celery" },
+    { name = "cron-descriptor" },
+    { name = "django" },
+    { name = "django-timezone-field" },
+    { name = "python-crontab" },
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/05/45/fc97bc1d9af8e7dc07f1e37044d9551a30e6793249864cef802341e2e3a8/django_celery_beat-2.9.0.tar.gz", hash = "sha256:92404650f52fcb44cf08e2b09635cb1558327c54b1a5d570f0e2d3a22130934c", size = 177667, upload-time = "2026-02-28T16:45:34.749Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/ae/9befa7ae37f5e5c41be636a254fcf47ff30dd5c88bd115070e252f6b9162/django_celery_beat-2.9.0-py3-none-any.whl", hash = "sha256:4a9e5ebe26d6f8d7215e1fc5c46e466016279dc102435a28141108649bdf2157", size = 105013, upload-time = "2026-02-28T16:45:32.822Z" },
 ]
 
 [[package]]
@@ -1161,6 +1175,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cd/86/f0be1a2882fc55839b61245101a32a6a6600a925e4ea3821d446bbeb9a53/django_sqids-0.2.2.tar.gz", hash = "sha256:853af6efef57644867f2e46fc1f01e814fb7c9b297163f143724a280dca738dd", size = 5371, upload-time = "2025-07-09T14:58:18.02Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/c9/3520ed5bad42f45c8ce5b7c31a7a87666cf05346fc53d825826fd86caf8d/django_sqids-0.2.2-py3-none-any.whl", hash = "sha256:ddec508a29e9b51474e3ef78a148d906151b4863e830f59d3f13fadf94e90a79", size = 6306, upload-time = "2025-07-09T14:58:16.742Z" },
+]
+
+[[package]]
+name = "django-timezone-field"
+version = "7.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/12/0b/22654abc2355f3b84e3e5b9d26569639c15d04b96d7186f3a477ec45c1ef/django_timezone_field-7.2.2.tar.gz", hash = "sha256:a004d0b19fe10bf5964cb21a65b36324b16a61879e4711c0dafdf8d6253e8ebc", size = 13158, upload-time = "2026-06-06T05:28:23.638Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/5f/c8dfb67105c4ef391a3e9d0bcd35b7eae4c4c9d023d612c3999ae1cb32ef/django_timezone_field-7.2.2-py3-none-any.whl", hash = "sha256:30354d0f37462a0b9b5c289e271580a6be9b58dea30e7bf88435372882c8fa7a", size = 13322, upload-time = "2026-06-06T05:28:22.454Z" },
 ]
 
 [[package]]
@@ -2603,6 +2629,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-crontab"
+version = "3.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/3e/f61917a63b20d0ce0dfb58e44192201892a1cfe9d4167264b93fa5485594/python_crontab-3.4.0.tar.gz", hash = "sha256:d2b5ad91f7a641d774661b7f3ba52258fd68273862c88713f4cc092ba614e707", size = 58724, upload-time = "2026-08-29T20:50:48.461Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/61/f8bc92ff12d349e18782cc1ea226ad1f6beb869715811aa7d310860b60cc/python_crontab-3.4.0-py3-none-any.whl", hash = "sha256:5237313e8ea8196295ef4ebd905ec800cb235e0cb009c6306580b1e025dbcdce", size = 27819, upload-time = "2026-08-29T20:50:47.295Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -3097,21 +3132,21 @@ wheels = [
 
 [[package]]
 name = "strawberry-django-aggregates"
-version = "0.12.0"
+version = "0.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/2c/e6a890e2de8b4fd94c05d488c2aa456b7dd9edfdd31de567758c69ecc182/strawberry_django_aggregates-0.12.0.tar.gz", hash = "sha256:69b7f2c6a12662537f83b32f078c10b259f8a4b92422396946b3d068a8c5895b", size = 159819, upload-time = "2026-09-05T23:04:45.773Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/09/8c777ddd9b548710d15145ff794960190ea1352b22f0f42b94fe75c51f60/strawberry_django_aggregates-0.13.0.tar.gz", hash = "sha256:345856b93720d19c689800fff4c9b2e0fbd27eed4c695868832073687f6d9608", size = 163406, upload-time = "2026-09-28T15:08:20.38Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/ce/7a9e1dc34c659f57a3e381b24d180b858aea9fa5d0d55f6ed307c92ba56a/strawberry_django_aggregates-0.12.0-py3-none-any.whl", hash = "sha256:8dd99db41513f03e62e8cd0e852bc7f68856aa898cca32c398603d8299b7803c", size = 105285, upload-time = "2026-09-05T23:04:44.632Z" },
+    { url = "https://files.pythonhosted.org/packages/17/5f/e96d9e3ba64e897144c347d33f2d4d408489c8834542acf9fc78d838a360/strawberry_django_aggregates-0.13.0-py3-none-any.whl", hash = "sha256:e23faf794d90cfdc41479e72bc37a217451d827a55f8395f9febbbaf6bbe296a", size = 106099, upload-time = "2026-09-28T15:08:19.271Z" },
 ]
 
 [[package]]
 name = "strawberry-django-hasura"
-version = "0.11.0"
+version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -3119,9 +3154,9 @@ dependencies = [
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/43/a7a24d3019e138e803f00e0db0894ba0660395d584519921dca332ccc4f6/strawberry_django_hasura-0.11.0.tar.gz", hash = "sha256:cffc90f492d8f26b43e975b6cadd986327e58e56baa24f891b11df97f963dbdc", size = 140835, upload-time = "2026-09-11T14:14:46.975Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/72/f038ccca9ead91de9ffa9a3756c7fd2fea6663a67b63e46684609e0a4941/strawberry_django_hasura-0.12.1.tar.gz", hash = "sha256:6e1618ab8715a00ec30e4feb18495a3419f5fa1fe56b8388f5db96c61f8aaa05", size = 148663, upload-time = "2026-09-28T15:33:16.944Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/a1/1ff0e3e3498de8f81cc96935f964c94ee2daffddd4b228b266e36f850b8f/strawberry_django_hasura-0.11.0-py3-none-any.whl", hash = "sha256:1721373c20519326329752279bebd643a856d4e5b037c487540aeca4bb764ae9", size = 64341, upload-time = "2026-09-11T14:14:45.562Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/45/22631356eaa6e7ff9d47daf642fb197d12e19c45fb188ae3939b88d34c47/strawberry_django_hasura-0.12.1-py3-none-any.whl", hash = "sha256:2ea90e3a36fca8db1d46d730a07680ac845f20463426c56c1d98c386b75097ea", size = 65690, upload-time = "2026-09-28T15:33:15.449Z" },
 ]
 
 [[package]]
