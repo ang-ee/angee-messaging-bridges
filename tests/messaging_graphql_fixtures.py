@@ -970,7 +970,7 @@ def test_record_chatter_post_note(messaging_graphql_tables: None) -> None:
             """
             mutation PostRecordNote($model: String!, $id: ID!, $body: String!) {
               post_record_message(
-                input: {model_label: $model, record_id: $id, body: $body, kind: "note"}
+                input: {model_label: $model, record_id: $id, body: $body, kind: NOTE}
               ) {
                 error
                 error_code
@@ -3586,7 +3586,8 @@ def test_channel_teardown_mutes_per_row_change_broadcasts(messaging_graphql_tabl
     proves the spy and publisher wiring are live, so the muted silence is real.
     """
 
-    from angee.graphql.publishing import change_published, connect_publishers, disconnect_publishers
+    from angee.graphql.publishing import connect_publishers, disconnect_publishers
+    from angee.workflows.testing.drivers import observe
 
     channel = make_integration("chan-mute", model=Channel, backend_class="manual")
     with system_context(reason="test.channel.mute.seed"):
@@ -3601,26 +3602,22 @@ def test_channel_teardown_mutes_per_row_change_broadcasts(messaging_graphql_tabl
             thread=thread, channel=channel, external_id="mute-control", status="synced", created_by_id=owner_id
         )
 
-    captured: list[Any] = []
-
-    def _spy(sender: Any, payload: Any, **kwargs: Any) -> None:
-        captured.append(payload)
-
     connect_publishers(messaging_models.Message)
     connect_publishers(messaging_models.Thread)
-    change_published.connect(_spy, dispatch_uid="test-channel-mute-spy", weak=False)
     try:
-        # Positive control: an unmuted delete DOES broadcast, proving the wiring is live.
-        with system_context(reason="test.channel.mute.control"):
-            control.delete()
-        assert captured, "expected the unmuted control delete to broadcast a change"
-        captured.clear()
+        with observe(messaging_models.Message) as messages, observe(messaging_models.Thread) as threads:
+            # Positive control: an unmuted delete DOES broadcast, proving the wiring is live.
+            with system_context(reason="test.channel.mute.control"):
+                control.delete()
+            assert messages, "expected the unmuted control delete to broadcast a change"
+            messages.clear()
+            threads.clear()
 
-        # The muted teardown deletes `keep` + the thread and broadcasts nothing per row.
-        messaging_models.Thread.objects.teardown_for_channel(channel)
-        assert captured == []
+            # The muted teardown deletes `keep` + the thread and broadcasts nothing per row.
+            messaging_models.Thread.objects.teardown_for_channel(channel)
+            assert messages == []
+            assert threads == []
     finally:
-        change_published.disconnect(dispatch_uid="test-channel-mute-spy")
         disconnect_publishers(messaging_models.Message)
         disconnect_publishers(messaging_models.Thread)
 

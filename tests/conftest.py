@@ -36,6 +36,7 @@ from angee.storage.models import FileAttachment as AbstractFileAttachment
 from angee.storage.models import Folder as AbstractFolder
 from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
+from tests import decisions_models  # noqa: F401 -- register decision FK targets before test database setup
 
 pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
 

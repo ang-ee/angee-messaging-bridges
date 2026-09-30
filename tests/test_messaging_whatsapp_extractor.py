@@ -22,7 +22,6 @@ from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_S
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
 from angee.resources.testing.models import Resource
-from angee.workflows.testing.models import Workflow
 
 
 class _BackupArchiveFile:
@@ -189,11 +188,12 @@ def test_shared_archive_resources_publish_file_and_drive_graphs(composed_tables:
     assert reloaded.loaded == 0
 
     with system_context(reason="test shared archive workflow resources"):
-        workflows = {workflow.key: workflow for workflow in Workflow.objects.all()}
+        workflow_model = apps.get_model("workflows.Workflow")
+        workflows = {workflow.key: workflow for workflow in workflow_model.objects.all()}
         assert set(workflows) == {"archive_import_file", "archive_import_drive"}
-        for key, subject in (("archive_import_file", "storage.file"), ("archive_import_drive", "storage.drive")):
+        for key, subject in (("archive_import_file", "storage.File"), ("archive_import_drive", "storage.Drive")):
             workflow = workflows[key]
-            assert workflow.subject_model == subject
+            assert workflow.subject_model == apps.get_model(subject)._meta.label
             assert workflow.published is not None
             nodes = workflow.published.definition.nodes
             assert set(nodes) == {"probe", "gate", "import_units", "summary"}
