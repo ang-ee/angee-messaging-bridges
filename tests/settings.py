@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from angee.jobs.autoconfig import SETTINGS as JOBS_SETTINGS
 from django.apps import AppConfig
 
 from angee import integrate
+from angee.decisions.autoconfig import SETTINGS as DECISIONS_SETTINGS
 from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
+from angee.messaging_integrate_facebook.autoconfig import SETTINGS as FACEBOOK_SETTINGS
+from angee.messaging_integrate_imessage.autoconfig import SETTINGS as IMESSAGE_SETTINGS
+from angee.messaging_integrate_telegram.autoconfig import SETTINGS as TELEGRAM_SETTINGS
+from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.workflows.autoconfig import SETTINGS as WORKFLOWS_SETTINGS
 from angee.workflows_integrate.autoconfig import SETTINGS as WORKFLOWS_INTEGRATE_SETTINGS
 
@@ -40,10 +46,12 @@ INSTALLED_APPS = [
     "tests.settings.BareGraphQLConfig",
     "angee.jobs",
     "angee.resources",
+    "angee.resources.testing",
     "tests.iam_app.TestIAMConfig",
     "angee.integrate",
     "angee.integrate_vcs",
     "angee.integrate_iphone",
+    "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",
     "angee.storage",
@@ -115,6 +123,25 @@ ANGEE_WORKFLOW_STEP_CLASSES = {
         for key, value in WORKFLOWS_INTEGRATE_SETTINGS.items()
         if key.startswith("ANGEE_WORKFLOW_STEP_CLASSES.")
     },
+}
+ANGEE_WORKFLOW_TRIGGER_SOURCES = WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_TRIGGER_SOURCES"]
+ANGEE_WORKFLOW_MAP_CONCURRENCY = WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_MAP_CONCURRENCY"]
+ANGEE_WORKFLOW_MAX_DISPATCHES = WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_MAX_DISPATCHES"]
+ANGEE_WORKFLOW_RETENTION_DAYS = WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_RETENTION_DAYS"]
+ANGEE_DECISION_POLICY_CLASSES = DECISIONS_SETTINGS["ANGEE_DECISION_POLICY_CLASSES"]
+ANGEE_DECISION_MAX_ATTEMPTS = DECISIONS_SETTINGS["ANGEE_DECISION_MAX_ATTEMPTS"]
+CELERY_TASK_SOFT_TIME_LIMIT = JOBS_SETTINGS["CELERY_TASK_SOFT_TIME_LIMIT"]
+CELERY_TASK_TIME_LIMIT = JOBS_SETTINGS["CELERY_TASK_TIME_LIMIT"]
+ANGEE_DECISION_ACTION_CLASSES = {
+    key.removeprefix("ANGEE_DECISION_ACTION_CLASSES."): value
+    for key, value in WORKFLOWS_INTEGRATE_SETTINGS.items()
+    if key.startswith("ANGEE_DECISION_ACTION_CLASSES.")
+}
+ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES = {
+    key.removeprefix("ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES."): value
+    for fragment in (FACEBOOK_SETTINGS, IMESSAGE_SETTINGS, TELEGRAM_SETTINGS, WHATSAPP_SETTINGS)
+    for key, value in fragment.items()
+    if key.startswith("ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.")
 }
 # Directory/channel backends each addon's autoconfig normally contributes; declared
 # here so the ImplClassField registries are non-empty at model-import time.

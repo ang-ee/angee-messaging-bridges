@@ -32,14 +32,14 @@ from angee.messaging_integrate_telegram.identity import (
     media_fact,
     parsed_export_message,
 )
-from angee.workflows_integrate.archives import (
+from angee.storage.archives import (
     ArchiveError,
     BoundedReader,
     archive_entries,
     safe_member_name,
     stage_subtree,
 )
-from angee.workflows_integrate.steps import ArchiveExecutionReporter, ArchiveExtractor
+from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 _ARCHIVE_RECOGNITION_READ_LIMIT = 16 * 1024 * 1024
 """Compressed bytes available to ZIP metadata and each ``result.json`` probe."""

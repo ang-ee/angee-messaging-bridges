@@ -21,19 +21,8 @@ from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
-from angee.resources.models import Resource as AbstractResource
+from angee.resources.testing.models import Resource
 from angee.workflows.testing.models import Workflow
-
-
-class ArchiveResourceLedger(AbstractResource):
-    """Concrete resource ledger for the stock messaging archive workflow fixtures."""
-
-    class Meta(AbstractResource.Meta):
-        """Keep this test ledger isolated from composed runtime output."""
-
-        abstract = False
-        app_label = "base"
-        db_table = "test_archive_workflow_resource"
 
 
 class _BackupArchiveFile:
@@ -178,71 +167,37 @@ def test_whatsapp_backup_ingest_is_historical(monkeypatch: pytest.MonkeyPatch) -
     assert calls == [{"messages": [message], "channel": channel, "quote_edges": False, "historical": True}]
 
 
-@pytest.mark.parametrize(
-    ("addon", "workflow_names"),
-    (
-        ("messaging_integrate_whatsapp", ("Archive import", "Backup import")),
-        ("messaging_integrate_facebook", ("Facebook archive import", "Facebook takeout import")),
-    ),
-)
-def test_archive_import_resource_loads_published_valid_graph(
-    composed_tables: None,
-    addon: str,
-    workflow_names: tuple[str, str],
-) -> None:
-    """The ledger loads, validates and idempotently publishes all stock archive graphs."""
+@pytest.mark.parametrize("addon", ("messaging_integrate_whatsapp", "messaging_integrate_facebook"))
+def test_bridge_addon_uses_shared_archive_workflows(addon: str) -> None:
+    """Vendor addons contribute extractors while the framework owns both graphs."""
+
+    assert resource_manifest_for(apps.get_app_config(addon))["install"] == ()
+    shared = resource_manifest_for(apps.get_app_config("workflows_integrate"))
+    assert tuple(entry["path"] for entry in shared["install"]) == (
+        "resources/install/100_workflows.workflow.yaml",
+    )
+
+
+def test_shared_archive_resources_publish_file_and_drive_graphs(composed_tables: None) -> None:
+    """The framework resource publishes one native graph for each storage subject."""
 
     del composed_tables
-    config = apps.get_app_config(addon)
-    manifest = resource_manifest_for(config)
-
-    assert tuple(entry["path"] for entry in manifest["install"]) == (
-        "resources/install/100_workflows.workflow.yaml",
-        "resources/install/101_workflows.step.yaml",
-        "resources/install/102_workflows.edge.yaml",
-        "resources/install/110_workflows.workflow.yaml",
-        "resources/install/111_workflows.step.yaml",
-        "resources/install/112_workflows.edge.yaml",
-    )
-    result = ArchiveResourceLedger.objects.load_addons(
-        (config,), tiers=[AbstractResource.Tier.INSTALL],
-    )
-    assert result.loaded == 19
-    reloaded = ArchiveResourceLedger.objects.load_addons(
-        (config,), tiers=[AbstractResource.Tier.INSTALL],
-    )
+    config = apps.get_app_config("workflows_integrate")
+    result = Resource.objects.load_addons((config,), tiers=[Resource.Tier.INSTALL])
+    assert result.loaded == 2
+    reloaded = Resource.objects.load_addons((config,), tiers=[Resource.Tier.INSTALL])
     assert reloaded.loaded == 0
 
-    with system_context(reason="test messaging archive workflow resources"):
-        for name, subject in zip(workflow_names, ("storage.file", "storage.drive"), strict=True):
-            assert Workflow._base_manager.filter(name=name).count() == 2
-            draft = Workflow._base_manager.get(name=name, published_from__isnull=True)
-            published = Workflow.objects.current_published_for(draft)
-            assert published is not None
-            assert published.subject_declaration == subject
-            steps = {step.key: step for step in published.steps.order_by("key")}
-            edges = list(published.edges.select_related("source", "target"))
-            assert {key: step.step_class.value for key, step in steps.items()} == {
-                "execute_unit": "archive_execute",
-                "gate": "archive_gate",
-                "map": "map",
-                "prepare": "archive_execute",
-                "probe": "archive_probe",
-            }
-            assert steps["prepare"].config["mode"] == "prepare"
-            assert steps["map"].config["items"] == "input"
-            assert steps["map"].config["target_step"] == "execute_unit"
-            assert steps["execute_unit"].config["mode"] == "unit"
-            assert [step.key for step in steps.values() if step.is_entry] == ["probe"]
-            assert {(edge.source.key, edge.target.key, edge.condition) for edge in edges} == {
-                ("gate", "prepare", "completed"),
-                ("prepare", "map", "prepared"),
-                ("probe", "gate", "recognized"),
-            }
-            for step in steps.values():
-                step.full_clean()
-            for edge in edges:
-                edge.full_clean()
+    with system_context(reason="test shared archive workflow resources"):
+        workflows = {workflow.key: workflow for workflow in Workflow.objects.all()}
+        assert set(workflows) == {"archive_import_file", "archive_import_drive"}
+        for key, subject in (("archive_import_file", "storage.file"), ("archive_import_drive", "storage.drive")):
+            workflow = workflows[key]
+            assert workflow.subject_model == subject
+            assert workflow.published is not None
+            nodes = workflow.published.definition.nodes
+            assert set(nodes) == {"probe", "gate", "import_units", "summary"}
+            assert nodes["import_units"].step == "map"
 
 
 def _minimal_backup_layout(

@@ -273,7 +273,7 @@ class BackupImporter:
         message_model = apps.get_model("messaging", "Message")
         prefix = f"chat:{self.channel.pk}:"
         watermarks: dict[str, float] = {}
-        with system_context(reason="messaging_integrate_whatsapp.backup_import.watermarks"):
+        with system_context(reason="messaging_integrate_whatsapp.backup.watermarks"):
             rows = (
                 message_model._base_manager.filter(thread__channel=self.channel, sent_at__isnull=False)
                 .values("thread__external_id")
@@ -301,7 +301,7 @@ class BackupImporter:
             self.channel,
             messages,
             parsed_message,
-            reason="messaging_integrate_whatsapp.backup_import",
+            reason="messaging_integrate_whatsapp.backup.ingest",
             batch_size=self.batch_size,
             max_batch_bytes=self.max_batch_bytes,
             dry_run=self.dry_run,
