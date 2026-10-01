@@ -109,7 +109,10 @@ describe("ConnectTelegramChannelAction", () => {
       appId: "123456",
       appSecret: "telegram-api-hash",
     });
-    expect(row).toEqual({ id: "cred_9", display_name: "My keys" });
+    expect(row).toEqual({
+      status: "ok",
+      data: { id: "cred_9", display_name: "My keys" },
+    });
 
     const secret = create?.fields?.find((field) => field.name === "app_secret");
     render(<>{secret?.description}</>);
