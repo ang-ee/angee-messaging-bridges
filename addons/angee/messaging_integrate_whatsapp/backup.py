@@ -274,7 +274,7 @@ class BackupImporter:
         message_model = apps.get_model("messaging", "Message")
         prefix = apps.get_model("messaging", "Thread").objects.chat_key_prefix(self.channel)
         watermarks: dict[str, float] = {}
-        with system_context(reason="messaging_integrate_whatsapp.backup_import.watermarks"):
+        with system_context(reason="messaging_integrate_whatsapp.backup.watermarks"):
             rows = (
                 message_model._base_manager.filter(thread__channel=self.channel, sent_at__isnull=False)
                 .values("thread__external_id")
