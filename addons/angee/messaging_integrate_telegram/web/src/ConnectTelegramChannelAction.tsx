@@ -8,7 +8,9 @@ import {
 } from "@angee/refine";
 import {
   mutationDialogValueCodecs,
-  type MutationDialogField,
+  savedFormSubmitResult,
+  useUiT,
+  type DescriptorField,
   type MutationDialogValues,
 } from "@angee/ui";
 import * as React from "react";
@@ -33,10 +35,11 @@ function parseValues(
 
 /** Telegram declarations plus its credential-creation relation affordance. */
 export function ConnectTelegramChannelAction(): React.ReactElement {
+  const uiT = useUiT();
   const [createAppKeys] = useAuthoredMutation(CreateTelegramAppKeys);
   const fields = React.useCallback<ConnectChannelFields>(
     (translate) => {
-      const createFields: readonly MutationDialogField[] = [
+      const createFields: readonly DescriptorField[] = [
         {
           name: "name",
           label: translate("channel.connect.name"),
@@ -110,14 +113,17 @@ export function ConnectTelegramChannelAction(): React.ReactElement {
                     "app_secret",
                   ),
                 });
-                return created?.create_credential ?? null;
+                return savedFormSubmitResult(
+                  created?.create_credential,
+                  uiT("form.genericSaveError"),
+                );
               },
             },
           },
         },
       ];
     },
-    [createAppKeys],
+    [createAppKeys, uiT],
   );
 
   return (
