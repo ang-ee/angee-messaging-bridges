@@ -27,8 +27,8 @@ from angee.posts.ingest import land_posts
 
 logger = logging.getLogger(__name__)
 
-_IMPORT_REASON = "messaging_integrate_facebook.takeout_import"
-_WATERMARK_REASON = "messaging_integrate_facebook.takeout_import.watermarks"
+_IMPORT_REASON = "messaging_integrate_facebook.importer.ingest"
+_WATERMARK_REASON = "messaging_integrate_facebook.importer.watermarks"
 # Public records land in bounded chunks so a photo-heavy archive never holds
 # every album's bytes resident — the message path's discipline, applied here.
 _PUBLIC_CHUNK = 200

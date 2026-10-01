@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from angee.compose.autoconfig import AutoConfig
 from django.apps import AppConfig
 
 from angee import integrate
-from angee.iam.autoconfig import SETTINGS as IAM_SETTINGS
-from angee.workflows.autoconfig import SETTINGS as WORKFLOWS_SETTINGS
-from angee.workflows_integrate.autoconfig import SETTINGS as WORKFLOWS_INTEGRATE_SETTINGS
 
 
 class BareComposeConfig(AppConfig):
@@ -40,10 +38,12 @@ INSTALLED_APPS = [
     "tests.settings.BareGraphQLConfig",
     "angee.jobs",
     "angee.resources",
+    "angee.resources.testing",
     "tests.iam_app.TestIAMConfig",
     "angee.integrate",
     "angee.integrate_vcs",
     "angee.integrate_iphone",
+    "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",
     "angee.storage",
@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     "angee.integrate.testing",
     "angee.workflows.testing",
 ]
+AutoConfig.apply_installed(globals(), environment=False)
+
 # Checkout-local so parallel git worktrees do not share one SQLite file.
 # Runs within this checkout must execute sequentially. `.test-db/` is gitignored.
 _TEST_DB_DIR = Path(__file__).resolve().parent.parent / ".test-db"
@@ -83,8 +85,6 @@ DATABASES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
-# The bare harness does not run the composer; retain IAM's declared admin policy.
-REBAC_UNIVERSAL_ADMIN_ROLE = IAM_SETTINGS["REBAC_UNIVERSAL_ADMIN_ROLE"]
 USE_TZ = True
 ANGEE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
@@ -95,52 +95,6 @@ ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
 ANGEE_STORAGE_DRAFT_TTL_HOURS = 24
 ANGEE_STORAGE_TRASH_TTL_DAYS = 30
-# Bare test settings do not run the composer, so the ImplClassField registries
-# (normally supplied by each addon's autoconfig) are declared explicitly here;
-# the enum field requires each to be non-empty at model-import time.
-ANGEE_STORAGE_BACKEND_CLASSES = {
-    "local": "angee.storage.backends.LocalBackend",
-}
-ANGEE_RESOURCE_SOURCE_CLASSES = {
-    "path": "angee.resources.sources.path_source",
-    "url": "angee.integrate.resource_source.url_source",
-}
-ANGEE_VCS_BACKEND_CLASSES = {
-    "local": "angee.integrate_vcs.backend.LocalVCSBackend",
-}
-ANGEE_WORKFLOW_STEP_CLASSES = {
-    **WORKFLOWS_SETTINGS["ANGEE_WORKFLOW_STEP_CLASSES"],
-    **{
-        key.removeprefix("ANGEE_WORKFLOW_STEP_CLASSES."): value
-        for key, value in WORKFLOWS_INTEGRATE_SETTINGS.items()
-        if key.startswith("ANGEE_WORKFLOW_STEP_CLASSES.")
-    },
-}
-# Directory/channel backends each addon's autoconfig normally contributes; declared
-# here so the ImplClassField registries are non-empty at model-import time.
-ANGEE_DIRECTORY_BACKEND_CLASSES = {
-    "manual": "angee.parties.backends.ManualDirectoryBackend",
-}
-ANGEE_CHANNEL_BACKEND_CLASSES = {
-    "manual": "angee.messaging.backends.ManualChannelBackend",
-    "discord": "angee.messaging_integrate_discord.backend.DiscordChannelBackend",
-    "facebook": "angee.messaging_integrate_facebook.backend.FacebookChannelBackend",
-    "signal": "angee.messaging_integrate_signal.backend.SignalChannelBackend",
-    "matrix": "angee.messaging_integrate_matrix.backend.MatrixChannelBackend",
-    "telegram": "angee.messaging_integrate_telegram.backend.TelegramChannelBackend",
-    "whatsapp": "angee.messaging_integrate_whatsapp.backend.WhatsAppChannelBackend",
-    "imessage": "angee.messaging_integrate_imessage.backend.ImessageChannelBackend",
-}
-# Feed backends a ``posts.Feed`` may select (posts' autoconfig normally
-# contributes these). ``stub`` returns canned posts queued by the posts tests.
-ANGEE_POSTS_FEED_BACKEND_CLASSES = {
-    "manual": "angee.posts.backends.ManualFeedBackend",
-}
-# OAuth provider types (normally each addon's autoconfig contributes these); the
-# ImplClassField enum requires a non-empty registry at model-import time.
-ANGEE_OAUTH_PROVIDER_TYPES = {
-    "generic_oauth2": "angee.integrate.oauth.providers.GenericOAuth2",
-}
 # Bare tests run Django's per-process LocMem cache. Production OAuth redirects
 # must use a shared cache; tests opt in explicitly so the state guard remains loud.
 ANGEE_INTEGRATE_ALLOW_LOCAL_OAUTH_STATE_CACHE = True
