@@ -29,13 +29,15 @@ READ_WAKE_SECONDS = 1.0
 LIVENESS_INTERVAL_SECONDS = 60.0
 """Quiet interval after which the pipe owner probes ``listAccounts`` inline."""
 
+LINK_CLOSE_EXPIRY_SECONDS = 10.0
+"""Minimum finishLink wait before a closed provisioning socket counts as expiry."""
+
 PID_FILE_NAME = "signal-cli.pid"
 """Store-local orphan identity written after the child starts."""
 
 ORPHAN_REAP_SECONDS = 5.0
 """Maximum wait for a store-matching orphan before SIGKILL escalation."""
 
-_LINK_TIMEOUT_TEXT = "link request timed out"
 _LOGGED_OUT_ERROR_TYPES = frozenset(
     {
         "AuthorizationFailedException",
@@ -58,6 +60,18 @@ class SignalCliRpcError(RuntimeError):
         self.error = dict(error)
         self.error_types = frozenset(_error_type_names(error))
         super().__init__(str(error.get("message") or "signal-cli JSON-RPC request failed."))
+
+    def link_attempt_expired(self, *, elapsed: float) -> bool:
+        """Identify finishLink expiry without swallowing other I/O failures."""
+
+        # signal-cli 0.14.6 uses the generic I/O code -3 and null data for a
+        # closed provisioning socket, so no structured expiry signal exists.
+        # An immediate close is a connection failure, not an expired QR.
+        message = str(self).lower()
+        return "link request timed out" in message or (
+            elapsed >= LINK_CLOSE_EXPIRY_SECONDS
+            and message.removesuffix(" (ioexception)") == "link request error: connection closed!"
+        )
 
 
 class SignalCliClient:
@@ -260,15 +274,16 @@ class SignalSession(LiveChannelSession):
             if not uri:
                 raise RuntimeError("signal-cli startLink returned no deviceLinkUri.")
             self.events.put(("qr", uri.encode("utf-8")))
+            started_at = time.monotonic()
             try:
                 finish_result = self._rpc(
                     "finishLink",
                     {"deviceLinkUri": uri, "deviceName": "Angee"},
                 )
             except SignalCliRpcError as error:
-                if _LINK_TIMEOUT_TEXT in str(error).lower():
-                    continue
-                raise
+                if not error.link_attempt_expired(elapsed=time.monotonic() - started_at):
+                    raise
+                continue
             accounts = self._accounts(self._rpc("listAccounts"))
             account = accounts[0] if accounts else _account_from_result(finish_result)
             if not account:

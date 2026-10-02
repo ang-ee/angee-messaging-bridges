@@ -39,7 +39,7 @@ from angee.integrate_iphone.backup import (
 )
 from angee.messaging.backends import MediaItem
 from angee.messaging.backup_ingest import batch_ingest
-from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, parsed_message
+from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, is_group_jid, parsed_message
 
 WHATSAPP_DOMAIN = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
 WHATSAPP_SMB_DOMAIN = "AppDomainGroup-group.net.whatsapp.WhatsAppSMB.shared"
@@ -202,7 +202,8 @@ class ChatStorage:
             chat_jid=chat,
             stanza_id=str(stanza_id or ""),
             fallback_id=f"ios:{pk}",
-            chat_name=str(partner_name or ""),
+            # Direct chats stay untitled: the thread label names the counterpart.
+            chat_name=str(partner_name or "") if is_group_jid(chat) else "",
             sender_jid=sender,
             sender_name=sender_name,
             from_me=from_me,
@@ -271,9 +272,9 @@ class BackupImporter:
         if not self.resume or self.dry_run:
             return {}
         message_model = apps.get_model("messaging", "Message")
-        prefix = f"chat:{self.channel.pk}:"
+        prefix = apps.get_model("messaging", "Thread").objects.chat_key_prefix(self.channel)
         watermarks: dict[str, float] = {}
-        with system_context(reason="messaging_integrate_whatsapp.backup_import.watermarks"):
+        with system_context(reason="messaging_integrate_whatsapp.backup.watermarks"):
             rows = (
                 message_model._base_manager.filter(thread__channel=self.channel, sent_at__isnull=False)
                 .values("thread__external_id")
