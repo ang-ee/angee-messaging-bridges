@@ -7,6 +7,19 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "agent-client-protocol"
+version = "1.0.0rc2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/ac/53520d32dd6afb8cef77bf2b731f9eb451d4a8dffbf0df104a1148724eed/agent_client_protocol-1.0.0rc2.tar.gz", hash = "sha256:c83b875efd036a95273d582daf02b29a509024d0232a2afd6187ce8d5564277d", size = 175309, upload-time = "2026-09-21T09:18:20.165Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/65/fefe1b5d234cb04e2e7e4fe3214865dfd01ced621a01eb00b58d26becfca/agent_client_protocol-1.0.0rc2-py3-none-any.whl", hash = "sha256:bd12a0b726c895353a6f7cf7b23d62d5f64191974a1cfadb83fe27ccdd8a0124", size = 125687, upload-time = "2026-09-21T09:18:18.997Z" },
+]
+
+[[package]]
 name = "aiofile"
 version = "3.12.3"
 source = { registry = "https://pypi.org/simple" }
@@ -141,6 +154,7 @@ dependencies = [
 
 [package.dev-dependencies]
 addons = [
+    { name = "agent-client-protocol" },
     { name = "anthropic" },
     { name = "authlib" },
     { name = "channels" },
@@ -199,6 +213,7 @@ requires-dist = [{ name = "django-angee", extras = ["postgres"], editable = "../
 
 [package.metadata.requires-dev]
 addons = [
+    { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
     { name = "anthropic", specifier = ">=0.109.2" },
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "channels", specifier = ">=4.0" },
@@ -210,7 +225,7 @@ addons = [
     { name = "django-axes", specifier = ">=8.0" },
     { name = "django-countries", specifier = ">=9,<10" },
     { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.18.2" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.25.2" },
     { name = "fastmcp", specifier = ">=3.4.2,<4" },
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
@@ -981,7 +996,7 @@ requires-dist = [
     { name = "django-simple-history", specifier = ">=3.7" },
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "django-zed-rebac", specifier = ">=0.18.2" },
+    { name = "django-zed-rebac", specifier = ">=0.25.2" },
     { name = "hatch-angee", specifier = ">=0.2.4" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
@@ -993,6 +1008,7 @@ provides-extras = ["postgres"]
 
 [package.metadata.requires-dev]
 addons = [
+    { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
     { name = "anthropic", specifier = ">=0.109.2" },
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "channels", specifier = ">=4.0" },
@@ -1002,7 +1018,7 @@ addons = [
     { name = "django-axes", specifier = ">=8.0" },
     { name = "django-countries", specifier = ">=9,<10" },
     { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.18.2" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.25.2" },
     { name = "fastmcp", specifier = ">=3.4.2,<4" },
     { name = "httpcore", specifier = ">=1.0,<2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
@@ -1202,14 +1218,14 @@ wheels = [
 
 [[package]]
 name = "django-zed-rebac"
-version = "0.18.2"
+version = "0.25.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/69/9b/1186b75aa5288797a23fe6c6ea036d91ada9035428a3a4cf4c57e80e2bbd/django_zed_rebac-0.18.2.tar.gz", hash = "sha256:c3db42b85f39b06b37651db3b295e87ca91aedc07d53c32a31bae2491301ec20", size = 325263, upload-time = "2026-09-22T16:28:07.312Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2a/61/758c2fbced4620edaec9b4533eced1d53745fcb46a23fa652b39e80c8d0c/django_zed_rebac-0.25.2.tar.gz", hash = "sha256:fba993826f7f16e556606f192adb193b2b68ab4a915b2dfaab49a7ad989da25b", size = 565166, upload-time = "2026-10-02T14:48:59.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/d9/d032bcf544e72095506e3da41faf64d03196ce2feff0905d30581aa757e9/django_zed_rebac-0.18.2-py3-none-any.whl", hash = "sha256:983b248609be2f560f8fc77820e5c2df7866ed3e8237cc8bf1b70be35efd8479", size = 213546, upload-time = "2026-09-22T16:28:05.796Z" },
+    { url = "https://files.pythonhosted.org/packages/21/af/ea55483c0fd13551d8e05584d41411a12ceeed2a295c30902c5476166c8a/django_zed_rebac-0.25.2-py3-none-any.whl", hash = "sha256:1ef8cf3aef46cbde9f06b0911353270f5c95df9308e683d4c11a192fa1835d30", size = 298468, upload-time = "2026-10-02T14:48:57.785Z" },
 ]
 
 [package.optional-dependencies]
