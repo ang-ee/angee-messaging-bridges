@@ -26,13 +26,12 @@ from rebac.roles import grant
 
 from angee.graphql.deletion import DeletePreview
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
-from angee.messaging.models import Channel as AbstractChannel
+from angee.messaging.testing.models import Channel as Channel
 from angee.parties.mixins import LinkSource
 from tests import messaging_fixtures as messaging_models
 from tests.conftest import (
     Backend,
     Drive,
-    Integration,
     MimeType,
     SchemaAddon,
     execute_schema,
@@ -42,21 +41,6 @@ from tests.conftest import (
     File as StorageFile,
 )
 from tests.conftest import result_data as _data
-
-_ChannelMeta = getattr(AbstractChannel, "Meta", object)
-
-
-class Channel(AbstractChannel, Integration):
-    """Concrete message channel used to import the messaging schema."""
-
-
-    class Meta(_ChannelMeta):
-        abstract = False
-        app_label = "messaging"
-        db_table = "test_messaging_channel"
-        rebac_resource_type = "messaging/channel"
-        rebac_id_attr = "sqid"
-
 
 parties_schema = importlib.import_module("angee.parties.schema")
 messaging_schema = importlib.import_module("angee.messaging.schema")
