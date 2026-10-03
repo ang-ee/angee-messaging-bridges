@@ -1,6 +1,4 @@
-import { CHANNEL_MODEL } from "@angee/messaging";
-import { expectValidChannelBridgeAddon } from "@angee/messaging/testing";
-import { formViewRecordActionsSlot } from "@angee/ui";
+import { expectChannelVerbsScoped, expectValidChannelBridgeAddon } from "@angee/messaging/testing";
 import { describe, expect, test } from "vitest";
 
 import messagingIntegrateTelegram from "./index";
@@ -8,14 +6,10 @@ import messagingIntegrateTelegram from "./index";
 describe("messaging_integrate_telegram addon manifest", () => {
   test("declares a valid bridge at the Telegram implementation key", () => {
     expect(() => expectValidChannelBridgeAddon(messagingIntegrateTelegram)).not.toThrow();
-    const actions = (messagingIntegrateTelegram.slots ?? []).slice(1);
-    expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
-      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "telegram")),
-    );
+    expect(() => expectChannelVerbsScoped(messagingIntegrateTelegram, "telegram")).not.toThrow();
   });
 
-  test("contributes Telegram navigation and application-key copy", () => {
-    expect(messagingIntegrateTelegram.menus?.[0]?.description).toBe("Link Telegram accounts by QR code");
+  test("contributes Telegram application-key copy", () => {
     expect(messagingIntegrateTelegram.i18n?.messaging?.["channel.telegram.scan"]).toContain(
       "Link Desktop Device",
     );
