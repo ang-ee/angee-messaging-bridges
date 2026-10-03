@@ -1,6 +1,4 @@
 export const enMessagingDiscordMessages: Record<string, string> = {
-  "channel.discord.menu.label": "Discord",
-  "channel.discord.menu.description": "Connect an invited Discord bot",
   "channel.discord.button": "Connect Discord",
   "channel.discord.title": "Connect Discord",
   "channel.discord.description":

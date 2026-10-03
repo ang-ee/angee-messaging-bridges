@@ -14,8 +14,7 @@ describe("messaging_integrate_telegram addon manifest", () => {
     );
   });
 
-  test("contributes Telegram navigation and application-key copy", () => {
-    expect(messagingIntegrateTelegram.menus?.[0]?.description).toBe("Link Telegram accounts by QR code");
+  test("contributes Telegram application-key copy", () => {
     expect(messagingIntegrateTelegram.i18n?.messaging?.["channel.telegram.scan"]).toContain(
       "Link Desktop Device",
     );

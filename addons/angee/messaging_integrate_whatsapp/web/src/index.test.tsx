@@ -14,8 +14,7 @@ describe("messaging_integrate_whatsapp addon manifest", () => {
     );
   });
 
-  test("contributes WhatsApp navigation and scan copy", () => {
-    expect(messagingIntegrateWhatsapp.menus?.[0]?.description).toBe("Link WhatsApp accounts by QR code");
+  test("contributes WhatsApp scan copy", () => {
     expect(messagingIntegrateWhatsapp.i18n?.messaging?.["channel.whatsapp.scan"]).toContain(
       "Linked devices",
     );

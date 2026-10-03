@@ -1,6 +1,4 @@
 export const enMessagingMatrixMessages: Record<string, string> = {
-  "channel.matrix.menu.label": "Matrix",
-  "channel.matrix.menu.description": "Connect your Matrix account",
   "channel.matrix.button": "Connect Matrix",
   "channel.matrix.title": "Connect Matrix",
   "channel.matrix.description":

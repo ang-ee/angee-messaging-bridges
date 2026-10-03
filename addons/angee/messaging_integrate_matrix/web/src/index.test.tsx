@@ -14,8 +14,7 @@ describe("messaging_integrate_matrix addon manifest", () => {
     );
   });
 
-  test("contributes Matrix navigation and recovery-key copy", () => {
-    expect(messagingIntegrateMatrix.menus?.[0]?.description).toBe("Connect your Matrix account");
+  test("contributes Matrix recovery-key copy", () => {
     expect(messagingIntegrateMatrix.i18n?.messaging?.["channel.matrix.recovery"]).toContain(
       "recovery key",
     );
