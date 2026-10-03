@@ -25,7 +25,6 @@ addons = [
     "channels-redis>=4.2",
     "channels>=4.0",
     "cryptg>=0.6.0",
-    "defusedxml>=0.7,<1",
     "discord-py>=2.7",
     "django-anymail>=15.1",
     "django-axes>=8.0",
