@@ -1,6 +1,4 @@
-import { CHANNEL_MODEL } from "@angee/messaging";
-import { expectValidChannelBridgeAddon } from "@angee/messaging/testing";
-import { formViewRecordActionsSlot } from "@angee/ui";
+import { expectChannelVerbsScoped, expectValidChannelBridgeAddon } from "@angee/messaging/testing";
 import { describe, expect, test } from "vitest";
 
 import messagingIntegrateWhatsapp from "./index";
@@ -8,10 +6,7 @@ import messagingIntegrateWhatsapp from "./index";
 describe("messaging_integrate_whatsapp addon manifest", () => {
   test("declares a valid bridge at the WhatsApp implementation key", () => {
     expect(() => expectValidChannelBridgeAddon(messagingIntegrateWhatsapp)).not.toThrow();
-    const actions = (messagingIntegrateWhatsapp.slots ?? []).slice(1);
-    expect(actions.map(({ slot, model, impl }) => ({ slot, model, impl }))).toEqual(
-      actions.map(() => formViewRecordActionsSlot(CHANNEL_MODEL, "whatsapp")),
-    );
+    expect(() => expectChannelVerbsScoped(messagingIntegrateWhatsapp, "whatsapp")).not.toThrow();
   });
 
   test("contributes WhatsApp scan copy", () => {
