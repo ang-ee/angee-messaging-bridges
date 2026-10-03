@@ -15,20 +15,23 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 from rebac import actor_context, system_context
 
+from angee.decisions.testing import models as decisions_models  # noqa: F401 -- register shared FK targets
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.models import Credential as AbstractCredential
 from angee.integrate.models import ExternalAccount as AbstractExternalAccount
-from angee.integrate.models import Integration as AbstractIntegration
 from angee.integrate.models import OAuthClient as AbstractOAuthClient
 from angee.integrate.models import Vendor as AbstractVendor
 from angee.integrate.models import WebhookSubscription as AbstractWebhookSubscription
+from angee.integrate.testing.integration import Integration as Integration
 from angee.integrate_vcs.backend import RepoDescriptor, TreeEntry, VCSBackend
 from angee.integrate_vcs.models import Repository as AbstractRepository
 from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
+from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
 from angee.posts.models import PostMetrics as AbstractPostMetrics
+from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
 from angee.storage.models import File as AbstractFile
@@ -36,7 +39,7 @@ from angee.storage.models import FileAttachment as AbstractFileAttachment
 from angee.storage.models import Folder as AbstractFolder
 from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
-from tests import decisions_models  # noqa: F401 -- register decision FK targets before test database setup
+from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
 
 pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
 
@@ -90,19 +93,6 @@ class Vendor(AbstractVendor):
         app_label = "integrate"
         db_table = "test_integrate_vendor"
         rebac_resource_type = "integrate/vendor"
-        rebac_id_attr = "sqid"
-
-
-class Integration(AbstractIntegration):
-    """Concrete integration used by source-addon tests."""
-
-    class Meta(AbstractIntegration.Meta):
-        """Django model options for the canonical test integration."""
-
-        abstract = False
-        app_label = "integrate"
-        db_table = "test_integrate_integration"
-        rebac_resource_type = "integrate/integration"
         rebac_id_attr = "sqid"
 
 
