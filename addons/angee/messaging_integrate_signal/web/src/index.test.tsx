@@ -14,8 +14,7 @@ describe("messaging_integrate_signal addon manifest", () => {
     );
   });
 
-  test("contributes Signal navigation and scan copy", () => {
-    expect(messagingIntegrateSignal.menus?.[0]?.description).toBe("Link Signal accounts by QR code");
+  test("contributes Signal scan copy", () => {
     expect(messagingIntegrateSignal.i18n?.messaging?.["channel.signal.scan"]).toContain(
       "Linked Devices",
     );

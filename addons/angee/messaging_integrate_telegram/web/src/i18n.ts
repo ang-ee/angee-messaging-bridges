@@ -1,6 +1,4 @@
 export const enMessagingTelegramMessages: Record<string, string> = {
-  "channel.telegram.menu.label": "Telegram",
-  "channel.telegram.menu.description": "Link Telegram accounts by QR code",
   "channel.telegram.button": "Connect Telegram",
   "channel.telegram.title": "Connect Telegram",
   "channel.telegram.description":

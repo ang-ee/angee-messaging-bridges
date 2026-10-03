@@ -1,8 +1,6 @@
 import { createNamespaceT } from "@angee/ui";
 
 export const enMessagingSignalMessages: Record<string, string> = {
-  "channel.signal.menu.label": "Signal",
-  "channel.signal.menu.description": "Link Signal accounts by QR code",
   "channel.signal.button": "Connect Signal",
   "channel.signal.connecting": "Connecting Signal",
   "channel.signal.error": "Could not connect Signal.",
