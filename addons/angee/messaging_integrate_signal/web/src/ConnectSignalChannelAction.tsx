@@ -1,5 +1,5 @@
 import { usePairingConnect } from "@angee/messaging";
-import { Button, Glyph, errorMessage, useToast } from "@angee/ui";
+import { ActionTrigger, errorMessage, useToast } from "@angee/ui";
 import * as React from "react";
 
 import { ConnectSignalChannel } from "./documents";
@@ -25,17 +25,16 @@ export function ConnectSignalChannelAction(): React.ReactElement {
 
   return (
     <>
-      <Button
+      <ActionTrigger
         variant="primary"
-        size="sm"
+        glyph="plus"
         disabled={connectState.fetching}
         loading={connectState.fetching}
         loadingText={t("channel.signal.connecting")}
         onClick={() => void start()}
       >
-        <Glyph decorative name="plus" />
         {t("channel.signal.button")}
-      </Button>
+      </ActionTrigger>
       {pairingDialog}
     </>
   );

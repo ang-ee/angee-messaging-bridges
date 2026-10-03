@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { ActionMenu, Dialog } from "@angee/ui";
 import * as React from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -34,20 +35,26 @@ vi.mock("@angee/messaging", () => ({
     return {
       connect,
       connectState: { fetching: false, error: null },
-      pairingDialog: channelId ? <div role="dialog">{instruction}</div> : null,
+      pairingDialog: channelId ? (
+        <Dialog.Root open onOpenChange={(open) => { if (!open) setChannelId(null); }}>
+          <Dialog.Portal>
+            <Dialog.Backdrop />
+            <Dialog.Content>
+              <Dialog.Title>Signal pairing</Dialog.Title>
+              <p>{instruction}</p>
+              <Dialog.Close>Done</Dialog.Close>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : null,
     };
   },
 }));
 
-vi.mock("@angee/ui", () => ({
+vi.mock("@angee/ui", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@angee/ui")>()),
   useToast: () => ({ danger: actionMocks.danger }),
   errorMessage: (_error: unknown, fallback: string) => fallback,
-  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button type="button" {...props}>
-      {children}
-    </button>
-  ),
-  Glyph: ({ name }: { name: string }) => <span aria-hidden>{name}</span>,
 }));
 
 vi.mock("./i18n", () => ({
@@ -80,5 +87,18 @@ describe("ConnectSignalChannelAction", () => {
       channelId: "chn_1",
       instruction: "channel.signal.scan",
     });
+  });
+
+  test("opens pairing from a real Connect menu item and restores focus after dismissal", async () => {
+    render(<ActionMenu label="Connect"><ConnectSignalChannelAction /></ActionMenu>);
+    const trigger = screen.getByRole("button", { name: "Connect" });
+    fireEvent.click(trigger);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "channel.signal.button" }));
+    expect(await screen.findByRole("dialog", { name: "Signal pairing" })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(screen.getByRole("dialog", { name: "Signal pairing" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(actionMocks.authoredMutation).toHaveBeenCalledWith({});
   });
 });
