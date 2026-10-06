@@ -706,8 +706,8 @@ def test_message_and_thread_hasura_writes(messaging_graphql_tables: None) -> Non
         execute_schema(
             schema,
             """
-            mutation Hide($id: String!) {
-              update_messages_by_pk(pk_columns: {id: $id}, _set: {status: "hidden"}) {
+            mutation MarkSent($id: String!) {
+              update_messages_by_pk(pk_columns: {id: $id}, _set: {status: "sent"}) {
                 status
                 title
               }
@@ -717,7 +717,7 @@ def test_message_and_thread_hasura_writes(messaging_graphql_tables: None) -> Non
             request=_request(admin),
         )
     )["update_messages_by_pk"]
-    assert updated_message == {"status": "HIDDEN", "title": ""}
+    assert updated_message == {"status": "SENT", "title": ""}
 
     updated_thread = _data(
         execute_schema(
@@ -772,7 +772,7 @@ def test_message_and_thread_hasura_writes(messaging_graphql_tables: None) -> Non
             request=_request(admin),
         )
     )["delete_messages_by_pk"]
-    assert deleted == {"id": message.sqid, "status": "HIDDEN"}
+    assert deleted == {"id": message.sqid, "status": "SENT"}
 
     with system_context(reason="test.messaging.hasura_write.verify"):
         assert messaging_models.Thread.objects.get(sqid=thread.sqid).visibility == "public"
