@@ -39,6 +39,7 @@ from angee.storage.models import FileAttachment as AbstractFileAttachment
 from angee.storage.models import Folder as AbstractFolder
 from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
+from angee.tags.testing import models as tags_models  # noqa: F401 -- register shared FK targets
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
 
 pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
