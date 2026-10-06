@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",
+    "angee.tags",
     "angee.storage",
     "angee.parties",
     "angee.messaging",
