@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "angee.messaging_integrate_imap",
     "angee.posts",
     "angee.posts_integrate_youtube",
+    "angee.posts_integrate_facebook",
     "angee.messaging_integrate_whatsapp",
     "angee.messaging_integrate_imessage",
     "angee.messaging_integrate_telegram",
