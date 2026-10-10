@@ -9,7 +9,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
 
-from django.apps import AppConfig
+import pytest
+from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
@@ -30,7 +31,10 @@ from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
 from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
+from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
+from angee.posts.models import Quota as AbstractQuota
+from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
@@ -43,6 +47,21 @@ from angee.tags.testing import models as tags_models  # noqa: F401 -- register s
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
 
 pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
+
+
+@pytest.fixture
+def replier(feed: Any) -> Any:
+    """Give a dedicated reply principal only channel read and reply access."""
+
+    with system_context(reason="test.feed.replier"):
+        user = get_user_model().objects.create_user(username="feed-replier")
+        channel = apps.get_model("messaging", "Channel").objects.get(pk=feed.pk)
+        channel.system_grant_record_access("reader", user)
+        channel.system_grant_record_access("replier", user)
+    assert channel.with_actor(user).has_access("read")
+    assert channel.with_actor(user).has_access("reply")
+    assert not channel.with_actor(user).has_access("write")
+    return user
 
 
 class OAuthClient(AbstractOAuthClient):
@@ -378,6 +397,30 @@ class PostMetrics(AbstractPostMetrics):
         db_table = "test_posts_post_metrics"
         rebac_resource_type = "posts/post_metrics"
         rebac_id_attr = "sqid"
+
+
+class Feed(YouTubeFeedState, AbstractFeed, messaging_models.Channel):
+    """Concrete feed over the shared channel and messaging/posts extensions."""
+
+    class Meta(AbstractFeed.Meta):
+        """Register the feed before native test database setup."""
+
+        abstract = False
+        app_label = "posts"
+        db_table = "test_posts_feed"
+        rebac_resource_type = "posts/feed"
+
+
+class Quota(AbstractQuota):
+    """Concrete quota ledger shared by public-feed bridge tests."""
+
+    class Meta(AbstractQuota.Meta):
+        """Register the ledger before native test database setup."""
+
+        abstract = False
+        app_label = "posts"
+        db_table = "test_posts_quota"
+        rebac_resource_type = "posts/quota"
 
 
 def create_user(username: str) -> Any:

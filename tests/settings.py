@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "angee.intake",
     "angee.messaging_integrate_imap",
     "angee.posts",
+    "angee.posts_integrate_youtube",
     "angee.messaging_integrate_whatsapp",
     "angee.messaging_integrate_imessage",
     "angee.messaging_integrate_telegram",
@@ -74,6 +75,7 @@ INSTALLED_APPS = [
     "angee.workflows.testing",
 ]
 AutoConfig.apply_installed(globals(), environment=False)
+CELERY_BROKER_URL = "memory://"
 
 # Checkout-local so parallel git worktrees do not share one SQLite file.
 # Runs within this checkout must execute sequentially. `.test-db/` is gitignored.
