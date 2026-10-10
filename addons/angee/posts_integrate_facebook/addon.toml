@@ -1,0 +1,9 @@
+[addon]
+name = "angee.posts_integrate_facebook"
+description = "Connect a Facebook Page, poll its comments, and publish replies"
+keywords = ["facebook", "meta", "pages", "comments"]
+category = "Integration"
+depends_on = ["angee.posts", "angee.integrate", "angee.parties", "angee.messaging_integrate_meta"]
+
+[resources]
+install = [{ path = "resources/install/010_integrate.oauthclient.yaml", adopt = ["slug", "environment"] }]

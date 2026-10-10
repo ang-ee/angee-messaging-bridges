@@ -13,5 +13,6 @@ class FacebookChannelBackend(ChannelBackend):
     key = "facebook"
     label = "Facebook"
     icon = "message-square"
+    defaults = {"vendor": "meta"}
 
     quote_edges: ClassVar[bool] = False

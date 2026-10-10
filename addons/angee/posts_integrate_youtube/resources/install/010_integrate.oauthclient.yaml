@@ -1,0 +1,8 @@
+# Supply the deployment's Google client registration through integrate.
+- xref: oauth_youtube
+  slug: youtube
+  environment: prod
+  provider_type: google_youtube
+  display_name: YouTube
+  icon: youtube
+  is_enabled: true

@@ -1,0 +1,288 @@
+{
+  "channel": {
+    "items": [
+      {
+        "id": "channel-demo",
+        "snippet": {
+          "title": "Example Channel"
+        },
+        "contentDetails": {
+          "relatedPlaylists": {
+            "uploads": "uploads-demo"
+          }
+        }
+      }
+    ]
+  },
+  "uploads_first": {
+    "nextPageToken": "uploads-p2",
+    "items": [
+      {
+        "contentDetails": {
+          "videoId": "video-fresh",
+          "videoPublishedAt": "2026-10-09T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "public"
+        }
+      },
+      {
+        "contentDetails": {
+          "videoId": "video-private",
+          "videoPublishedAt": "2026-10-09T07:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "private"
+        }
+      }
+    ]
+  },
+  "uploads_last": {
+    "items": [
+      {
+        "contentDetails": {
+          "videoId": "video-archive",
+          "videoPublishedAt": "2025-01-01T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "public"
+        }
+      }
+    ]
+  },
+  "video_fresh": {
+    "items": [
+      {
+        "id": "video-fresh",
+        "snippet": {
+          "channelId": "channel-demo",
+          "channelTitle": "Example Channel",
+          "title": "An example video",
+          "description": "A synthetic description.",
+          "publishedAt": "2026-10-09T08:00:00Z",
+          "tags": [
+            "example",
+            "Example"
+          ]
+        },
+        "statistics": {
+          "viewCount": "20",
+          "likeCount": "3",
+          "commentCount": "4"
+        },
+        "status": {
+          "privacyStatus": "public"
+        },
+        "contentDetails": {
+          "duration": "PT2M"
+        }
+      }
+    ]
+  },
+  "video_archive": {
+    "items": [
+      {
+        "id": "video-archive",
+        "snippet": {
+          "channelId": "channel-demo",
+          "channelTitle": "Example Channel",
+          "title": "An older example",
+          "description": "An older synthetic video.",
+          "publishedAt": "2025-01-01T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "unlisted"
+        },
+        "statistics": {
+          "commentCount": "0"
+        }
+      }
+    ]
+  },
+  "threads_first": {
+    "nextPageToken": "threads-p2",
+    "items": [
+      {
+        "id": "thread-resource-a",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 2,
+          "topLevelComment": {
+            "id": "comment-a",
+            "snippet": {
+              "videoId": "video-fresh",
+              "textOriginal": "How does this work?",
+              "authorChannelId": {
+                "value": "author-demo"
+              },
+              "authorDisplayName": "Example Viewer",
+              "publishedAt": "2026-10-09T09:00:00Z",
+              "updatedAt": "2026-10-09T09:30:00Z",
+              "likeCount": 2
+            }
+          }
+        },
+        "replies": {
+          "comments": [
+            {
+              "id": "reply-a",
+              "snippet": {
+                "parentId": "comment-a",
+                "textOriginal": "I have the same question.",
+                "authorChannelId": {
+                  "value": "author-other"
+                },
+                "publishedAt": "2026-10-09T10:00:00Z"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "threads_last": {
+    "items": [
+      {
+        "id": "thread-resource-b",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-b",
+            "snippet": {
+              "textOriginal": "Thanks for the example.",
+              "authorChannelId": {
+                "value": "author-other"
+              },
+              "publishedAt": "2026-10-09T11:00:00Z"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "threads_held": {
+    "items": [
+      {
+        "id": "thread-resource-held",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-held",
+            "snippet": {
+              "textOriginal": "An example awaiting review.",
+              "authorDisplayName": "Unavailable Author",
+              "moderationStatus": "heldForReview",
+              "publishedAt": "2026-10-09T11:30:00Z"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "replies_first": {
+    "nextPageToken": "replies-p2",
+    "items": [
+      {
+        "id": "reply-a",
+        "snippet": {
+          "parentId": "comment-a",
+          "textOriginal": "I have the same question.",
+          "authorChannelId": {
+            "value": "author-other"
+          },
+          "authorDisplayName": "Another Example Viewer",
+          "publishedAt": "2026-10-09T10:00:00Z",
+          "updatedAt": "2026-10-09T10:00:00Z"
+        }
+      }
+    ]
+  },
+  "replies_last": {
+    "items": [
+      {
+        "id": "reply-b",
+        "snippet": {
+          "parentId": "comment-a",
+          "textOriginal": "Here is an example answer.",
+          "authorChannelId": {
+            "value": "channel-demo"
+          },
+          "authorDisplayName": "Example Channel",
+          "publishedAt": "2026-10-09T10:30:00Z",
+          "updatedAt": "2026-10-09T10:30:00Z"
+        }
+      }
+    ]
+  },
+  "inserted_reply": {
+    "id": "reply-published",
+    "snippet": {
+      "parentId": "comment-a"
+    }
+  },
+  "invalid_page_token": {
+    "error": {
+      "code": 400,
+      "errors": [
+        {
+          "reason": "invalidPageToken",
+          "location": "pageToken"
+        }
+      ]
+    }
+  },
+  "revoked_grant": {
+    "error": {
+      "code": 401,
+      "errors": [
+        {
+          "reason": "authError"
+        }
+      ]
+    }
+  },
+  "rate_limited": {
+    "error": {
+      "code": 429,
+      "errors": [
+        {
+          "reason": "rateLimitExceeded"
+        }
+      ]
+    }
+  },
+  "quota_exceeded": {
+    "error": {
+      "code": 403,
+      "errors": [
+        {
+          "reason": "quotaExceeded"
+        }
+      ]
+    }
+  },
+  "threads_old": {
+    "items": [
+      {
+        "id": "thread-resource-old",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-old",
+            "snippet": {
+              "textOriginal": "Thanks for the example.",
+              "authorChannelId": {
+                "value": "author-other"
+              },
+              "publishedAt": "2025-01-01T09:00:00Z"
+            }
+          }
+        }
+      }
+    ],
+    "nextPageToken": "activity-unneeded"
+  }
+}

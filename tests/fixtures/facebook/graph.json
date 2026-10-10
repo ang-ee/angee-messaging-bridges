@@ -1,0 +1,100 @@
+{
+  "extended_grant": {
+    "access_token": "synthetic-long-user-token",
+    "token_type": "bearer",
+    "expires_in": 5184000
+  },
+  "accounts": {
+    "data": [
+      {"id": "900001", "name": "Example Workshop", "access_token": "synthetic-page-token"}
+    ]
+  },
+  "posts_first": {
+    "data": [
+      {
+        "id": "900001_700001", "message": "A new workshop update",
+        "created_time": "2026-10-01T09:00:00+0000",
+        "permalink_url": "https://www.facebook.com/900001/posts/700001",
+        "comments": {"summary": {"total_count": 4}}
+      }
+    ],
+    "paging": {
+      "cursors": {"after": "posts-next"},
+      "next": "https://untrusted.invalid/posts?after=posts-next&access_token=synthetic-discarded-token"
+    }
+  },
+  "posts_last": {
+    "data": [
+      {
+        "id": "900001_700002", "story": "A previous workshop update",
+        "created_time": "2023-01-02T09:00:00+0000", "comments": {"summary": {"total_count": 1}}
+      }
+    ]
+  },
+  "comments_first": {
+    "data": [
+      {
+        "id": "800002", "from": {"id": "600002", "name": "Example Visitor Two"},
+        "message": "A follow-up question", "created_time": "2026-10-02T09:01:00+0000",
+        "parent": {"id": "800001"}, "like_count": 0, "comment_count": 0
+      },
+      {
+        "id": "800001", "from": {"id": "600001", "name": "Example Visitor One"},
+        "message": "When is the next event?", "created_time": "2026-10-02T09:00:00+0000",
+        "parent": {"id": "900001_700001"}, "like_count": 2, "comment_count": 2
+      },
+      {
+        "id": "800003", "message": "An anonymous question", "created_time": "2026-10-02T09:02:00+0000",
+        "is_hidden": true, "like_count": 0, "comment_count": 0
+      }
+    ],
+    "paging": {
+      "cursors": {"after": "comments-next"},
+      "next": "https://untrusted.invalid/comments?after=comments-next&access_token=synthetic-discarded-token"
+    }
+  },
+  "comments_last": {
+    "data": [
+      {
+        "id": "800004", "from": {"id": "900001", "name": "Example Workshop"},
+        "message": "An answer from the Page", "created_time": "2026-10-02T09:03:00+0000",
+        "parent": {"id": "800001"}, "like_count": 0, "comment_count": 0
+      }
+    ]
+  },
+  "old_comments": {
+    "data": [
+      {
+        "id": "800005", "from": {"id": "600003", "name": "Example Visitor Three"},
+        "message": "A new question on an old post", "created_time": "2026-10-03T09:00:00+0000",
+        "parent": {"id": "900001_700002"}
+      }
+    ]
+  },
+  "insert": {"id": "800006"},
+  "existing_reply": {
+    "data": [{
+      "id": "800006", "from": {"id": "900001", "name": "Example Workshop"},
+      "message": "A public response", "created_time": "2026-10-10T12:00:00+0000"
+    }]
+  },
+  "page_throttle": {
+    "status": 400,
+    "body": {"error": {"code": 80001, "message": "synthetic-private-provider-message"}},
+    "headers": {
+      "X-Business-Use-Case-Usage": "{\"900001\":[{\"estimated_time_to_regain_access\":37}]}"
+    }
+  },
+  "rate_limited": {"error": {"code": 4, "message": "synthetic-private-provider-message"}},
+  "revoked": {"error": {"code": 190, "message": "synthetic-private-provider-message"}},
+  "missing": {"error": {"code": 100, "error_subcode": 33}},
+  "permission_denied": {"error": {"code": 10, "message": "synthetic-private-provider-message"}},
+  "invalid_cursor": {"error": {"code": 100, "message": "Invalid cursor: synthetic-expired-position"}},
+  "malformed_post": {
+    "id": "900001_700099", "message": "synthetic-private-bad-record",
+    "created_time": "2026-10-02T09:00:00Z", "comments": {"summary": {"total_count": "invalid"}}
+  },
+  "malformed_comment": {
+    "id": "800099", "message": "synthetic-private-bad-record", "from": "invalid-author"
+  }
+}
