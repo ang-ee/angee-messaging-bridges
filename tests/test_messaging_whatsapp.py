@@ -220,9 +220,7 @@ def whatsapp_session() -> Any:
 
 
 @pytest.fixture
-def whatsapp_tables(
-    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def whatsapp_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
     del composed_tables
@@ -329,6 +327,18 @@ class FakeWhatsAppClient:
         if media is None:
             raise OSError("media expired")
         return media
+
+    pictures: ClassVar[dict[str, Any]] = {}
+    """Profile picture answers by ``user@server``: a CDN URL, or the vendor error to raise."""
+    picture_queries: ClassVar[list[str]] = []
+
+    def get_profile_picture(self, jid: Any, _params: Any) -> Any:
+        key = f"{jid.User}@{jid.Server}"
+        type(self).picture_queries.append(key)
+        answer = type(self).pictures.get(key, "")
+        if isinstance(answer, Exception):
+            raise answer
+        return _Namespace(URL=answer)
 
 
 def _run_session(
@@ -1411,6 +1421,110 @@ def test_contact_name_reads_the_business_name_field(whatsapp_session: Any, whats
 
     session.client = _Namespace(contact=_FakeContactStore({"18583421935": _BusinessOnlyContact()}))
     assert session._contact_name("18583421935@s.whatsapp.net") == "Acme Corp"
+
+
+from django.conf import settings  # noqa: E402
+from neonize.exc import GetProfilePictureError  # noqa: E402
+from neonize.proto.Neonize_pb2 import GetProfilePictureReturnFunction  # noqa: E402
+
+from angee.integrate.http import HttpClient  # noqa: E402
+from angee.parties.backends import AvatarReport  # noqa: E402
+
+_GIF_BYTES = bytes.fromhex("47494638396101000100800000000000ffffff21f90401000000002c00000000010001000002024401003b")
+
+
+def _no_avatar(answer: str) -> GetProfilePictureError:
+    """The error neonize raises for a whatsmeow profile-picture answer."""
+
+    return GetProfilePictureError(GetProfilePictureReturnFunction(Error=answer))
+
+
+@pytest.mark.django_db(transaction=True)
+def test_a_senders_avatar_is_read_once_and_follows_its_changes(
+    whatsapp_session: Any, whatsapp_tables: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sender's first message reads their avatar once; a change reads it again and a removal clears it.
+
+    A stranger's avatar change reads nothing.
+    """
+
+    channel = _whatsapp_channel()
+    with system_context(reason="test whatsapp avatar drives"):
+        # Storage provisions its image drive beside this default drive at the first avatar.
+        _storage_drive(tmp_path / "drive", owner=channel.owner)
+    monkeypatch.setattr(whatsapp_session, "AVATAR_INTERVAL_SECONDS", 0)
+    downloads: list[tuple[str, int]] = []
+
+    def download_capped(_http: Any, url: str, *, cap: int, **_kwargs: Any) -> bytes:
+        downloads.append((url, cap))
+        return _GIF_BYTES
+
+    monkeypatch.setattr(HttpClient, "download_capped", download_capped)
+    FakeWhatsAppClient.pictures = {"4917000002@s.whatsapp.net": "https://pps.whatsapp.net/ada.jpg"}
+    FakeWhatsAppClient.picture_queries = []
+    stop_event = threading.Event()
+
+    def avatar_id() -> Any:
+        return (
+            Handle._base_manager.filter(external_id="4917000002@s.whatsapp.net")
+            .values_list("avatar_id", flat=True)
+            .first()
+        )
+
+    def message(stanza: str) -> Any:
+        return lambda client: client.event.handlers["Message"](
+            client, _message_event(stanza=stanza, chat_user="4917000002", sender_user="4917000002", text="Hi!")
+        )
+
+    def removed(client: Any) -> None:
+        FakeWhatsAppClient.pictures = {
+            "4917000002@s.whatsapp.net": _no_avatar("that user or group does not have a profile picture")
+        }
+        client.event.handlers["Picture"](client, _Namespace(JID=_jid("4917000009")))
+        client.event.handlers["Picture"](client, _Namespace(JID=_jid("4917000002"), Remove=True))
+
+    shown: list[Any] = []
+    script = (
+        lambda client: client.event.handlers["PairStatus"](client, _Namespace(ID=_jid("4917000001"))),
+        message("3EB0A1"),
+        message("3EB0A2"),
+        lambda _client: _await(lambda: avatar_id() is not None),
+        lambda _client: shown.append(avatar_id()),
+        removed,
+        lambda _client: _await(lambda: avatar_id() is None),
+        lambda _client: stop_event.set(),
+    )
+    _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
+
+    # A failed wait ends the scripted connection early; the stop proves every step ran.
+    assert stop_event.is_set()
+    assert shown[0] is not None
+    assert avatar_id() is None
+    assert FakeWhatsAppClient.picture_queries == ["4917000002@s.whatsapp.net"] * 2
+    assert downloads == [("https://pps.whatsapp.net/ada.jpg", settings.ANGEE_STORAGE_IMAGE_MAX_BYTES)]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_only_a_not_set_answer_reports_no_avatar(whatsapp_session: Any, whatsapp_tables: Any) -> None:
+    """Hidden from this account, a failed query or an empty answer reports nothing: the handle keeps its avatar."""
+
+    channel = _whatsapp_channel("whatsapp-avatars")
+    session = whatsapp_session.WhatsAppSession(
+        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
+    )
+    session.client = FakeWhatsAppClient(str(channel.pk))
+    sender = whatsapp_session.handle_for_jid("4917000002@s.whatsapp.net", "Ada")
+    jid = "4917000002@s.whatsapp.net"
+
+    FakeWhatsAppClient.pictures = {jid: _no_avatar("that user or group does not have a profile picture")}
+    assert session._read_avatar(sender) == AvatarReport(
+        platform="whatsapp", value="+4917000002", external_id=jid, avatar=None
+    )
+    for answer in ("the user has hidden their profile picture from you", "websocket disconnected"):
+        FakeWhatsAppClient.pictures = {jid: _no_avatar(answer)}
+        assert session._read_avatar(sender) is None
+    FakeWhatsAppClient.pictures = {}
+    assert session._read_avatar(sender) is None
 
 
 def test_store_resolver_reads_lid_map_and_contacts(tmp_path: Any) -> None:
