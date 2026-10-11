@@ -194,17 +194,27 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
                 _tally_dry_run(handle_model, handle, new_value=new_value, name=name, stats=stats)
                 continue
             with transaction.atomic():
-                target = (
-                    handle_model._base_manager.select_for_update()
-                    .filter(platform="whatsapp", value=new_value)
+                target_pk = (
+                    handle_model._base_manager.filter(platform="whatsapp", value=new_value)
                     .exclude(pk=handle.pk)
+                    .values_list("pk", flat=True)
                     .first()
                 )
+                # Lock both handles in the parties identity order before anything that
+                # points at them moves, then act on the locked rows: a concurrent run
+                # may already have resolved this alias.
+                handles, _parties = apps.get_model("parties", "PartyHandle").objects.lock_identity_rows(
+                    party_ids=(), handle_ids=(handle.pk,) if target_pk is None else (handle.pk, target_pk)
+                )
+                locked = handles.get(handle.pk)
+                if locked is None or not locked.value.endswith("@lid"):
+                    continue
+                target = handles.get(target_pk) if target_pk is not None else None
                 if target is not None:
-                    _merge_into_phone_handle(handle, target, bare_lid=bare_lid, name=name, stats=stats)
+                    _merge_into_phone_handle(locked, target, bare_lid=bare_lid, name=name, stats=stats)
                     stats.merged += 1
                 else:
-                    _rewrite_lid_handle(handle, new_value=new_value, bare_lid=bare_lid, name=name, stats=stats)
+                    _rewrite_lid_handle(locked, new_value=new_value, bare_lid=bare_lid, name=name, stats=stats)
     return stats
 
 
@@ -237,9 +247,9 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
 
     The phone handle survives (it keeps its own ``external_id``); the LID and any
     missing name are carried onto it, and the LID handle's messages, participants,
-    and identity links (``PartyHandleManager.move_links``, which keeps each person's
-    decisions and evidence) repoint before it is deleted.
-    Reactions and any post feeds keep their ``SET_NULL``/cascade behaviour — a chat
+    reactions and identity links (``PartyHandleManager.move_links``, which keeps
+    each person's decisions and evidence) repoint before it is deleted. The caller
+    holds both handles' locks. Any post feeds keep their cascade behaviour — a chat
     sender does not own them.
     """
 
@@ -256,6 +266,7 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
         target.save(update_fields=[*updates, "updated_at"])
 
     _repoint_unique(apps.get_model("messaging", "Participant"), handle, target, ("message_id", "role"))
+    _repoint_unique(apps.get_model("messaging", "Reaction"), handle, target, ("message_id", "reaction"))
     apps.get_model("parties", "PartyHandle").objects.move_links(handle, target)
     apps.get_model("messaging", "Message")._base_manager.filter(sender=handle).update(sender=target)
     handle.delete()
