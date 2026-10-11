@@ -153,7 +153,9 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
     assert comment.message_type == Message.MessageKind.COMMENT
     assert comment.is_original_post is False
     assert direct.message_type == Message.MessageKind.CHAT
-    assert friend_handle.party_link_confirmed is True
+    # A name can match a stranger: the export's link waits for review and owns nothing.
+    friend_link = PartyHandle._base_manager.get(handle=friend_handle)
+    assert (friend_link.confidence, friend_link.is_confirmed, friend_handle.party_id) == (0.4, False, None)
     assert friend_handle.metadata["identity_confidence"] == "name_only"
     assert Relationship._base_manager.get(kind__slug="acquaintance").started_at is not None
 
