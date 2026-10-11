@@ -237,8 +237,9 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
 
     The phone handle survives (it keeps its own ``external_id``); the LID and any
     missing name are carried onto it, and the LID handle's messages, participants,
-    and identity links repoint before it is deleted. Reactions and any post feeds
-    keep their ``SET_NULL``/cascade behaviour — a chat sender does not own them.
+    and identity links (:func:`_move_party_links`) repoint before it is deleted.
+    Reactions and any post feeds keep their ``SET_NULL``/cascade behaviour — a chat
+    sender does not own them.
     """
 
     updates: list[str] = []
@@ -254,9 +255,44 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
         target.save(update_fields=[*updates, "updated_at"])
 
     _repoint_unique(apps.get_model("messaging", "Participant"), handle, target, ("message_id", "role"))
-    _repoint_unique(apps.get_model("parties", "PartyHandle"), handle, target, ("party_id",))
+    _move_party_links(handle, target)
     apps.get_model("messaging", "Message")._base_manager.filter(sender=handle).update(sender=target)
     handle.delete()
+
+
+def _move_party_links(from_handle: Any, to_handle: Any) -> None:
+    """Move the LID handle's identity links onto the phone handle, keeping every human decision.
+
+    A party the phone handle is not yet linked to takes the link as it is. A party
+    linked to both keeps one link folding the two: confirmed if either was,
+    dismissed if either was and it is not confirmed, and the higher confidence.
+    The rows lock in the parties owner's order, and the phone handle re-resolves
+    its owner, which recounts the parties it gains or loses.
+    """
+
+    party_handle_model = apps.get_model("parties", "PartyHandle")
+    links = party_handle_model.objects
+    moving = list(party_handle_model._base_manager.filter(handle=from_handle).order_by("pk"))
+    links.lock_identity_rows(party_ids=[row.party_id for row in moving], handle_ids=(from_handle.pk, to_handle.pk))
+    for row in moving:
+        kept = party_handle_model._base_manager.filter(handle=to_handle, party_id=row.party_id).first()
+        if kept is None:
+            row.handle = to_handle
+            row.save(update_fields=["handle", "updated_at"])
+            continue
+        confirmed = kept.is_confirmed or row.is_confirmed
+        folded = {
+            "is_confirmed": confirmed,
+            "is_dismissed": not confirmed and (kept.is_dismissed or row.is_dismissed),
+            "confidence": max(kept.confidence, row.confidence),
+        }
+        dirty = [name for name, value in folded.items() if getattr(kept, name) != value]
+        if dirty:
+            for name in dirty:
+                setattr(kept, name, folded[name])
+            kept.save(update_fields=[*dirty, "updated_at"])
+        row.delete()
+    links.resolve(to_handle)
 
 
 def _repoint_unique(model: Any, from_handle: Any, to_handle: Any, conflict_fields: tuple[str, ...]) -> None:
