@@ -288,6 +288,8 @@ class Backend(AbstractStorageBackend):
 class Drive(AbstractDrive):
     """Concrete storage drive used by source-addon tests."""
 
+    rebac_grantable = AbstractDrive.rebac_grantable
+
     class Meta(AbstractDrive.Meta):
         """Django model options for the canonical test drive."""
 
@@ -324,6 +326,8 @@ class MimeType(AbstractMimeType):
 
 class File(AbstractFile):
     """Concrete storage file used by source-addon tests."""
+
+    rebac_grantable = AbstractFile.rebac_grantable
 
     class Meta(AbstractFile.Meta):
         """Django model options for the canonical test file."""
