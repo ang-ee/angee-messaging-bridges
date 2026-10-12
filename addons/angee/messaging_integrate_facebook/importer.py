@@ -7,16 +7,19 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from django.apps import apps
 from rebac import system_context
 
+from angee.integrate.states import StreamKind
 from angee.messaging.backup_ingest import (
     ContentKeyCounter,
     batch_ingest,
     thread_watermarks,
 )
-from angee.messaging_integrate_facebook.archive import FacebookArchive
+from angee.messaging_integrate_facebook.archive import FacebookArchive, FacebookConnectionRecord
 from angee.messaging_integrate_facebook.parser import (
     FacebookPostMatcher,
+    connection_key,
     parsed_comment,
     parsed_connection,
     parsed_message,
@@ -29,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 _IMPORT_REASON = "messaging_integrate_facebook.importer.ingest"
 _WATERMARK_REASON = "messaging_integrate_facebook.importer.watermarks"
+CONNECTIONS_STREAM = "connections"
+"""The takeout's friend records: a read-once replica of the export's connection section."""
 # Public records land in bounded chunks so a photo-heavy archive never holds
 # every album's bytes resident — the message path's discipline, applied here.
 _PUBLIC_CHUNK = 200
@@ -48,7 +53,8 @@ def import_archive(
     Messages stream through the byte-bounded batch owner with optional
     per-thread resume watermarks. Own posts and comments land through the posts
     public overlay in bounded chunks (media bytes are read per chunk, never all
-    at once), and friend records land through parties' batch connection owner.
+    at once), and friend records land through parties' batch connection owner as
+    statements the channel asserts (:func:`observe_connections`).
     ``limit`` bounds takeout messages (the potentially unbounded collection);
     the smaller public and connection sections still converge in full.
     ``on_batch`` receives a running landed total after every message flush and
@@ -67,11 +73,7 @@ def import_archive(
             own_name,
         )
     counter = ContentKeyCounter()
-    watermarks = (
-        thread_watermarks(channel, reason=_WATERMARK_REASON)
-        if resume and not dry_run
-        else {}
-    )
+    watermarks = thread_watermarks(channel, reason=_WATERMARK_REASON) if resume and not dry_run else {}
     messages = archive.messages(
         counter=counter,
         watermarks=watermarks,
@@ -97,7 +99,7 @@ def import_archive(
         )
         for record in archive.comments()
     ]
-    connections = [parsed_connection(record) for record in archive.connections()]
+    connections = archive.connections()
     landed = message_count
     if not dry_run:
         with system_context(reason=_IMPORT_REASON):
@@ -119,10 +121,46 @@ def import_archive(
                 landed += len(comments[start : start + _PUBLIC_CHUNK])
                 if on_batch is not None:
                     on_batch(landed)
-        ingest_connections(connections, created_by_id=channel.owner_id)
+        ingest_connections(
+            observe_connections(channel, connections),
+            created_by_id=channel.owner_id,
+            asserted_by=channel.integration_ptr,
+        )
     return {
         "messages": message_count,
         "posts": len(post_records),
         "comments": len(comments),
         "connections": len(connections),
     }
+
+
+def observe_connections(channel: Any, records: list[FacebookConnectionRecord]) -> list[tuple[Any, Any]]:
+    """Observe each friend record on the channel's ``connections`` stream; return ingest pairs.
+
+    A takeout is read once: its connection section is a snapshot record replica of
+    the channel (the identified IMPORT integration), never a polled stream, so the
+    importer materializes the stream and observes the links itself rather than
+    running the archive through the sync driver. Each observed ``RecordLink`` keeps
+    the record's facts as its source payload and is the link every connection
+    statement cites; a re-import observes the same links again.
+    """
+
+    stream = apps.get_model("integrate", "SyncStream").objects.current(
+        channel, CONNECTIONS_STREAM, kind=StreamKind.RECORD_REPLICA, snapshot=True
+    )
+    links = apps.get_model("integrate", "RecordLink").objects
+    return [
+        (
+            parsed_connection(record),
+            links.observe(
+                stream,
+                connection_key(record),
+                source_payload={
+                    "name": record.name,
+                    "section": record.section,
+                    "connected_at": record.connected_at.isoformat() if record.connected_at is not None else None,
+                },
+            ),
+        )
+        for record in records
+    ]

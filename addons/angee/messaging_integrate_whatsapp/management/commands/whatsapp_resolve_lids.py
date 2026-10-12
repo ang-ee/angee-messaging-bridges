@@ -13,8 +13,8 @@ live session may keep running) and rewrites existing handles to a real
 It needs no live WhatsApp connection: it only reads the on-disk store. It is
 re-runnable — a later run picks up LID mappings the store has since learned — and
 converges a resolved LID handle into an existing phone handle when they collide
-on the ``(platform, value)`` uniqueness, repointing the LID handle's messages,
-participants, and identity links before removing the duplicate.
+on the ``(platform, value)`` uniqueness, repointing the LID handle's messages and
+participants and moving its handle statements before removing the duplicate.
 """
 
 from __future__ import annotations
@@ -203,7 +203,7 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
                 # Lock both handles in the parties identity order before anything that
                 # points at them moves, then act on the locked rows: a concurrent run
                 # may already have resolved this alias.
-                handles, _parties = apps.get_model("parties", "PartyHandle").objects.lock_identity_rows(
+                handles, _parties = apps.get_model("parties", "Party").objects.lock_identity_rows(
                     party_ids=(), handle_ids=(handle.pk,) if target_pk is None else (handle.pk, target_pk)
                 )
                 locked = handles.get(handle.pk)
@@ -246,11 +246,12 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
     """Merge a resolved LID handle into the phone handle that already owns its value.
 
     The phone handle survives (it keeps its own ``external_id``); the LID and any
-    missing name are carried onto it, and the LID handle's messages, participants,
-    reactions and identity links (``PartyHandleManager.move_links``, which keeps
-    each person's decisions and evidence) repoint before it is deleted. The caller
-    holds both handles' locks. Any post feeds keep their cascade behaviour — a chat
-    sender does not own them.
+    missing name are carried onto it, and the LID handle's messages, participants
+    and reactions repoint before it is deleted. Its handle statements move through
+    parties' owner (``Party.objects.move_handle_statements``: every party's
+    decisions and evidence survive, collisions are retained as superseded, both
+    handles re-resolve). The caller holds both handles' locks. Any post feeds keep
+    their cascade behaviour — a chat sender does not own them.
     """
 
     updates: list[str] = []
@@ -267,7 +268,7 @@ def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: s
 
     _repoint_unique(apps.get_model("messaging", "Participant"), handle, target, ("message_id", "role"))
     _repoint_unique(apps.get_model("messaging", "Reaction"), handle, target, ("message_id", "reaction"))
-    apps.get_model("parties", "PartyHandle").objects.move_links(handle, target)
+    apps.get_model("parties", "Party").objects.move_handle_statements(handle, target)
     apps.get_model("messaging", "Message")._base_manager.filter(sender=handle).update(sender=target)
     handle.delete()
 

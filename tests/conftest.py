@@ -9,6 +9,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
 
+import pytest
 from django.apps import AppConfig
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -41,8 +42,20 @@ from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
 from angee.tags.testing import models as tags_models  # noqa: F401 -- register shared FK targets
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
+from tests.bootstrap import statement_sources
 
-pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
+
+@pytest.fixture
+def composed_tables(composed_tables: None) -> None:
+    """The bridges' composed tables also carry the declared statement principals.
+
+    Extends the ``angee.testing`` plugin fixture of the same name: after its REBAC
+    sync, the install-tier principals and grants that admission reads are loaded
+    (``tests.bootstrap.statement_sources``), exactly as the framework's hosts do.
+    """
+
+    del composed_tables
+    statement_sources()
 
 
 class OAuthClient(AbstractOAuthClient):

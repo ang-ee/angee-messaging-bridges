@@ -1669,11 +1669,10 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
 
 
 @pytest.mark.django_db(transaction=True)
-def test_resolve_channel_lids_folds_identity_links_keeping_human_decisions(whatsapp_tables: Any) -> None:
-    """A party linked to both handles keeps one link with both decisions; a lone LID link moves as it is."""
+def test_resolve_channel_lids_moves_handle_statements_keeping_human_decisions(whatsapp_tables: Any) -> None:
+    """A party stating both spellings keeps the stronger current; every decision survives the merge."""
 
-    from angee.parties.mixins import LinkSource
-    from tests.messaging_fixtures import Party, PartyHandle
+    from tests.messaging_fixtures import Party
 
     channel = _whatsapp_channel("whatsapp-fold")
     _ingest_whatsapp(
@@ -1692,42 +1691,41 @@ def test_resolve_channel_lids_folds_identity_links_keeping_human_decisions(whats
     )
     phone_handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    with system_context(reason="test lid identity links"):
+    owner = channel.owner
+    with system_context(reason="test lid identity statements"):
         confirmed, dismissed, stronger = (
-            Party._base_manager.create(display_name=name) for name in ("Bob", "Robert", "Rob")
+            Party._base_manager.create(display_name=name, created_by=owner) for name in ("Bob", "Robert", "Rob")
         )
-        for party, handle, confidence, is_confirmed, is_dismissed in (
-            (confirmed, lid_handle, 1.0, True, False),
-            (confirmed, phone_handle, 0.6, False, True),
-            (dismissed, lid_handle, 0.6, False, True),
-            (stronger, lid_handle, 0.3, False, True),
-            (stronger, phone_handle, 0.9, False, False),
-        ):
-            PartyHandle._base_manager.create(
-                party=party,
-                handle=handle,
-                confidence=confidence,
-                source=LinkSource.IMPORT,
-                is_confirmed=is_confirmed,
-                is_dismissed=is_dismissed,
-            )
+        confirmed.with_actor(owner).confirm(aspect="handle", handle=lid_handle, values={})
+        Party.objects.assert_handle(confirmed, phone_handle, asserted_by=owner, confidence=0.6)
+        Party.objects.assert_handle(dismissed, lid_handle, asserted_by=owner, confidence=0.6)
+        dismissed.with_actor(owner).dismiss(aspect="handle", handle=lid_handle)
+        Party.objects.assert_handle(stronger, lid_handle, asserted_by=owner, confidence=0.3)
+        Party.objects.assert_handle(stronger, phone_handle, asserted_by=owner, confidence=0.9)
+        lid_handle.refresh_from_db()
+        assert lid_handle.party_id == confirmed.pk
 
     resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": ""}))
 
-    with system_context(reason="test lid identity links read"):
-        links = {
-            party_id: (confidence, is_confirmed, is_dismissed)
-            for party_id, confidence, is_confirmed, is_dismissed in PartyHandle._base_manager.filter(
-                handle=phone_handle, party__in=(confirmed, dismissed, stronger)
-            ).values_list("party_id", "confidence", "is_confirmed", "is_dismissed")
+    with system_context(reason="test lid identity statements read"):
+        current = {
+            row.subject_id: (row.confidence, row.is_confirmed, row.is_dismissed)
+            for row in Party.statements.filter(handle=phone_handle).current()
         }
+        superseded = sorted(
+            (row.subject_id, row.confidence)
+            for row in Party.statements.filter(handle=phone_handle, superseded__isnull=False)
+        )
         phone_handle.refresh_from_db()
-    assert links == {
+    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    assert current == {
         confirmed.pk: (1.0, True, False),
-        dismissed.pk: (0.6, False, True),
-        stronger.pk: (0.9, False, True),
+        dismissed.pk: (1.0, False, True),
+        stronger.pk: (0.9, False, False),
     }
-    assert phone_handle.party_id == confirmed.pk
+    # The weaker spellings are retained as superseded evidence on the survivor, not deleted with the alias.
+    assert superseded == sorted([(confirmed.pk, 0.6), (stronger.pk, 0.3)])
+    assert (phone_handle.party_id, phone_handle.party_link_confirmed) == (confirmed.pk, True)
 
 
 @pytest.mark.django_db(transaction=True)

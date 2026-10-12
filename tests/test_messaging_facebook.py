@@ -7,8 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from rebac import system_context
+from angee.base.mixins import SourceKind
+from rebac import system_context, to_subject_ref
 
+from angee.integrate.states import LinkStatus, StreamKind
+from angee.integrate.testing.models import RecordLink, SyncStream
 from angee.messaging.backup_ingest import ContentKeyCounter
 from angee.messaging_integrate_facebook.archive import (
     FacebookArchive,
@@ -26,7 +29,6 @@ from tests.messaging_fixtures import (
     Handle,
     Message,
     Party,
-    PartyHandle,
     Person,
     Relationship,
     RelationshipKind,
@@ -138,12 +140,16 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
         direct = Message._base_manager.get(thread__modality=Thread.Modality.DIRECT)
         friend_handle = Handle._base_manager.get(platform="facebook", value="Bob Friend")
 
-    assert first_result == second_result == {
-        "messages": 1,
-        "posts": 1,
-        "comments": 1,
-        "connections": 1,
-    }
+    assert (
+        first_result
+        == second_result
+        == {
+            "messages": 1,
+            "posts": 1,
+            "comments": 1,
+            "connections": 1,
+        }
+    )
     assert second_counts == first_counts
     assert Message._base_manager.count() == 3
     assert post.message_type == Message.MessageKind.COMMENT
@@ -153,11 +159,27 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
     assert comment.message_type == Message.MessageKind.COMMENT
     assert comment.is_original_post is False
     assert direct.message_type == Message.MessageKind.CHAT
-    # A name can match a stranger: the export's link waits for review and owns nothing.
-    friend_link = PartyHandle._base_manager.get(handle=friend_handle)
-    assert (friend_link.confidence, friend_link.is_confirmed, friend_handle.party_id) == (0.4, False, None)
+    # A name can match a stranger: the channel's IMPORT statement waits for review and owns nothing.
+    with system_context(reason="test facebook importer read"):
+        statement = Party.statements.filter(handle=friend_handle).current().get()
+        stream = SyncStream.objects.get(integration_id=channel.pk, key="connections")
+        link = RecordLink.objects.get(stream=stream)
+    assert channel.source_kind == SourceKind.IMPORT
+    assert (statement.confidence, statement.is_confirmed, friend_handle.party_id) == (0.4, False, None)
+    assert (statement.source_kind, statement.asserted_by) == (
+        SourceKind.IMPORT,
+        str(to_subject_ref(channel.integration_ptr)),
+    )
     assert friend_handle.metadata["identity_confidence"] == "name_only"
     assert Relationship._base_manager.get(kind__slug="acquaintance").started_at is not None
+    # The friend record is one observed link on the takeout's read-once replica, cited by its statements.
+    assert (stream.kind, stream.snapshot, stream.reconcile_interval) == (StreamKind.RECORD_REPLICA, True, None)
+    assert (link.external_key, link.status, link.source_payload["name"]) == (
+        "friends:Bob Friend",
+        LinkStatus.OBSERVED,
+        "Bob Friend",
+    )
+    assert (statement.link_id, link.target) == (link.pk, Party._base_manager.get(pk=statement.subject_id))
 
 
 def _row_counts() -> tuple[int, ...]:
@@ -169,7 +191,8 @@ def _row_counts() -> tuple[int, ...]:
         Handle._base_manager.count(),
         Party._base_manager.count(),
         Person._base_manager.count(),
-        PartyHandle._base_manager.count(),
+        Party.statements.count(),
+        RecordLink.objects.count(),
         Relationship._base_manager.count(),
     )
 
@@ -179,12 +202,7 @@ def _facebook_export(tmp_path: Path) -> Path:
 
     root = tmp_path / "export"
     activity = root / "your_facebook_activity"
-    profile = (
-        activity
-        / "personal_information"
-        / "profile_information"
-        / "profile_information.json"
-    )
+    profile = activity / "personal_information" / "profile_information" / "profile_information.json"
     profile.parent.mkdir(parents=True, exist_ok=True)
     profile.write_text(
         json.dumps({"profile_v2": {"name": {"full_name": "Alex Example"}}}),

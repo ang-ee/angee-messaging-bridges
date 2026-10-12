@@ -19,7 +19,6 @@ from angee.messaging.testing.models import Directory as Directory
 from angee.messaging.testing.models import Folder as Folder
 from angee.messaging.testing.models import Fragment as Fragment
 from angee.messaging.testing.models import Handle as Handle
-from angee.messaging.testing.models import MergeVeto as MergeVeto
 from angee.messaging.testing.models import Message as Message
 from angee.messaging.testing.models import MessageEdge as MessageEdge
 from angee.messaging.testing.models import MessageStar as MessageStar
@@ -28,7 +27,6 @@ from angee.messaging.testing.models import Organization as Organization
 from angee.messaging.testing.models import Part as Part
 from angee.messaging.testing.models import Participant as Participant
 from angee.messaging.testing.models import Party as Party
-from angee.messaging.testing.models import PartyHandle as PartyHandle
 from angee.messaging.testing.models import Person as Person
 from angee.messaging.testing.models import Reaction as Reaction
 from angee.messaging.testing.models import Relationship as Relationship

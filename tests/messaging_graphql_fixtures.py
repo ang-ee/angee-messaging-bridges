@@ -27,7 +27,6 @@ from rebac.roles import grant
 from angee.graphql.deletion import DeletePreview
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.messaging.testing.models import Channel as Channel
-from angee.parties.mixins import LinkSource
 from tests import messaging_fixtures as messaging_models
 from tests.conftest import (
     Backend,
@@ -58,9 +57,7 @@ class SudoHandleQuery:
         """Return sudo-loaded handles to exercise nested relation re-gating."""
 
         with system_context(reason="test.messaging.sudo_handles"):
-            return list(
-                messaging_models.Handle._base_manager.select_related("party").order_by("value")
-            )
+            return list(messaging_models.Handle._base_manager.select_related("party").order_by("value"))
 
 
 def test_console_resource_metadata_declares_message_surface() -> None:
@@ -316,13 +313,7 @@ def test_message_sender_and_participant_expose_resolved_party(messaging_graphql_
             display_name="Ada Envelope",
             created_by_id=admin.pk,
         )
-        messaging_models.PartyHandle.objects.link(
-            party,
-            handle,
-            source=LinkSource.MANUAL,
-            is_confirmed=True,
-            created_by_id=admin.pk,
-        )
+        party.with_actor(admin).confirm(aspect="handle", handle=handle, values={})
         message.sender = handle
         message.save(update_fields=("sender", "updated_at"))
         messaging_models.Participant.objects.create(
@@ -384,13 +375,7 @@ def test_inbox_sender_redacts_party_without_party_read(messaging_graphql_tables:
             display_name="Ada Envelope",
             created_by_id=owner.pk,
         )
-        messaging_models.PartyHandle.objects.link(
-            party,
-            handle,
-            source=LinkSource.MANUAL,
-            is_confirmed=True,
-            created_by_id=owner.pk,
-        )
+        party.with_actor(owner).confirm(aspect="handle", handle=handle, values={})
         message.sender = handle
         message.save(update_fields=("sender", "updated_at"))
     _grant(message, "reader", reader)
@@ -593,13 +578,7 @@ def test_record_thread_sender_projection_omits_party_for_non_admin_reader(
             display_name="Ada Envelope",
             created_by_id=owner.pk,
         )
-        messaging_models.PartyHandle.objects.link(
-            party,
-            handle,
-            source=LinkSource.MANUAL,
-            is_confirmed=True,
-            created_by_id=owner.pk,
-        )
+        party.with_actor(owner).confirm(aspect="handle", handle=handle, values={})
         message.sender = handle
         message.save(update_fields=("sender", "updated_at"))
     _grant(doc, "reader", reader)
@@ -1742,10 +1721,7 @@ def test_record_chatter_fetches_message_windows(messaging_graphql_tables: None) 
     admin = _platform_admin("msg-window-admin")
     with system_context(reason="test.messaging.record_window.seed"):
         ticket = messaging_models.ThreadedTicket.objects.create(title="Case 516")
-        messages = [
-            ticket.message_post(f"Window message {index}")
-            for index in range(1, 6)
-        ]
+        messages = [ticket.message_post(f"Window message {index}") for index in range(1, 6)]
     schema = _schema()
 
     def fetch(
@@ -1839,9 +1815,7 @@ def test_record_chatter_orders_interleaved_backfilled_email(messaging_graphql_ta
         # A backfilled email arrives last (highest pk) but was sent between #2 and #3.
         backfilled = ticket.message_post("Backfilled email")
         for index, message in enumerate(messages, start=1):
-            messaging_models.Message.objects.filter(pk=message.pk).update(
-                sent_at=base + timedelta(minutes=index)
-            )
+            messaging_models.Message.objects.filter(pk=message.pk).update(sent_at=base + timedelta(minutes=index))
         messaging_models.Message.objects.filter(pk=backfilled.pk).update(
             sent_at=base + timedelta(minutes=2, seconds=30)
         )
@@ -1931,8 +1905,7 @@ def test_record_thread_projects_edit_and_delete_capability(messaging_graphql_tab
 
     assert payload["error_code"] is None
     capabilities = {
-        message["message_type"]: (message["can_edit"], message["can_delete"])
-        for message in payload["messages"]
+        message["message_type"]: (message["can_edit"], message["can_delete"]) for message in payload["messages"]
     }
     # A plain comment is editable and deletable; a tracked message is deletable
     # (post access) but never editable (the mail edit rule blocks it).
@@ -2549,10 +2522,7 @@ def test_record_chatter_follow_toggle(messaging_graphql_tables: None) -> None:
 
     assert record_thread["error_code"] is None
     assert record_thread["self_follower"] == followed["follower"]
-    subtype_options = {
-        option["key"]: option
-        for option in record_thread["subtypes"]
-    }
+    subtype_options = {option["key"]: option for option in record_thread["subtypes"]}
     assert subtype_options["comment"] == {
         "key": "comment",
         "name": "Comment",
@@ -2823,14 +2793,7 @@ def _schema_with_sudo_handle_query() -> Any:
         for module in (iam_schema, integrate_schema, parties_schema, messaging_schema)
     ]
     addons.append(
-        SchemaAddon(
-            {
-                "console": {
-                    key: (SudoHandleQuery,) if key == "query" else ()
-                    for key in SCHEMA_PART_KEYS
-                }
-            }
-        )
+        SchemaAddon({"console": {key: (SudoHandleQuery,) if key == "query" else () for key in SCHEMA_PART_KEYS}})
     )
     return GraphQLSchemas(addons).build("console")
 
@@ -3203,9 +3166,9 @@ def test_generic_delete_excludes_record_thread_from_its_creator(messaging_graphq
     assert record_result.errors is not None
     assert (record_result.data or {}).get("delete_threads_by_pk") is None
 
-    inbox_deleted = _data(
-        execute_schema(schema, delete, {"id": inbox_thread.sqid}, request=_request(creator))
-    )["delete_threads_by_pk"]
+    inbox_deleted = _data(execute_schema(schema, delete, {"id": inbox_thread.sqid}, request=_request(creator)))[
+        "delete_threads_by_pk"
+    ]
     assert inbox_deleted == {"id": inbox_thread.sqid}
 
     with system_context(reason="test.messaging.delete_isolation.verify"):
@@ -3294,9 +3257,7 @@ def test_record_chatter_rows_opt_out_of_change_broadcasts(messaging_graphql_tabl
     record_thread = record_message.thread
 
     with system_context(reason="test.messaging.changes.verify"):
-        orphan = messaging_models.Message.objects.create(
-            preview="Orphan", status="synced", created_by_id=admin.pk
-        )
+        orphan = messaging_models.Message.objects.create(preview="Orphan", status="synced", created_by_id=admin.pk)
         # Channel inbox rows broadcast; record-attached chatter does not.
         assert channel_thread.broadcasts_changes() is True
         assert channel_message.broadcasts_changes() is True
@@ -3534,9 +3495,7 @@ def test_delete_channel_preview_total_matches_real_deleted_rows(channel_purge_ta
         messaging_models.Participant._base_manager.create(message=msg1, handle=handle, created_by_id=owner_id)
         messaging_models.Participant._base_manager.create(thread=thread2, handle=handle, created_by_id=owner_id)
         # Thread-rooted CASCADE children: a bare follower and a delivery notification.
-        messaging_models.ThreadFollower._base_manager.create(
-            thread=thread1, user_id=owner_id, created_by_id=owner_id
-        )
+        messaging_models.ThreadFollower._base_manager.create(thread=thread1, user_id=owner_id, created_by_id=owner_id)
         messaging_models.ThreadNotification._base_manager.create(
             thread=thread1, message=msg1, user_id=owner_id, created_by_id=owner_id
         )
@@ -3622,9 +3581,7 @@ def test_from_counts_ignores_target_type_to_avoid_double_counting_root(messaging
     plain = DeletePreview.from_counts(channel, {messaging_models.Thread: 2})
     assert guarded.total_deleted_count == plain.total_deleted_count
     channel_counts = {
-        group.label: group.count
-        for group in guarded.deleted
-        if group.label == str(Channel._meta.verbose_name_plural)
+        group.label: group.count for group in guarded.deleted if group.label == str(Channel._meta.verbose_name_plural)
     }
     # The root counts once, not 1 + the bogus 5.
     assert channel_counts[str(Channel._meta.verbose_name_plural)] == 1
