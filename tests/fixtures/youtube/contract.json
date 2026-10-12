@@ -1,0 +1,448 @@
+{
+  "channel": {
+    "items": [
+      {
+        "id": "channel-demo",
+        "snippet": {
+          "title": "Example Channel"
+        },
+        "contentDetails": {
+          "relatedPlaylists": {
+            "uploads": "uploads-demo"
+          }
+        },
+        "kind": "youtube#channel",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#channelListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 1,
+      "resultsPerPage": 1
+    }
+  },
+  "uploads_first": {
+    "nextPageToken": "uploads-p2",
+    "items": [
+      {
+        "contentDetails": {
+          "videoId": "video-fresh",
+          "videoPublishedAt": "2026-10-09T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "public"
+        },
+        "kind": "youtube#playlistItem",
+        "etag": "synthetic-resource-etag",
+        "id": "synthetic-playlist-item-uploads_first0"
+      },
+      {
+        "contentDetails": {
+          "videoId": "video-private",
+          "videoPublishedAt": "2026-10-09T07:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "private"
+        },
+        "kind": "youtube#playlistItem",
+        "etag": "synthetic-resource-etag",
+        "id": "synthetic-playlist-item-uploads_first1"
+      }
+    ],
+    "kind": "youtube#playlistItemListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 3,
+      "resultsPerPage": 2
+    }
+  },
+  "uploads_last": {
+    "items": [
+      {
+        "contentDetails": {
+          "videoId": "video-archive",
+          "videoPublishedAt": "2025-01-01T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "public"
+        },
+        "kind": "youtube#playlistItem",
+        "etag": "synthetic-resource-etag",
+        "id": "synthetic-playlist-item-uploads_last0"
+      }
+    ],
+    "kind": "youtube#playlistItemListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 3,
+      "resultsPerPage": 1
+    }
+  },
+  "video_fresh": {
+    "items": [
+      {
+        "id": "video-fresh",
+        "snippet": {
+          "channelId": "channel-demo",
+          "channelTitle": "Example Channel",
+          "title": "An example video",
+          "description": "A synthetic description.",
+          "publishedAt": "2026-10-09T08:00:00Z",
+          "tags": [
+            "example",
+            "Example"
+          ]
+        },
+        "statistics": {
+          "viewCount": "20",
+          "likeCount": "3",
+          "commentCount": "4"
+        },
+        "status": {
+          "privacyStatus": "public"
+        },
+        "kind": "youtube#video",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#videoListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 1,
+      "resultsPerPage": 1
+    }
+  },
+  "video_archive": {
+    "items": [
+      {
+        "id": "video-archive",
+        "snippet": {
+          "channelId": "channel-demo",
+          "channelTitle": "Example Channel",
+          "title": "An older example",
+          "description": "An older synthetic video.",
+          "publishedAt": "2025-01-01T08:00:00Z"
+        },
+        "status": {
+          "privacyStatus": "unlisted"
+        },
+        "statistics": {
+          "commentCount": "0"
+        },
+        "kind": "youtube#video",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#videoListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 1,
+      "resultsPerPage": 1
+    }
+  },
+  "threads_first": {
+    "nextPageToken": "threads-p2",
+    "items": [
+      {
+        "id": "comment-a",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 2,
+          "topLevelComment": {
+            "id": "comment-a",
+            "snippet": {
+              "authorChannelId": {
+                "value": "author-demo"
+              },
+              "authorDisplayName": "Example Viewer",
+              "publishedAt": "2026-10-09T09:00:00Z",
+              "updatedAt": "2026-10-09T09:30:00Z",
+              "likeCount": 2,
+              "channelId": "channel-demo",
+              "textDisplay": "How does this work?"
+            },
+            "kind": "youtube#comment",
+            "etag": "synthetic-comment-etag"
+          },
+          "channelId": "channel-demo",
+          "canReply": true,
+          "isPublic": true
+        },
+        "replies": {
+          "comments": [
+            {
+              "id": "reply-a",
+              "snippet": {
+                "parentId": "comment-a",
+                "authorChannelId": {
+                  "value": "author-other"
+                },
+                "publishedAt": "2026-10-09T10:00:00Z",
+                "channelId": "channel-demo",
+                "textDisplay": "I have the same question.",
+                "updatedAt": "2026-10-09T10:00:00Z"
+              },
+              "kind": "youtube#comment",
+              "etag": "synthetic-comment-etag"
+            }
+          ]
+        },
+        "kind": "youtube#commentThread",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#commentThreadListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 2,
+      "resultsPerPage": 1
+    }
+  },
+  "threads_last": {
+    "items": [
+      {
+        "id": "comment-b",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-b",
+            "snippet": {
+              "authorChannelId": {
+                "value": "author-other"
+              },
+              "publishedAt": "2026-10-09T08:30:00Z",
+              "channelId": "channel-demo",
+              "textDisplay": "Thanks for the example.",
+              "updatedAt": "2026-10-09T08:30:00Z"
+            },
+            "kind": "youtube#comment",
+            "etag": "synthetic-comment-etag"
+          },
+          "channelId": "channel-demo",
+          "canReply": true,
+          "isPublic": true
+        },
+        "kind": "youtube#commentThread",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#commentThreadListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 2,
+      "resultsPerPage": 1
+    }
+  },
+  "threads_held": {
+    "items": [
+      {
+        "id": "comment-held",
+        "snippet": {
+          "videoId": "video-fresh",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-held",
+            "snippet": {
+              "authorDisplayName": "Unavailable Author",
+              "moderationStatus": "heldForReview",
+              "publishedAt": "2026-10-09T11:30:00Z",
+              "channelId": "channel-demo",
+              "textDisplay": "An example awaiting review.",
+              "updatedAt": "2026-10-09T11:30:00Z"
+            },
+            "kind": "youtube#comment",
+            "etag": "synthetic-comment-etag"
+          },
+          "channelId": "channel-demo",
+          "canReply": true,
+          "isPublic": false
+        },
+        "kind": "youtube#commentThread",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "kind": "youtube#commentThreadListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 1,
+      "resultsPerPage": 1
+    }
+  },
+  "replies_first": {
+    "nextPageToken": "replies-p2",
+    "items": [
+      {
+        "id": "reply-a",
+        "snippet": {
+          "parentId": "comment-a",
+          "authorChannelId": {
+            "value": "author-other"
+          },
+          "authorDisplayName": "Another Example Viewer",
+          "publishedAt": "2026-10-09T10:00:00Z",
+          "updatedAt": "2026-10-09T10:00:00Z",
+          "channelId": "channel-demo",
+          "textDisplay": "I have the same question."
+        },
+        "kind": "youtube#comment",
+        "etag": "synthetic-comment-etag"
+      }
+    ],
+    "kind": "youtube#commentListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 2,
+      "resultsPerPage": 1
+    }
+  },
+  "replies_last": {
+    "items": [
+      {
+        "id": "reply-b",
+        "snippet": {
+          "parentId": "comment-a",
+          "textOriginal": "Here is an example answer.",
+          "authorChannelId": {
+            "value": "channel-demo"
+          },
+          "authorDisplayName": "Example Channel",
+          "publishedAt": "2026-10-10T12:00:00Z",
+          "updatedAt": "2026-10-10T12:00:00Z",
+          "channelId": "channel-demo",
+          "textDisplay": "Here is an example answer."
+        },
+        "kind": "youtube#comment",
+        "etag": "synthetic-comment-etag"
+      }
+    ],
+    "kind": "youtube#commentListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 2,
+      "resultsPerPage": 1
+    }
+  },
+  "inserted_reply": {
+    "id": "reply-published",
+    "snippet": {
+      "parentId": "comment-a",
+      "textOriginal": "Here is an example answer.",
+      "authorChannelId": {
+        "value": "channel-demo"
+      },
+      "authorDisplayName": "Example Channel",
+      "publishedAt": "2026-10-10T12:00:00Z",
+      "updatedAt": "2026-10-10T12:00:00Z",
+      "channelId": "channel-demo",
+      "textDisplay": "Here is an example answer."
+    },
+    "kind": "youtube#comment",
+    "etag": "synthetic-comment-etag"
+  },
+  "invalid_page_token": {
+    "error": {
+      "code": 400,
+      "errors": [
+        {
+          "reason": "invalidPageToken",
+          "location": "pageToken",
+          "domain": "global",
+          "message": "Synthetic API refusal",
+          "locationType": "parameter"
+        }
+      ],
+      "message": "Synthetic API refusal"
+    }
+  },
+  "revoked_grant": {
+    "error": {
+      "code": 401,
+      "errors": [
+        {
+          "reason": "authError",
+          "domain": "global",
+          "message": "Synthetic API refusal"
+        }
+      ],
+      "message": "Synthetic API refusal"
+    }
+  },
+  "rate_limited": {
+    "error": {
+      "code": 429,
+      "errors": [
+        {
+          "reason": "rateLimitExceeded",
+          "domain": "global",
+          "message": "Synthetic API refusal"
+        }
+      ],
+      "message": "Synthetic API refusal"
+    }
+  },
+  "quota_exceeded": {
+    "error": {
+      "code": 403,
+      "errors": [
+        {
+          "reason": "quotaExceeded",
+          "domain": "youtube.quota",
+          "message": "Synthetic API refusal"
+        }
+      ],
+      "message": "Synthetic API refusal"
+    }
+  },
+  "threads_old": {
+    "items": [
+      {
+        "id": "comment-old",
+        "snippet": {
+          "videoId": "video-old",
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "id": "comment-old",
+            "snippet": {
+              "authorChannelId": {
+                "value": "author-other"
+              },
+              "publishedAt": "2025-01-01T09:00:00Z",
+              "channelId": "channel-demo",
+              "textDisplay": "Thanks for the example.",
+              "updatedAt": "2025-01-01T09:00:00Z"
+            },
+            "kind": "youtube#comment",
+            "etag": "synthetic-comment-etag"
+          },
+          "channelId": "channel-demo",
+          "canReply": true,
+          "isPublic": true
+        },
+        "kind": "youtube#commentThread",
+        "etag": "synthetic-resource-etag"
+      }
+    ],
+    "nextPageToken": "activity-unneeded",
+    "kind": "youtube#commentThreadListResponse",
+    "etag": "synthetic-page-etag",
+    "pageInfo": {
+      "totalResults": 1,
+      "resultsPerPage": 1
+    }
+  },
+  "rate_limited_403": {
+    "error": {
+      "code": 403,
+      "errors": [
+        {
+          "reason": "rateLimitExceeded",
+          "domain": "global",
+          "message": "Synthetic API refusal"
+        }
+      ],
+      "message": "Synthetic API refusal"
+    }
+  }
+}
