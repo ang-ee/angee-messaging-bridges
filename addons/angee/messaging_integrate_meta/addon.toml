@@ -2,7 +2,10 @@
 # the package's [project] + entry points; see hatch-angee's native AddonManifest.
 [addon]
 name = "angee.messaging_integrate_meta"
-description = "Dependency-free reader for Facebook and Instagram Download Your Information exports"
+description = "Meta vendor catalogue and reader for Facebook and Instagram Download Your Information exports"
 keywords = ["meta", "facebook", "instagram", "takeout", "import"]
 category = "Integration"
 depends_on = ["angee.messaging"]
+
+[resources]
+master = [{ path = "resources/master/010_integrate.vendor.yaml", adopt = "slug" }]

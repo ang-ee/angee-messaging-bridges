@@ -8,14 +8,20 @@ import tempfile
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
+from unittest.mock import patch
 
-from django.apps import AppConfig
+import pytest
+from angee.jobs.enqueue import celery_app
+from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
+from django.utils import timezone
 from rebac import actor_context, system_context
 
 from angee.decisions.testing import models as decisions_models  # noqa: F401 -- register shared FK targets
+from angee.graphql.actions import ActionSelectionInput
+from angee.graphql.ids import PublicID
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.models import Credential as AbstractCredential
@@ -30,7 +36,10 @@ from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
 from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
+from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
+from angee.posts.models import Quota as AbstractQuota
+from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
@@ -43,6 +52,21 @@ from angee.tags.testing import models as tags_models  # noqa: F401 -- register s
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
 
 pytest_plugins = ("angee.testing.fixtures", "tests.messaging_graphql_fixtures")
+
+
+@pytest.fixture
+def replier(feed: Any) -> Any:
+    """Give a dedicated reply principal only channel read and reply access."""
+
+    with system_context(reason="test.feed.replier"):
+        user = get_user_model().objects.create_user(username="feed-replier")
+        channel = apps.get_model("messaging", "Channel").objects.get(pk=feed.pk)
+        channel.system_grant_record_access("reader", user)
+        channel.system_grant_record_access("replier", user)
+    assert channel.with_actor(user).has_access("read")
+    assert channel.with_actor(user).has_access("reply")
+    assert not channel.with_actor(user).has_access("write")
+    return user
 
 
 class OAuthClient(AbstractOAuthClient):
@@ -197,6 +221,7 @@ def make_integration(
             slug=slug,
             display_name=slug.title(),
             client_id=f"{slug}-cid",
+            client_secret=f"synthetic-{slug}-app-secret",
         )
         credential = Credential.objects.upsert_for_user(user, oauth_client, kind, material)
         vendor = Vendor.objects.create(slug=slug, display_name=slug.title())
@@ -384,6 +409,30 @@ class PostMetrics(AbstractPostMetrics):
         rebac_id_attr = "sqid"
 
 
+class Feed(YouTubeFeedState, AbstractFeed, messaging_models.Channel):
+    """Concrete feed over the shared channel and messaging/posts extensions."""
+
+    class Meta(AbstractFeed.Meta):
+        """Register the feed before native test database setup."""
+
+        abstract = False
+        app_label = "posts"
+        db_table = "test_posts_feed"
+        rebac_resource_type = "posts/feed"
+
+
+class Quota(AbstractQuota):
+    """Concrete quota ledger shared by public-feed bridge tests."""
+
+    class Meta(AbstractQuota.Meta):
+        """Register the ledger before native test database setup."""
+
+        abstract = False
+        app_label = "posts"
+        db_table = "test_posts_quota"
+        rebac_resource_type = "posts/quota"
+
+
 def create_user(username: str) -> Any:
     """Create one plain test user."""
 
@@ -528,3 +577,33 @@ def assert_private_hasura_insert_access(
     )[detail_root]
     assert denied is None
     return created, readable, updated
+
+
+def claim_feed_reply(message: Any, *, actor: Any) -> Any:
+    """Release a held feed reply and claim it through the messaging owner."""
+
+    model = type(message)
+    with system_context(reason="test.feed.delivery.claim"), patch.object(celery_app, "send_task"):
+        result = model.objects.send_held_drafts([
+            ActionSelectionInput(id=PublicID(message.public_id), expected_revision=message.revision),
+        ], actor=actor)
+        assert result[0].ok
+        claimed = model.objects.claim_delivery(message.pk, token=message.external_id)
+        assert claimed is not None
+        return claimed
+
+
+def settle_uncertain_reply(message: Any, error: Exception, *, monkeypatch: Any) -> Any:
+    """Commit ambiguous-send evidence before asking the feed to reconcile."""
+
+    model = type(message)
+    with system_context(reason="test.feed.delivery.uncertain"):
+        assert model.objects.record_delivery(
+            message.pk, token=message.external_id, claim=message.delivery_claim, error=error,
+        ) == "uncertain"
+        message.refresh_from_db()
+        moment = message.delivery_lease_until
+        monkeypatch.setattr(timezone, "now", lambda: moment)
+        claimed = model.objects.claim_delivery(message.pk, token=message.external_id, reconcile=True)
+        assert claimed is not None
+        return claimed

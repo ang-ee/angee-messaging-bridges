@@ -106,7 +106,7 @@ def import_archive(
                     parsed_post(record, archive=archive, own_name=own_name)
                     for record in post_records[start : start + _PUBLIC_CHUNK]
                 ]
-                land_posts(channel, chunk, owner_id=channel.owner_id)
+                land_posts(channel, chunk, owner_id=channel.owner_id, historical=True)
                 landed += len(chunk)
                 if on_batch is not None:
                     on_batch(landed)
@@ -115,6 +115,7 @@ def import_archive(
                     channel,
                     comments[start : start + _PUBLIC_CHUNK],
                     owner_id=channel.owner_id,
+                    historical=True,
                 )
                 landed += len(comments[start : start + _PUBLIC_CHUNK])
                 if on_batch is not None:
