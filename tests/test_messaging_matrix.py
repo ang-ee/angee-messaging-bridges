@@ -7,7 +7,6 @@ import importlib
 import json
 import os
 import threading
-import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
@@ -35,6 +34,7 @@ from tests.conftest import (
     Vendor,
     execute_schema,
     result_data,
+    wait_until,
 )
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
@@ -657,15 +657,6 @@ def _session_facts(channel: Any) -> dict[str, Any]:
         return {}
 
 
-def _wait_until(predicate: Any, *, timeout: float = 3.0) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if predicate():
-            return
-        time.sleep(0.01)
-    assert predicate()
-
-
 @pytest.mark.django_db(transaction=True)
 def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
     matrix_tables: Any,
@@ -693,17 +684,17 @@ def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
 
     def operate() -> None:
         try:
-            _wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
+            wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
             with system_context(reason="test.messaging.matrix.recovery.submit"):
                 operator_channel = Channel.objects.get(pk=channel.pk)
                 submit_channel_password(operator_channel, fixture.recovery_key)
-            _wait_until(
+            wait_until(
                 lambda: (
                     Message._base_manager.filter(channel_id=channel.pk).count() == 2
                     and bool(Channel._base_manager.get(pk=channel.pk).subscription_state.get("history_seeded"))
                 )
             )
-            _wait_until(lambda: _session_facts(channel).get("next_batch") == "s1")
+            wait_until(lambda: _session_facts(channel).get("next_batch") == "s1")
             stop_event.set()
         except BaseException as error:  # noqa: BLE001 — surface operator-thread failures.
             failures.append(error)
@@ -775,12 +766,12 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
 
     def operate() -> None:
         try:
-            _wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
+            wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
             with system_context(reason="test.messaging.matrix.recovery.skip"):
                 operator_channel = Channel.objects.get(pk=channel.pk)
                 assert operator_channel.live_impl.pairing().can_skip is True
                 skip_channel_password(operator_channel)
-            _wait_until(lambda: session.pairing is PairingState.PAIRED)
+            wait_until(lambda: session.pairing is PairingState.PAIRED)
             stop_event.set()
         except BaseException as error:  # noqa: BLE001 — surface operator-thread failures.
             failures.append(error)

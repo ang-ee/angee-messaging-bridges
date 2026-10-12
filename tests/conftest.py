@@ -5,6 +5,8 @@ from __future__ import annotations
 import itertools
 import sys
 import tempfile
+import time
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
@@ -449,6 +451,26 @@ def create_user(username: str) -> Any:
     """Create one plain test user."""
 
     return get_user_model().objects.create_user(username=username, password=username)
+
+
+SESSION_WAIT_SECONDS = 30.0
+"""How long a test waits for a live session's cross-thread state before failing.
+
+It bounds a hung session, not throughput: :func:`wait_until` returns as soon as its
+predicate holds, while a loaded host lands a session's ingest batches several times
+slower than an idle one.
+"""
+
+
+def wait_until(predicate: Callable[[], object]) -> None:
+    """Poll ``predicate`` until it holds; fail if it still does not after the session wait."""
+
+    deadline = time.monotonic() + SESSION_WAIT_SECONDS
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        time.sleep(0.01)
+    assert predicate()
 
 
 _TEST_ADDON_SEQ = itertools.count()
