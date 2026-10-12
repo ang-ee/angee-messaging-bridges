@@ -12,9 +12,10 @@ live session may keep running) and rewrites existing handles to a real
 
 It needs no live WhatsApp connection: it only reads the on-disk store. It is
 re-runnable — a later run picks up LID mappings the store has since learned — and
-converges a resolved LID handle into an existing phone handle when they collide
-on the ``(platform, value)`` uniqueness, repointing the LID handle's messages and
-participants and moving its handle statements before removing the duplicate.
+converges a resolved LID handle into the phone handle that owns its value on the
+``(platform, value)`` uniqueness (including one sync creates during the run)
+through parties' one handle-merge verb, ``Handle.objects.merge``: everything that
+pointed at the LID handle, its handle statements included, moves before it goes.
 """
 
 from __future__ import annotations
@@ -22,12 +23,12 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, NamedTuple, Protocol
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from rebac import system_context
 
 from angee.integrate.live import session_store_path
@@ -146,6 +147,7 @@ class LidResolveStats:
     merged: int = 0
     named: int = 0
     unresolved: int = 0
+    refused: int = 0
 
     def summary(self, *, dry_run: bool) -> str:
         """Return a one-line human summary of the run."""
@@ -154,8 +156,16 @@ class LidResolveStats:
         return (
             f"{verb} {self.resolved}/{self.candidates} @lid handle(s): "
             f"{self.merged} merged into an existing phone handle, "
-            f"{self.named} name(s) filled, {self.unresolved} left unresolved (no mapping)."
+            f"{self.named} name(s) filled, {self.unresolved} left unresolved (no mapping), "
+            f"{self.refused} refused by the handle merge."
         )
+
+
+class LidOutcome(NamedTuple):
+    """What resolving one LID handle did: folded it into a phone handle, filled a name."""
+
+    merged: bool
+    named: bool
 
 
 def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool = False) -> LidResolveStats:
@@ -165,7 +175,9 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
     touches the account whose store was read. Each still-unresolved LID handle
     (``value`` ends with ``@lid``) is looked up; a hit rewrites the handle to
     ``+E.164`` in place, or — when a phone handle already owns that value — merges
-    into it. A miss is left for a later run to resolve.
+    into it. A miss is left for a later run to resolve, as is a handle the merge
+    refuses (counted). Each handle commits on its own, and counts only once its
+    outcome is known: an alias a concurrent run already resolved counts nowhere.
     """
 
     handle_model = apps.get_model("parties", "Handle")
@@ -189,33 +201,65 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
                 continue
             new_value = f"+{phone_digits}"
             name = resolver.name_for_phone(phone_digits)
-            stats.resolved += 1
             if dry_run:
+                stats.resolved += 1
                 _tally_dry_run(handle_model, handle, new_value=new_value, name=name, stats=stats)
                 continue
-            with transaction.atomic():
-                target_pk = (
+            try:
+                outcome = _resolve_lid_handle(handle_model, handle, new_value=new_value, bare_lid=bare_lid, name=name)
+            except ValidationError:
+                # Something the merge cannot move still refers to the alias; a later run retries it.
+                stats.refused += 1
+                continue
+            if outcome is None:
+                continue
+            stats.resolved += 1
+            stats.merged += outcome.merged
+            stats.named += outcome.named
+    return stats
+
+
+def _resolve_lid_handle(
+    handle_model: Any, handle: Any, *, new_value: str, bare_lid: str, name: str
+) -> LidOutcome | None:
+    """Rewrite one LID handle to its phone value, or merge it into the handle owning that value.
+
+    Returns ``None`` when a concurrent run already resolved the alias. A phone
+    handle sync creates after the lookup surfaces as the rewrite's unique-value
+    collision, rolled back to a savepoint; the alias then merges into that row.
+    """
+
+    with transaction.atomic():
+        target_pk = (
+            handle_model._base_manager.filter(platform="whatsapp", value=new_value)
+            .exclude(pk=handle.pk)
+            .values_list("pk", flat=True)
+            .first()
+        )
+        # Lock both handles in the parties identity order before anything that
+        # points at them moves, then act on the locked rows: a concurrent run
+        # may already have resolved this alias.
+        handles, _parties = apps.get_model("parties", "Party").objects.lock_identity_rows(
+            party_ids=(), handle_ids=(handle.pk,) if target_pk is None else (handle.pk, target_pk)
+        )
+        locked = handles.get(handle.pk)
+        if locked is None or not locked.value.endswith("@lid"):
+            return None
+        target = handles.get(target_pk) if target_pk is not None else None
+        if target is None:
+            try:
+                with transaction.atomic():
+                    named = _rewrite_lid_handle(locked, new_value=new_value, bare_lid=bare_lid, name=name)
+                return LidOutcome(merged=False, named=named)
+            except IntegrityError:
+                target = (
                     handle_model._base_manager.filter(platform="whatsapp", value=new_value)
-                    .exclude(pk=handle.pk)
-                    .values_list("pk", flat=True)
+                    .exclude(pk=locked.pk)
                     .first()
                 )
-                # Lock both handles in the parties identity order before anything that
-                # points at them moves, then act on the locked rows: a concurrent run
-                # may already have resolved this alias.
-                handles, _parties = apps.get_model("parties", "Party").objects.lock_identity_rows(
-                    party_ids=(), handle_ids=(handle.pk,) if target_pk is None else (handle.pk, target_pk)
-                )
-                locked = handles.get(handle.pk)
-                if locked is None or not locked.value.endswith("@lid"):
-                    continue
-                target = handles.get(target_pk) if target_pk is not None else None
-                if target is not None:
-                    _merge_into_phone_handle(locked, target, bare_lid=bare_lid, name=name, stats=stats)
-                    stats.merged += 1
-                else:
-                    _rewrite_lid_handle(locked, new_value=new_value, bare_lid=bare_lid, name=name, stats=stats)
-    return stats
+                if target is None:
+                    raise
+        return _merge_into_phone_handle(locked, target, bare_lid=bare_lid, name=name)
 
 
 def _tally_dry_run(handle_model: Any, handle: Any, *, new_value: str, name: str, stats: LidResolveStats) -> None:
@@ -227,67 +271,49 @@ def _tally_dry_run(handle_model: Any, handle: Any, *, new_value: str, name: str,
         stats.named += 1
 
 
-def _rewrite_lid_handle(handle: Any, *, new_value: str, bare_lid: str, name: str, stats: LidResolveStats) -> None:
-    """Rewrite a LID handle to its phone value in place, keeping the LID identity."""
+def _rewrite_lid_handle(handle: Any, *, new_value: str, bare_lid: str, name: str) -> bool:
+    """Rewrite a LID handle to its phone value in place, keeping the LID identity; return whether it was named."""
 
     handle.value = new_value
-    updates = ["value"]
-    if name and not handle.display_name:
+    updates = ["value", "metadata"]
+    named = bool(name and not handle.display_name)
+    if named:
         handle.display_name = name
         updates.append("display_name")
-        stats.named += 1
     handle.metadata = {**(handle.metadata or {}), "lid": bare_lid}
-    updates.append("metadata")
     # Handle.save() recomputes normalized_value because "value" is in update_fields.
     handle.save(update_fields=[*updates, "updated_at"])
+    return named
 
 
-def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: str, stats: LidResolveStats) -> None:
+def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: str) -> LidOutcome | None:
     """Merge a resolved LID handle into the phone handle that already owns its value.
 
-    The phone handle survives (it keeps its own ``external_id``); the LID and any
-    missing name are carried onto it, and the LID handle's messages, participants
-    and reactions repoint before it is deleted. Its handle statements move through
-    parties' owner (``Party.objects.move_handle_statements``: every party's
-    decisions and evidence survive, collisions are retained as superseded, both
-    handles re-resolve). The caller holds both handles' locks. Any post feeds keep
-    their cascade behaviour — a chat sender does not own them.
+    Parties' handle merge (``Handle.objects.merge``) folds the alias in: the phone
+    handle keeps its own values (and its own ``external_id``), takes the ones it
+    lacks, and receives every row that pointed at the alias — messages,
+    participations, reactions, tags and handle statements, where every party's
+    decisions and evidence survive — before the alias is deleted. This adapter then
+    records what only the store knows: the LID under ``metadata['lid']`` and the
+    store's contact name when the phone handle still has none. ``None`` when a
+    concurrent run removed either handle first.
     """
 
+    kept = apps.get_model("parties", "Handle").objects.merge(handle, into=target)
+    if kept is None:
+        return None
     updates: list[str] = []
-    merged_metadata = {**(target.metadata or {}), "lid": bare_lid}
-    if merged_metadata != target.metadata:
-        target.metadata = merged_metadata
+    merged_metadata = {**(kept.metadata or {}), "lid": bare_lid}
+    if merged_metadata != kept.metadata:
+        kept.metadata = merged_metadata
         updates.append("metadata")
-    if name and not target.display_name:
-        target.display_name = name
+    named = bool(name and not kept.display_name)
+    if named:
+        kept.display_name = name
         updates.append("display_name")
-        stats.named += 1
     if updates:
-        target.save(update_fields=[*updates, "updated_at"])
-
-    _repoint_unique(apps.get_model("messaging", "Participant"), handle, target, ("message_id", "role"))
-    _repoint_unique(apps.get_model("messaging", "Reaction"), handle, target, ("message_id", "reaction"))
-    apps.get_model("parties", "Party").objects.move_handle_statements(handle, target)
-    apps.get_model("messaging", "Message")._base_manager.filter(sender=handle).update(sender=target)
-    handle.delete()
-
-
-def _repoint_unique(model: Any, from_handle: Any, to_handle: Any, conflict_fields: tuple[str, ...]) -> None:
-    """Repoint ``handle`` FKs from one handle to another, honouring a unique key.
-
-    A row whose repoint would duplicate an existing ``(to_handle, *conflict)`` row
-    is dropped instead; the survivor already carries that fact. A NULL in any
-    conflict field means the row's uniqueness does not apply, so it always moves.
-    """
-
-    for row in model._base_manager.filter(handle=from_handle).order_by("pk"):
-        conflict = {field_name: getattr(row, field_name) for field_name in conflict_fields}
-        collides = None not in conflict.values() and (model._base_manager.filter(handle=to_handle, **conflict).exists())
-        if collides:
-            row.delete()
-        else:
-            model._base_manager.filter(pk=row.pk).update(handle=to_handle)
+        kept.save(update_fields=[*updates, "updated_at"])
+    return LidOutcome(merged=True, named=named)
 
 
 class Command(BaseCommand):
