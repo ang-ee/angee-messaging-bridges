@@ -1,0 +1,9 @@
+[addon]
+name = "angee.posts_integrate_youtube"
+description = "Connect a YouTube channel, poll its comments, and publish public replies"
+keywords = ["youtube", "feeds", "comments"]
+category = "Integration"
+depends_on = ["angee.posts", "angee.integrate", "angee.parties"]
+
+[resources]
+install = [{ path = "resources/install/010_integrate.oauthclient.yaml", adopt = ["slug", "environment"] }]

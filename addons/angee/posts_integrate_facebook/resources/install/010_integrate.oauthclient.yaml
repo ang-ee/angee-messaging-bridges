@@ -1,0 +1,8 @@
+# Deployment app keys are configured on this adopted client by its operator.
+- xref: oauth_facebook
+  slug: facebook
+  environment: prod
+  provider_type: meta_facebook
+  display_name: Facebook Pages
+  icon: facebook
+  is_enabled: true
