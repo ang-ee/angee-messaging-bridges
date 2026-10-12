@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from angee.base.mixins import SourceKind
@@ -13,6 +14,7 @@ from rebac import system_context, to_subject_ref
 from angee.integrate.states import LinkStatus, StreamKind
 from angee.integrate.testing.models import RecordLink, SyncStream
 from angee.messaging.backup_ingest import ContentKeyCounter
+from angee.messaging.events import message_ingested
 from angee.messaging_integrate_facebook.archive import (
     FacebookArchive,
     FacebookCommentRecord,
@@ -123,7 +125,10 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
 
     del facebook_tables
     root = _facebook_export(tmp_path)
-    with system_context(reason="test facebook importer"):
+    with (
+        system_context(reason="test facebook importer"),
+        patch.object(message_ingested, "send", wraps=message_ingested.send) as ingested,
+    ):
         channel = make_integration(
             "facebook-import",
             backend_class="facebook",
@@ -139,6 +144,7 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
         comment = Message._base_manager.get(parent=post)
         direct = Message._base_manager.get(thread__modality=Thread.Modality.DIRECT)
         friend_handle = Handle._base_manager.get(platform="facebook", value="Bob Friend")
+    ingested.assert_not_called()
 
     assert (
         first_result

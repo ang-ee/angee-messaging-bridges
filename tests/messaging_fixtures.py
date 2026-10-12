@@ -11,7 +11,6 @@ from django.conf import settings
 from django.db import models
 
 from angee.messaging.models import ThreadedModelMixin
-from angee.messaging.testing.models import ActivityType as ActivityType
 from angee.messaging.testing.models import Address as Address
 from angee.messaging.testing.models import Circle as Circle
 from angee.messaging.testing.models import CircleMember as CircleMember
@@ -32,7 +31,6 @@ from angee.messaging.testing.models import Reaction as Reaction
 from angee.messaging.testing.models import Relationship as Relationship
 from angee.messaging.testing.models import RelationshipKind as RelationshipKind
 from angee.messaging.testing.models import Thread as Thread
-from angee.messaging.testing.models import ThreadActivity as ThreadActivity
 from angee.messaging.testing.models import ThreadAttachment as ThreadAttachment
 from angee.messaging.testing.models import ThreadFollower as ThreadFollower
 from angee.messaging.testing.models import ThreadNotification as ThreadNotification

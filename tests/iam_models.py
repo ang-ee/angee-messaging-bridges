@@ -41,3 +41,4 @@ class User(AbstractUser):
         app_label = "iam"
         db_table = "test_iam_user"
         rebac_resource_type = "auth/user"
+        rebac_id_attr = "pk"
