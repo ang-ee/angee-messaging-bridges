@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import queue
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from django.conf import settings
 from neonize.client import NewClient
 from neonize.events import (
     ConnectedEv,
@@ -16,14 +18,35 @@ from neonize.events import (
     LoggedOutEv,
     MessageEv,
     PairStatusEv,
+    PictureEv,
 )
+from neonize.proto.Neonize_pb2 import GetProfilePictureParams
 from neonize.utils.jid import build_jid
 
-from angee.integrate.live import STOP_JOIN_SECONDS
+from angee.integrate.live import STOP_JOIN_SECONDS, WAKE_SECONDS
+from angee.messaging.backends import ParsedHandle
 from angee.messaging.session import LiveChannelSession
-from angee.messaging_integrate_whatsapp.parser import INDIVIDUAL_SERVER, ChatMessage, bare_jid, is_group_jid
+from angee.messaging_integrate_whatsapp.parser import (
+    INDIVIDUAL_SERVER,
+    ChatMessage,
+    bare_jid,
+    handle_for_jid,
+    is_group_jid,
+    parsed_message,
+)
+from angee.parties.backends import AvatarReport
 
 logger = logging.getLogger(__name__)
+
+AVATAR_INTERVAL_SECONDS = 1.0
+"""Spacing between profile-picture queries, so a history sync's many senders never burst the account."""
+
+_NO_AVATAR_ANSWER = "does not have a profile picture"
+"""whatsmeow's not-set answer, which neonize flattens to text: the contact shows no avatar to anyone.
+
+Its hidden-from-you answer is not this one: that hides the avatar from this account
+only, so the handle keeps the avatar another account may still see.
+"""
 
 
 def _jid_str(jid: Any) -> str:
@@ -95,9 +118,17 @@ class WhatsAppSession(LiveChannelSession):
 
     client_class: type[Any] = NewClient
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._avatar_queue: queue.Queue[ParsedHandle] = queue.Queue()
+        """Senders whose avatar to read, fed by the vendor callbacks."""
+        self._avatar_seen: set[str] = set()
+        """Handle identities whose avatar this session already queued."""
+
     def _connect(self) -> None:
         """Run the blocking vendor connect; unwound by ``client.stop()``."""
 
+        threading.Thread(target=self._read_avatars, name=f"whatsapp-avatars-{self.bridge.sqid}", daemon=True).start()
         try:
             self.client.connect()
         except Exception:
@@ -125,6 +156,68 @@ class WhatsAppSession(LiveChannelSession):
         except Exception:
             logger.info("WhatsApp media download failed for channel %s.", self.bridge.sqid)
             return None
+
+    def _want_avatar(self, message: ChatMessage) -> None:
+        """Queue a received message's sender avatar the first time this session sees them.
+
+        Callers queue only after the message itself, so the task thread lands the
+        sender's handle before its avatar.
+        """
+
+        sender = parsed_message(message).sender
+        if message.from_me or sender is None or sender.external_id in self._avatar_seen:
+            return
+        if is_group_jid(sender.external_id):
+            return
+        self._avatar_seen.add(sender.external_id)
+        self._avatar_queue.put(sender)
+
+    def _read_avatars(self) -> None:
+        """Read the queued senders' avatars, one per interval, until the session stops.
+
+        Each answer lands as a ``handle_avatars`` report, which the task thread
+        sets on its handle.
+        """
+
+        while not self._vendor_stopping():
+            try:
+                handle = self._avatar_queue.get(timeout=WAKE_SECONDS)
+            except queue.Empty:
+                continue
+            report = self._read_avatar(handle)
+            if report is not None:
+                self.events.put(("handle_avatars", [report]))
+            self._stopping.wait(AVATAR_INTERVAL_SECONDS)
+
+    def _read_avatar(self, handle: ParsedHandle) -> AvatarReport | None:
+        """Return the avatar WhatsApp shows for ``handle``, or ``None`` when that is unknown.
+
+        Its not-set answer reports no avatar; any other failure, including the
+        avatar hidden from this account, reports nothing. The download is capped
+        at storage's image size.
+        """
+
+        def report(avatar: bytes | None) -> AvatarReport:
+            return AvatarReport(
+                platform=handle.platform, value=handle.value, external_id=handle.external_id, avatar=avatar
+            )
+
+        try:
+            info = self.client.get_profile_picture(self._jid_proto(handle.external_id), GetProfilePictureParams())
+        except Exception as error:
+            if _NO_AVATAR_ANSWER in str(error):
+                return report(None)
+            logger.info("WhatsApp avatar lookup failed on channel %s.", self.bridge.sqid)
+            return None
+        url = str(getattr(info, "URL", "") or "")
+        if not url:
+            return None
+        try:
+            data = self.live_impl.http.download_capped(url, cap=int(settings.ANGEE_STORAGE_IMAGE_MAX_BYTES))
+        except Exception:
+            logger.info("WhatsApp avatar download failed on channel %s.", self.bridge.sqid)
+            return None
+        return report(data) if data else None
 
     def _resolve_identity(self, jid: str, name: str) -> tuple[str, str]:
         """Resolve a sender's phone JID (for ``@lid``) and enrich a missing name.
@@ -215,6 +308,7 @@ class WhatsAppSession(LiveChannelSession):
         client.event(LoggedOutEv)(self._on_logged_out)
         client.event(MessageEv)(self._on_message)
         client.event(HistorySyncEv)(self._on_history)
+        client.event(PictureEv)(self._on_avatar_change)
         client.event.qr(self._on_qr)
         return client
 
@@ -259,6 +353,21 @@ class WhatsAppSession(LiveChannelSession):
     def _on_logged_out(self, _client: Any, _event: Any) -> None:
         self.events.put(("logged_out", None))
 
+    def _on_avatar_change(self, _client: Any, event: Any) -> None:
+        """Read a changed avatar again for a sender this session already read.
+
+        Others are read at their first message, so reads stay with the people
+        this account corresponds with.
+        """
+
+        jid = _jid_str(getattr(event, "JID", None))
+        if not bare_jid(jid):
+            return
+        phone_jid, name = self._resolve_identity(jid, "")
+        handle = handle_for_jid(jid, name, phone_jid=phone_jid)
+        if handle.external_id in self._avatar_seen:
+            self._avatar_queue.put(handle)
+
     def _on_message(self, _client: Any, event: Any) -> None:
         info = event.Info
         source = info.MessageSource
@@ -289,6 +398,7 @@ class WhatsAppSession(LiveChannelSession):
         )
         if message.stanza_id and (message.text or facts):
             self.events.put(("messages", [(message, content if facts else None)]))
+            self._want_avatar(message)
 
     def _on_history(self, _client: Any, event: Any) -> None:
         batch: list[tuple[ChatMessage, Any]] = []
@@ -339,3 +449,5 @@ class WhatsAppSession(LiveChannelSession):
                 batch.append((message, content if facts else None))
         if batch:
             self.events.put(("messages", batch))
+        for message, _payload in batch:
+            self._want_avatar(message)
