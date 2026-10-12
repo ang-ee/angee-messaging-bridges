@@ -38,6 +38,7 @@ from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
 from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
+from angee.parties.testing.fixtures import load_statement_sources
 from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
@@ -52,7 +53,6 @@ from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
 from angee.tags.testing import models as tags_models  # noqa: F401 -- register shared FK targets
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
-from tests.bootstrap import statement_sources
 
 
 @pytest.fixture
@@ -61,11 +61,12 @@ def composed_tables(composed_tables: None) -> None:
 
     Extends the ``angee.testing`` plugin fixture of the same name: after its REBAC
     sync, the install-tier principals and grants that admission reads are loaded
-    (``tests.bootstrap.statement_sources``), exactly as the framework's hosts do.
+    (``angee.parties.testing.fixtures.load_statement_sources``), exactly as the
+    framework's hosts do.
     """
 
     del composed_tables
-    statement_sources()
+    load_statement_sources()
 
 
 @pytest.fixture
