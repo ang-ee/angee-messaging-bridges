@@ -57,6 +57,7 @@ addons = [
     "python-magic>=0.4.27",
     "pyyaml>=6",
     "qrcode[pil]>=8.2",
+    "requests>=2.32",
     "ruamel.yaml>=0.18",
     "slack-sdk>=3.43.0",
     "strawberry-django-aggregates>=0.14.0",
@@ -66,6 +67,7 @@ addons = [
     "tablib>=3",
     "telethon>=1.44",
     "unpaddedbase64>=2.1",
+    "urllib3>=2.2",
     "vobject>=0.9.9",
 ]
 
