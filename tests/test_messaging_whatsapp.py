@@ -1669,11 +1669,10 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
 
 
 @pytest.mark.django_db(transaction=True)
-def test_resolve_channel_lids_folds_identity_links_keeping_human_decisions(whatsapp_tables: Any) -> None:
-    """A party linked to both handles keeps one link with both decisions; a lone LID link moves as it is."""
+def test_resolve_channel_lids_moves_handle_statements_keeping_human_decisions(whatsapp_tables: Any) -> None:
+    """A party stating both spellings keeps the stronger current; every decision survives the merge."""
 
-    from angee.parties.mixins import LinkSource
-    from tests.messaging_fixtures import Party, PartyHandle
+    from tests.messaging_fixtures import Party
 
     channel = _whatsapp_channel("whatsapp-fold")
     _ingest_whatsapp(
@@ -1692,42 +1691,41 @@ def test_resolve_channel_lids_folds_identity_links_keeping_human_decisions(whats
     )
     phone_handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    with system_context(reason="test lid identity links"):
+    owner = channel.owner
+    with system_context(reason="test lid identity statements"):
         confirmed, dismissed, stronger = (
-            Party._base_manager.create(display_name=name) for name in ("Bob", "Robert", "Rob")
+            Party._base_manager.create(display_name=name, created_by=owner) for name in ("Bob", "Robert", "Rob")
         )
-        for party, handle, confidence, is_confirmed, is_dismissed in (
-            (confirmed, lid_handle, 1.0, True, False),
-            (confirmed, phone_handle, 0.6, False, True),
-            (dismissed, lid_handle, 0.6, False, True),
-            (stronger, lid_handle, 0.3, False, True),
-            (stronger, phone_handle, 0.9, False, False),
-        ):
-            PartyHandle._base_manager.create(
-                party=party,
-                handle=handle,
-                confidence=confidence,
-                source=LinkSource.IMPORT,
-                is_confirmed=is_confirmed,
-                is_dismissed=is_dismissed,
-            )
+        confirmed.with_actor(owner).confirm(aspect="handle", handle=lid_handle, values={})
+        Party.objects.assert_handle(confirmed, phone_handle, asserted_by=owner, confidence=0.6)
+        Party.objects.assert_handle(dismissed, lid_handle, asserted_by=owner, confidence=0.6)
+        dismissed.with_actor(owner).dismiss(aspect="handle", handle=lid_handle)
+        Party.objects.assert_handle(stronger, lid_handle, asserted_by=owner, confidence=0.3)
+        Party.objects.assert_handle(stronger, phone_handle, asserted_by=owner, confidence=0.9)
+        lid_handle.refresh_from_db()
+        assert lid_handle.party_id == confirmed.pk
 
     resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": ""}))
 
-    with system_context(reason="test lid identity links read"):
-        links = {
-            party_id: (confidence, is_confirmed, is_dismissed)
-            for party_id, confidence, is_confirmed, is_dismissed in PartyHandle._base_manager.filter(
-                handle=phone_handle, party__in=(confirmed, dismissed, stronger)
-            ).values_list("party_id", "confidence", "is_confirmed", "is_dismissed")
+    with system_context(reason="test lid identity statements read"):
+        current = {
+            row.subject_id: (row.confidence, row.is_confirmed, row.is_dismissed)
+            for row in Party.statements.filter(handle=phone_handle).current()
         }
+        superseded = sorted(
+            (row.subject_id, row.confidence)
+            for row in Party.statements.filter(handle=phone_handle, superseded__isnull=False)
+        )
         phone_handle.refresh_from_db()
-    assert links == {
+    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    assert current == {
         confirmed.pk: (1.0, True, False),
-        dismissed.pk: (0.6, False, True),
-        stronger.pk: (0.9, False, True),
+        dismissed.pk: (1.0, False, True),
+        stronger.pk: (0.9, False, False),
     }
-    assert phone_handle.party_id == confirmed.pk
+    # The weaker spellings are retained as superseded evidence on the survivor, not deleted with the alias.
+    assert superseded == sorted([(confirmed.pk, 0.6), (stronger.pk, 0.3)])
+    assert (phone_handle.party_id, phone_handle.party_link_confirmed) == (confirmed.pk, True)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -1767,6 +1765,94 @@ def test_resolve_channel_lids_merges_an_older_lid_and_keeps_its_reactions(whatsa
 
 
 @pytest.mark.django_db(transaction=True)
+def test_resolve_channel_lids_collapses_a_participation_and_reaction_the_phone_handle_already_has(
+    whatsapp_tables: Any,
+) -> None:
+    """The handle merge's generic move drops the alias's copy of a fact the phone handle states; the rest moves."""
+
+    from tests.messaging_fixtures import Reaction
+
+    channel = _whatsapp_channel("whatsapp-lid-collisions")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
+    )
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(
+            chat_jid="18583421935@s.whatsapp.net",
+            stanza_id="D1",
+            sender_jid="18583421935@s.whatsapp.net",
+            sender_name="Bob",
+            text="direct",
+        ),
+    )
+    lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
+    phone_handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
+    with system_context(reason="test lid collisions"):
+        group_message = Message._base_manager.get(sender=lid_handle)
+        for handle in (lid_handle, phone_handle):
+            # A thread-level membership (no message) and the same reaction, held by both spellings.
+            Participant._base_manager.create(
+                thread_id=group_message.thread_id, handle=handle, role=Participant.ParticipantRole.TO
+            )
+            Reaction._base_manager.create(message=group_message, handle=handle, reaction="👍")
+        moved = Reaction._base_manager.create(message=group_message, handle=lid_handle, reaction="❤️")
+
+    stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
+
+    assert (stats.resolved, stats.merged, stats.refused) == (1, 1, 0)
+    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    memberships = Participant._base_manager.filter(
+        thread_id=group_message.thread_id, message__isnull=True, handle=phone_handle
+    )
+    assert memberships.count() == 1
+    assert sorted(Reaction._base_manager.filter(message=group_message).values_list("handle_id", "reaction")) == sorted(
+        [(phone_handle.pk, "👍"), (phone_handle.pk, "❤️")]
+    )
+    moved.refresh_from_db()
+    assert moved.handle_id == phone_handle.pk
+
+
+@pytest.mark.django_db(transaction=True)
+def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
+    whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rewrite's unique-value collision merges into the row that now owns the value, not abort the run."""
+
+    from angee.parties.managers import PartyManager
+
+    channel = _whatsapp_channel("whatsapp-lid-race")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
+    )
+    lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
+    lock_identity_rows = PartyManager.lock_identity_rows
+    created: list[Any] = []
+
+    def sync_creates_the_phone_handle(manager: Any, **kwargs: Any) -> Any:
+        # Sync lands the phone JID after the command looked up the value's owner.
+        if not created:
+            created.append(
+                Handle._base_manager.create(
+                    platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net"
+                )
+            )
+        return lock_identity_rows(manager, **kwargs)
+
+    monkeypatch.setattr(PartyManager, "lock_identity_rows", sync_creates_the_phone_handle)
+    stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
+
+    assert (stats.resolved, stats.merged) == (1, 1)
+    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    phone_handle = created[0]
+    phone_handle.refresh_from_db()
+    assert phone_handle.metadata.get("lid") == "113352894324870@lid"
+    assert Message._base_manager.filter(sender=phone_handle).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
 def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_tables: Any) -> None:
     """Two overlapping runs list the same LID: the one that finds it already merged moves nothing."""
 
@@ -1800,8 +1886,9 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     resolver.phone_for_lid = phone_for_lid  # type: ignore[method-assign]
     stats = resolve_channel_lids(channel, resolver)
 
-    assert overlapped[0].merged == 1
-    assert stats.merged == 0
+    assert (overlapped[0].resolved, overlapped[0].merged) == (1, 1)
+    # The run that found the alias already merged counts it as neither resolved nor merged.
+    assert (stats.candidates, stats.resolved, stats.merged) == (1, 0, 0)
     assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2

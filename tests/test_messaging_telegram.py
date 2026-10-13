@@ -7,7 +7,6 @@ import importlib
 import queue
 import sys
 import threading
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -31,6 +30,7 @@ from tests.conftest import (
     Vendor,
     execute_schema,
     result_data,
+    wait_until,
 )
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
@@ -600,17 +600,6 @@ def telegram_session_module(monkeypatch: pytest.MonkeyPatch) -> Any:
         sys.modules.pop(module_name, None)
 
 
-def _wait_until(predicate: Any, *, timeout: float = 2.0) -> None:
-    """Wait for a cross-thread session state without importing vendor code."""
-
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if predicate():
-            return
-        time.sleep(0.01)
-    assert predicate()
-
-
 @pytest.mark.django_db(transaction=True)
 def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
     telegram_tables: Any,
@@ -644,11 +633,11 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
     submitted = "correct-horse-battery-staple"
 
     def _submit_password() -> None:
-        _wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
+        wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
         with system_context(reason="test.messaging.telegram.session.password"):
             operator_channel = Channel.objects.get(pk=channel.pk)
             submit_channel_password(operator_channel, "wrong-password")
-        _wait_until(
+        wait_until(
             lambda: any(
                 report.get("details", {}).get("pairing", {}).get("message")
                 == "Incorrect Telegram two-step verification password. Try again."

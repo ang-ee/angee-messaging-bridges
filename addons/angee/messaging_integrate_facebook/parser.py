@@ -174,11 +174,18 @@ def parsed_comment(
 def parsed_connection(record: FacebookConnectionRecord) -> ParsedConnection:
     """Map one friend record onto parties' shared connection DTO."""
 
-    return ParsedConnection(
-        handle=_handle(record.name),
-        connected_at=record.connected_at,
-        provenance=record.provenance,
-    )
+    return ParsedConnection(handle=_handle(record.name), connected_at=record.connected_at)
+
+
+def connection_key(record: FacebookConnectionRecord) -> str:
+    """Return the friend record's identity within the takeout's ``connections`` stream.
+
+    Facebook names friends without an account id, so one fact is its section and
+    name: the same friend in a later export observes the same ``RecordLink``, and a
+    removed friend is a second record beside the current one.
+    """
+
+    return f"{record.section}:{record.name}"
 
 
 def _handle(name: str) -> ParsedHandle:
