@@ -39,6 +39,13 @@ def graph():
     return json.loads((Path(__file__).parent / "fixtures/facebook/graph.json").read_text())
 
 
+
+def _failures(stream):
+    """Retained failures of ``stream``'s current row (the lane's SyncFailure value objects)."""
+
+    row = apps.get_model("integrate", "SyncStream").objects.get(pk=stream.pk)
+    return list(row.sync_failures(open_only=False))
+
 @pytest.fixture
 def feed(composed_tables):
     """Use the shared Feed/Quota composition and real credential methods."""
@@ -449,18 +456,15 @@ def test_malformed_records_and_permanent_post_reads_are_quarantined_without_wedg
         second = advance_stream(first.stream, FacebookFeedBackend(feed))
         third = advance_stream(second.stream, FacebookFeedBackend(feed))
         assert first.count == 2 and second.count == 0 and third.count == 1 and third.exhausted
-        assert len(first.discrepancy_ids) == 1 and len(second.discrepancy_ids) == 1
-        assert len(set(third.discrepancy_ids)) == 2
-        refused = apps.get_model("integrate", "SyncDiscrepancy").objects.filter(pk__in=third.discrepancy_ids)
-        assert set(refused.values_list("details__external_key", flat=True)) == {
-            "700001_800099", "900001_700002:comment:1",
-        }
+        assert len(first.failure_ids) == 1 and len(second.failure_ids) == 1
+        assert len(set(third.failure_ids)) == 2
+        failures = _failures(third.stream)
+        refused = [row for row in failures if row.id in third.failure_ids]
         assert {row.details["external_key"] for row in refused} == {
             "700001_800099", "900001_700002:comment:1",
         }
-        discrepancies = apps.get_model("integrate", "SyncDiscrepancy").objects.filter(stream=third.stream)
-        assert set(discrepancies.values_list("code", flat=True)) == {"invalid_record", "comment_read_refused"}
-        assert "synthetic-private" not in json.dumps(list(discrepancies.values_list("details", flat=True)))
+        assert {row.code for row in failures} == {"invalid_record", "comment_read_refused"}
+        assert "synthetic-private" not in json.dumps([row.details for row in failures])
     assert len(calls) == 3 and "synthetic-private" not in json.dumps(third.stream.cursor)
 
 
@@ -513,7 +517,7 @@ def test_revoked_grant_on_a_comment_read_is_not_quarantined_or_skipped(feed, gra
             advance_stream(state, FacebookFeedBackend(feed))
         state.refresh_from_db()
         assert state.cursor == saved
-        assert not apps.get_model("integrate", "SyncDiscrepancy").objects.filter(stream=state).exists()
+        assert not _failures(state)
     assert not raised.value.transient and type(raised.value) is IntegrationError
 
 
@@ -523,7 +527,7 @@ def test_repeated_bad_comment_cursor_records_discrepancy_and_moves_to_the_next_p
         seed = {"pending": ["900001_700001", "900001_700002"], "posts_done": True}
         first = advance_stream(stream(feed, cursor=seed), FacebookFeedBackend(feed))
         second = advance_stream(first.stream, FacebookFeedBackend(feed))
-        assert first.reset and len(second.discrepancy_ids) == 1
+        assert first.reset and len(second.failure_ids) == 1
         assert second.stream.cursor["pending"] == ["900001_700002"]
         assert not second.exhausted
 
@@ -651,7 +655,8 @@ def test_transient_comment_reads_keep_pending_and_reply_posts_become_uncertain(
         assert raised.value.transient
         state.refresh_from_db()
         assert state.cursor["pending"] == ["900001_700001"]
-        assert not apps.get_model("integrate", "SyncDiscrepancy").objects.exists()
+        streams = apps.get_model("integrate", "SyncStream").objects.filter(integration_id=feed.pk)
+        assert not any(_failures(row) for row in streams)
         with pytest.raises(DeliveryUncertain):
             FacebookFeedBackend(feed).deliver(reply(feed, graph, actor=replier))
     assert [call[0] for call in calls] == ["GET", "POST"]

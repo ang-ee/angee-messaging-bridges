@@ -6,7 +6,6 @@ import asyncio
 import importlib
 import sys
 import threading
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -26,6 +25,7 @@ from tests.conftest import (
     Vendor,
     execute_schema,
     result_data,
+    wait_until,
 )
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
@@ -416,17 +416,6 @@ def discord_session_module(monkeypatch: pytest.MonkeyPatch) -> Any:
         sys.modules.pop(module_name, None)
 
 
-def _wait_until(predicate: Any, *, timeout: float = 5.0) -> None:
-    """Wait for one cross-thread session condition."""
-
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if predicate():
-            return
-        time.sleep(0.01)
-    assert predicate()
-
-
 @pytest.mark.django_db(transaction=True)
 def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
     discord_tables: Any,
@@ -452,7 +441,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
 
     def stop_first() -> None:
         try:
-            _wait_until(
+            wait_until(
                 lambda: (
                     Message._base_manager.filter(channel_id=channel.pk).count() == 6
                     and (state := Channel._base_manager.get(pk=channel.pk).subscription_state)
@@ -518,7 +507,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
 
     def stop_second() -> None:
         try:
-            _wait_until(
+            wait_until(
                 lambda: (
                     Message._base_manager.filter(channel_id=channel.pk).count() == 119
                     and Channel._base_manager.get(pk=channel.pk)

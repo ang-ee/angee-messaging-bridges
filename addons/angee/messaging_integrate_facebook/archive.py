@@ -63,7 +63,8 @@ class FacebookConnectionRecord:
 
     name: str
     connected_at: datetime | None
-    provenance: str
+    section: str
+    """The export section the fact came from: ``friends`` or ``removed_friends``."""
 
 
 class FacebookArchive:
@@ -195,10 +196,10 @@ class FacebookArchive:
 
         records: list[FacebookConnectionRecord] = []
         specs = (
-            ("your_friends.json", "friends_v2", "facebook_takeout_friend"),
-            ("removed_friends.json", "deleted_friends_v2", "facebook_takeout_removed_friend"),
+            ("your_friends.json", "friends_v2", "friends"),
+            ("removed_friends.json", "deleted_friends_v2", "removed_friends"),
         )
-        for filename, key, provenance in specs:
+        for filename, key, section in specs:
             paths = self.export.paths(
                 ACTIVITY_DIRECTORY,
                 "connections",
@@ -217,14 +218,14 @@ class FacebookArchive:
                             FacebookConnectionRecord(
                                 name=name,
                                 connected_at=timestamp_seconds(value.get("timestamp")),
-                                provenance=provenance,
+                                section=section,
                             )
                         )
         return sorted(
             records,
             key=lambda record: (
                 record.name.casefold(),
-                record.provenance,
+                record.section,
                 record.connected_at.timestamp() if record.connected_at is not None else -1,
             ),
         )
