@@ -26,7 +26,7 @@ from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
-from angee.integrate.testing.models import SyncDiscrepancy, SyncStream
+from angee.integrate.testing.models import SyncStream
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.delivery import RECONCILE_BACKOFF, run_message_delivery
 from angee.messaging.events import message_ingested
@@ -51,6 +51,23 @@ AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
 ADDON = Path(__file__).resolve().parents[1] / "addons/angee/posts_integrate_youtube"
 """The addon-owned manifest and adopted OAuth client resource."""
 
+
+
+def _failures(feed, code=None):
+    """Retained failures across the feed's streams (the lane's SyncFailure value objects), by code."""
+
+    with system_context(reason="test.youtube.failures"):
+        rows = [
+            failure
+            for stream in SyncStream.objects.filter(integration_id=feed.pk).order_by("pk")
+            for failure in stream.sync_failures(open_only=False)
+        ]
+    return [failure for failure in rows if code is None or failure.code == code]
+
+
+def _one_failure(feed, code):
+    (failure,) = _failures(feed, code)
+    return failure
 
 @pytest.fixture(autouse=True)
 def context(monkeypatch):
@@ -572,7 +589,7 @@ def test_youtube_repeated_token_quarantines_the_walk_after_one_reset(feed, monke
     result = step(feed, row)
     assert not result.reset and result.stream.cursor["threads"]["token"] is None
     assert result.stream.cursor["uploads"]["token"] == "uploads-later"
-    assert SyncDiscrepancy.objects.filter(code="youtube_page_token_loop").exists()
+    assert bool(_failures(feed, "youtube_page_token_loop"))
 
 
 @pytest.mark.parametrize("key", ["activity", "history"])
@@ -583,7 +600,7 @@ def test_youtube_deleted_reply_parent_cannot_wedge_the_stream(feed, monkeypatch,
     calls = transport(monkeypatch, lambda *args: (404, refusal, {}))
     row = step(feed, source(feed, key, cursor)).stream
     assert row.cursor["replies"] == [] and len(calls) == 1
-    assert SyncDiscrepancy.objects.get(code="youtube_replies_unavailable").details == {"external_key": "comment-gone"}
+    assert _one_failure(feed, "youtube_replies_unavailable").details == {"external_key": "comment-gone"}
 
 
 @pytest.mark.parametrize("key", ["activity", "history"])
@@ -596,7 +613,7 @@ def test_youtube_refused_deferred_thread_is_removed_from_the_cursor(feed, monkey
     transport(monkeypatch, lambda *args: (403, refusal, {}))
     result = step(feed, source(feed, key, cursor))
     assert result.stream.cursor["pending"] == []
-    assert SyncDiscrepancy.objects.get(code="youtube_thread_unavailable").details == {
+    assert _one_failure(feed, "youtube_thread_unavailable").details == {
         "external_key": "thread-unavailable",
     }
 
@@ -617,7 +634,7 @@ def test_youtube_disabled_video_does_not_block_later_history_videos(feed, monkey
     assert row.cursor["videos"] == ["video-fresh"]
     step(feed, row)
     assert [query["videoId"] for _, _, query, _ in calls] == ["video-disabled", "video-fresh"]
-    assert SyncDiscrepancy.objects.filter(code="youtube_video_comments_unavailable").exists()
+    assert bool(_failures(feed, "youtube_video_comments_unavailable"))
 
 
 def test_youtube_refused_recheck_advances_beyond_the_thread(feed, monkeypatch, wire):
@@ -629,7 +646,7 @@ def test_youtube_refused_recheck_advances_beyond_the_thread(feed, monkeypatch, w
     assert row.cursor["active_after"] > 0
     result = step(feed, row)
     assert result.stream.cursor["stage"] == "comments" and len(calls) == 1
-    assert SyncDiscrepancy.objects.filter(code="youtube_thread_unavailable").exists()
+    assert bool(_failures(feed, "youtube_thread_unavailable"))
 
 
 def test_youtube_malformed_reply_is_recorded_and_does_not_hold_the_parent_cursor(feed, monkeypatch):
@@ -639,7 +656,7 @@ def test_youtube_malformed_reply_is_recorded_and_does_not_hold_the_parent_cursor
     transport(monkeypatch, lambda *args: {"items": [{"id": "reply-malformed", "snippet": None}]})
     result = step(feed, source(feed, cursor=cursor))
     assert result.count == 0 and result.stream.cursor["replies"] == []
-    assert SyncDiscrepancy.objects.filter(code="youtube_malformed_reply").exists()
+    assert bool(_failures(feed, "youtube_malformed_reply"))
 
 
 @pytest.mark.parametrize("key", ["activity", "history"])
@@ -650,10 +667,10 @@ def test_youtube_malformed_thread_is_skipped_and_progress_is_committed(feed, mon
     transport(monkeypatch, lambda *args: {"items": [{"id": "thread-malformed"}, None]})
     result = step(feed, source(feed, key, cursor))
     assert result.count == 0 and result.stream.cursor != (cursor or {})
-    discrepancies = SyncDiscrepancy.objects.filter(code="youtube_malformed_thread")
+    discrepancies = _failures(feed, "youtube_malformed_thread")
     assert sum(discrepancy.attempts for discrepancy in discrepancies) == 2
-    assert discrepancies.count() == 2
-    assert set(discrepancies.values_list("details__external_key", flat=True)) == {
+    assert len(discrepancies) == 2
+    assert {discrepancy.details["external_key"] for discrepancy in discrepancies} == {
         "thread-malformed", "channel-demo:malformed_thread:1",
     }
 
@@ -725,7 +742,7 @@ def test_youtube_missing_reobserved_comment_records_absence_without_claiming_del
     cursor = ReobserveCursor(stage="comments").model_dump(mode="json")
     drain(feed, source(feed, "reobserve", cursor))
     assert not messages(feed).get(external_id="comment-a").is_trashed
-    assert SyncDiscrepancy.objects.get(code="youtube_comment_unavailable").details == {"external_key": "comment-a"}
+    assert _one_failure(feed, "youtube_comment_unavailable").details == {"external_key": "comment-a"}
 
 
 def test_youtube_polling_limit_protects_reply_units_on_the_real_ledger(feed, replier, monkeypatch, wire):
@@ -1053,7 +1070,7 @@ def test_youtube_quarantine_is_owned_by_the_page_transaction(feed, monkeypatch):
     state = source(feed, "activity")
     page = feed.backend.extract(state, 10)
     assert len(page.records) == 1 and calls
-    assert not SyncDiscrepancy.objects.exists()
+    assert not _failures(feed)
 
     def fail_page(*args):
         raise RuntimeError("Synthetic page failure")
@@ -1061,7 +1078,7 @@ def test_youtube_quarantine_is_owned_by_the_page_transaction(feed, monkeypatch):
     monkeypatch.setattr(YouTubeFeedBackend, "finish_page", fail_page)
     with pytest.raises(RuntimeError):
         step(feed, state)
-    assert not SyncDiscrepancy.objects.exists()
+    assert not _failures(feed)
     state.refresh_from_db()
     assert not state.cursor
 
@@ -1119,7 +1136,7 @@ def test_youtube_quarantine_overflow_respects_the_record_page_bound(feed, wire, 
     previous = len(calls)
     second = step(feed, first.stream, bound=1)
     assert second.count == 0 and len(calls) == previous and not second.stream.cursor["refusals"]
-    assert SyncDiscrepancy.objects.filter(code="youtube_malformed_comment").exists()
+    assert bool(_failures(feed, "youtube_malformed_comment"))
 
 
 @pytest.mark.parametrize("budget", [0, 1])
