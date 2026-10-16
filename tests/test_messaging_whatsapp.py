@@ -1607,6 +1607,11 @@ def _ingest_whatsapp(channel: Any, message: ChatMessage) -> None:
         Message.objects.ingest([parsed_message(message)], channel=channel, quote_edges=False)
 
 
+def _assert_handle_redirect(alias: Any, survivor: Any) -> None:
+    alias.refresh_from_db()
+    assert alias.merged_into_id == survivor.pk
+
+
 @pytest.mark.django_db(transaction=True)
 def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> None:
     """An unresolved @lid handle is rewritten to its phone value, name, and lid."""
@@ -1660,7 +1665,7 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
     stats = resolve_channel_lids(channel, resolver)
 
     assert stats.merged == 1
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata.get("lid") == "113352894324870@lid"
     # The group participant now points at the surviving phone handle.
@@ -1717,13 +1722,13 @@ def test_resolve_channel_lids_moves_handle_statements_keeping_human_decisions(wh
             for row in Party.statements.filter(handle=phone_handle, superseded__isnull=False)
         )
         phone_handle.refresh_from_db()
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    _assert_handle_redirect(lid_handle, phone_handle)
     assert current == {
         confirmed.pk: (1.0, True, False),
         dismissed.pk: (1.0, False, True),
         stronger.pk: (0.9, False, False),
     }
-    # The weaker spellings are retained as superseded evidence on the survivor, not deleted with the alias.
+    # The weaker spellings stay as superseded evidence on the survivor, not stranded on the alias redirect.
     assert superseded == sorted([(confirmed.pk, 0.6), (stronger.pk, 0.3)])
     assert (phone_handle.party_id, phone_handle.party_link_confirmed) == (confirmed.pk, True)
 
@@ -1759,7 +1764,7 @@ def test_resolve_channel_lids_merges_an_older_lid_and_keeps_its_reactions(whatsa
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
     assert stats.merged == 1
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    _assert_handle_redirect(lid_handle, phone_handle)
     reaction.refresh_from_db()
     assert reaction.handle_id == phone_handle.pk
 
@@ -1802,7 +1807,7 @@ def test_resolve_channel_lids_collapses_a_participation_and_reaction_the_phone_h
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
     assert (stats.resolved, stats.merged, stats.refused) == (1, 1, 0)
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    _assert_handle_redirect(lid_handle, phone_handle)
     memberships = Participant._base_manager.filter(
         thread_id=group_message.thread_id, message__isnull=True, handle=phone_handle
     )
@@ -1845,8 +1850,8 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
     assert (stats.resolved, stats.merged) == (1, 1)
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
     phone_handle = created[0]
+    _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata.get("lid") == "113352894324870@lid"
     assert Message._base_manager.filter(sender=phone_handle).count() == 1
@@ -1889,6 +1894,6 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     assert (overlapped[0].resolved, overlapped[0].merged) == (1, 1)
     # The run that found the alias already merged counts it as neither resolved nor merged.
     assert (stats.candidates, stats.resolved, stats.merged) == (1, 0, 0)
-    assert not Handle._base_manager.filter(pk=lid_handle.pk).exists()
+    _assert_handle_redirect(lid_handle, phone_handle)
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2
