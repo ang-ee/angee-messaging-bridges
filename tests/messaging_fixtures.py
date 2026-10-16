@@ -34,7 +34,6 @@ from angee.messaging.testing.models import Thread as Thread
 from angee.messaging.testing.models import ThreadAttachment as ThreadAttachment
 from angee.messaging.testing.models import ThreadFollower as ThreadFollower
 from angee.messaging.testing.models import ThreadNotification as ThreadNotification
-from angee.messaging.testing.models import TrackingValue as TrackingValue
 from tests.conftest import Backend, Drive, MimeType
 
 
@@ -42,7 +41,6 @@ class ThreadedTicket(SqidMixin, AuditMixin, ThreadedModelMixin, AngeeModel):
     """Concrete model that opts into record chatter for messaging tests."""
 
     sqid_prefix = "tkt_"
-    thread_tracking_fields = ("title", "status")
     thread_suggested_recipient_fields = ("assigned_user",)
 
     title = models.CharField(max_length=160)
