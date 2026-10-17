@@ -68,14 +68,13 @@ def test_handle_resolves_lid_to_the_phone_jid_identity() -> None:
     # of a separate LID row that would collide on (platform, value) every message.
     assert resolved.external_id == "18583421935@s.whatsapp.net"
     assert resolved.display_name == "Bob"
-    # The bare LID rides in metadata so the offline backfill can still merge it.
-    assert resolved.metadata == {"lid": "113352894324870@lid"}
+    assert resolved.metadata == {}
 
     # An unresolved LID keeps the bare LID as both its identity and its value.
     unresolved = handle_for_jid("113352894324870@lid")
     assert unresolved.value == "113352894324870@lid"
     assert unresolved.external_id == "113352894324870@lid"
-    assert unresolved.metadata == {"lid": "113352894324870@lid"}
+    assert unresolved.metadata == {}
 
     # A phone-JID sender is unchanged and carries no lid metadata.
     phone = handle_for_jid("4917000001:2@s.whatsapp.net", "Ada")
@@ -1381,7 +1380,7 @@ def test_session_resolves_a_lid_sender_to_phone_and_name(whatsapp_session: Any, 
     handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
     assert handle.value == "+18583421935"
     assert handle.display_name == "Bob Business"
-    assert handle.metadata.get("lid") == "113352894324870@lid"
+    assert handle.metadata == {}
 
 
 @pytest.mark.django_db(transaction=True)
@@ -1614,7 +1613,7 @@ def _assert_handle_redirect(alias: Any, survivor: Any) -> None:
 
 @pytest.mark.django_db(transaction=True)
 def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> None:
-    """An unresolved @lid handle is rewritten to its phone value, name, and lid."""
+    """An unresolved @lid handle is rewritten to its phone value and name."""
 
     channel = _whatsapp_channel("whatsapp-backfill")
     _ingest_whatsapp(
@@ -1631,7 +1630,7 @@ def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> 
     lid_handle.refresh_from_db()
     assert lid_handle.value == "+18583421935"
     assert lid_handle.display_name == "Bob Biz"
-    assert lid_handle.metadata.get("lid") == "113352894324870@lid"
+    assert lid_handle.metadata == {}
 
     # Re-running finds nothing: the value no longer ends with @lid.
     assert resolve_channel_lids(channel, resolver).candidates == 0
@@ -1667,7 +1666,7 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
     assert stats.merged == 1
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
-    assert phone_handle.metadata.get("lid") == "113352894324870@lid"
+    assert phone_handle.metadata == {}
     # The group participant now points at the surviving phone handle.
     group_participation.refresh_from_db()
     assert group_participation.handle_id == phone_handle.pk
@@ -1825,18 +1824,17 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
 ) -> None:
     """The rewrite's unique-value collision merges into the row that now owns the value, not abort the run."""
 
-    from angee.parties.managers import PartyManager
-
     channel = _whatsapp_channel("whatsapp-lid-race")
     _ingest_whatsapp(
         channel,
         ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
     )
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    lock_identity_rows = PartyManager.lock_identity_rows
+    system_queryset = Handle.system_queryset
     created: list[Any] = []
 
-    def sync_creates_the_phone_handle(manager: Any, **kwargs: Any) -> Any:
+    def sync_creates_the_phone_handle(cls: Any, *, lock: tuple[str, ...] | None = None) -> Any:
+        del cls
         # Sync lands the phone JID after the command looked up the value's owner.
         if not created:
             created.append(
@@ -1844,16 +1842,16 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
                     platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net"
                 )
             )
-        return lock_identity_rows(manager, **kwargs)
+        return system_queryset(lock=lock)
 
-    monkeypatch.setattr(PartyManager, "lock_identity_rows", sync_creates_the_phone_handle)
+    monkeypatch.setattr(Handle, "system_queryset", classmethod(sync_creates_the_phone_handle))
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
     assert (stats.resolved, stats.merged) == (1, 1)
     phone_handle = created[0]
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
-    assert phone_handle.metadata.get("lid") == "113352894324870@lid"
+    assert phone_handle.metadata == {}
     assert Message._base_manager.filter(sender=phone_handle).count() == 1
 
 
@@ -1892,8 +1890,8 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     stats = resolve_channel_lids(channel, resolver)
 
     assert (overlapped[0].resolved, overlapped[0].merged) == (1, 1)
-    # The run that found the alias already merged counts it as neither resolved nor merged.
-    assert (stats.candidates, stats.resolved, stats.merged) == (1, 0, 0)
+    # The stale fold is refused after it locks and sees the redirect.
+    assert (stats.candidates, stats.resolved, stats.merged, stats.refused) == (1, 0, 0, 1)
     _assert_handle_redirect(lid_handle, phone_handle)
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2

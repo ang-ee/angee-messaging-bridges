@@ -38,12 +38,12 @@ from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
 from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
-from angee.parties.testing.fixtures import load_statement_sources
 from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
 from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
+from angee.provenance.testing import load_statement_sources
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
 from angee.storage.models import File as AbstractFile
@@ -60,13 +60,12 @@ def composed_tables(composed_tables: None) -> None:
     """The bridges' composed tables also carry the declared statement principals.
 
     Extends the ``angee.testing`` plugin fixture of the same name: after its REBAC
-    sync, the install-tier principals and grants that admission reads are loaded
-    (``angee.parties.testing.fixtures.load_statement_sources``), exactly as the
-    framework's hosts do.
+    sync, the install-tier principals and grants that admission reads are loaded,
+    exactly as the framework's hosts do.
     """
 
     del composed_tables
-    load_statement_sources()
+    load_statement_sources("parties")
 
 
 @pytest.fixture
