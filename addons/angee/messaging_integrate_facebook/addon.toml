@@ -9,8 +9,3 @@ depends_on = [
     "angee.messaging", "angee.integrate", "angee.parties", "angee.posts",
     "angee.workflows_integrate", "angee.messaging_integrate_meta",
 ]
-
-[[migrations]]
-name = "meta_vendor"
-app_label = "integrate"
-module = "runtime_migrations.meta_vendor"
