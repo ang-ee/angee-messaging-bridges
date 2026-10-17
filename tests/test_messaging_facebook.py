@@ -49,7 +49,7 @@ def facebook_tables(composed_tables: None) -> None:
 
 
 def test_message_parser_maps_direction_identity_and_thread_folder(tmp_path: Path) -> None:
-    """Facebook names become confidence-stamped handles and stable thread hints."""
+    """Facebook names carry typed confidence and stable thread hints."""
 
     root = _facebook_export(tmp_path)
     archive = FacebookArchive(root)
@@ -59,16 +59,15 @@ def test_message_parser_maps_direction_identity_and_thread_folder(tmp_path: Path
     assert parsed.direction == "inbound"
     assert parsed.sender is not None
     assert parsed.sender.value == "Bob Friend"
-    assert parsed.sender.metadata == {
-        "identity_confidence": "name_only",
-        "source": "facebook_takeout",
-    }
+    assert parsed.sender.confidence == 0.4
+    assert parsed.sender.metadata == {}
     assert parsed.thread is not None
     # The thread keys on Meta's stable directory slug; the folder is an
     # export-run fact and rides metadata only (a folder move must not fork).
     assert parsed.thread.external_id == "bob_chat"
     assert parsed.thread.metadata["folder"] == "inbox"
-    assert parsed.metadata["sender_identity"]["identity_confidence"] == "name_only"
+    assert "sender_identity" not in parsed.metadata
+    assert "source" not in parsed.metadata
 
 
 def test_comment_matching_distinguishes_strong_weak_and_unmatched() -> None:
@@ -140,7 +139,7 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
         first_counts = _row_counts()
         second_result = import_archive(root, channel)
         second_counts = _row_counts()
-        post = Message._base_manager.get(metadata__source="facebook_takeout", is_original_post=True)
+        post = Message._base_manager.get(is_original_post=True)
         comment = Message._base_manager.get(parent=post)
         direct = Message._base_manager.get(thread__modality=Thread.Modality.DIRECT)
         friend_handle = Handle._base_manager.get(platform="facebook", value="Bob Friend")
@@ -176,7 +175,7 @@ def test_importer_is_idempotent_and_lands_every_section_through_owners(
         SourceKind.IMPORT,
         str(to_subject_ref(channel.integration_ptr)),
     )
-    assert friend_handle.metadata["identity_confidence"] == "name_only"
+    assert friend_handle.metadata == {}
     assert Relationship._base_manager.get(kind__slug="acquaintance").started_at is not None
     # The friend record is one observed link on the takeout's read-once replica, cited by its statements.
     assert (stream.kind, stream.snapshot, stream.reconcile_interval) == (StreamKind.RECORD_REPLICA, True, None)

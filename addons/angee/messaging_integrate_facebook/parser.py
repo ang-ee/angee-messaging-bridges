@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from angee.messaging.backends import ParsedHandle, ParsedMessage, ParsedThread, body_part
+from angee.messaging.backends import ParsedMessage, ParsedThread, body_part
 from angee.messaging.backup_ingest import ContentKeyCounter
 from angee.messaging_integrate_facebook.archive import (
     FacebookArchive,
@@ -17,6 +17,7 @@ from angee.messaging_integrate_facebook.archive import (
     FacebookPostRecord,
 )
 from angee.messaging_integrate_meta.export import (
+    MetaHandle,
     MetaMessageRecord,
     decode_message,
     media_items,
@@ -24,11 +25,8 @@ from angee.messaging_integrate_meta.export import (
 from angee.parties.connections import ParsedConnection
 from angee.posts.backends import ParsedPost
 
-IDENTITY_METADATA = {
-    "identity_confidence": "name_only",
-    "source": "facebook_takeout",
-}
 # Facebook DYI exposes display names but no durable user ids.
+FACEBOOK_HANDLE_CONFIDENCE = 0.4
 
 _HASHTAG = re.compile(r"(?<!\w)#[\w-]+", re.UNICODE)
 
@@ -40,7 +38,7 @@ def parsed_message(record: MetaMessageRecord, *, own_name: str) -> ParsedMessage
         record,
         platform="facebook",
         own_name=own_name,
-        identity_metadata=IDENTITY_METADATA,
+        confidence=FACEBOOK_HANDLE_CONFIDENCE,
     )
 
 
@@ -55,11 +53,6 @@ def parsed_post(
     text, title = _post_text_title(record)
     media_data = _post_media(record.data)
     media = media_items(archive.export, {"photos": media_data})
-    metadata = {
-        "source": "facebook_takeout",
-        "identity": dict(IDENTITY_METADATA),
-        **({"album": record.album} if record.album else {}),
-    }
     subject_url = _post_subject_url(record.data)
     message = ParsedMessage(
         external_id=record.external_id,
@@ -73,10 +66,9 @@ def parsed_post(
             modality="public_thread",
             visibility="public",
             title=record.thread_title,
-            metadata={"source": "facebook_takeout"},
         ),
         body=body_part(text=text, media=media),
-        metadata=metadata,
+        metadata={"album": record.album} if record.album else {},
     )
     return ParsedPost(
         message=message,
@@ -149,7 +141,6 @@ def parsed_comment(
             modality="public_thread",
             visibility="public",
             title=f"{own_name}'s Comments" if own_name else "Facebook Comments",
-            metadata={"source": "facebook_takeout"},
         )
     )
     message = ParsedMessage(
@@ -162,11 +153,7 @@ def parsed_comment(
         in_reply_to=match.post.external_id if match.post is not None else "",
         thread=thread,
         body=body_part(text=text),
-        metadata={
-            "source": "facebook_takeout",
-            "identity": dict(IDENTITY_METADATA),
-            "post_match": match.strength,
-        },
+        metadata={"post_match": match.strength},
     )
     return ParsedPost(message=message, is_original_post=False)
 
@@ -188,14 +175,14 @@ def connection_key(record: FacebookConnectionRecord) -> str:
     return f"{record.section}:{record.name}"
 
 
-def _handle(name: str) -> ParsedHandle:
+def _handle(name: str) -> MetaHandle:
     """Return Facebook's accepted name-only handle with explicit confidence."""
 
-    return ParsedHandle(
+    return MetaHandle(
         platform="facebook",
         value=name,
         display_name=name,
-        metadata=dict(IDENTITY_METADATA),
+        confidence=FACEBOOK_HANDLE_CONFIDENCE,
     )
 
 
