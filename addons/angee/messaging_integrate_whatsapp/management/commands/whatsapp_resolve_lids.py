@@ -14,8 +14,9 @@ It needs no live WhatsApp connection: it only reads the on-disk store. It is
 re-runnable — a later run picks up LID mappings the store has since learned — and
 converges a resolved LID handle into the phone handle that owns its value on the
 ``(platform, value)`` uniqueness (including one sync creates during the run)
-through parties' one handle-merge verb, ``Handle.objects.merge``: everything that
-pointed at the LID handle, its handle statements included, moves before it goes.
+through the Handle's system fold: everything that pointed at the LID handle,
+its handle statements included, moves to the phone survivor while the LID stays
+as an identity redirect.
 """
 
 from __future__ import annotations
@@ -184,7 +185,7 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
     stats = LidResolveStats()
     with system_context(reason="whatsapp_resolve_lids"):
         candidates = list(
-            handle_model._base_manager.filter(
+            handle_model.objects.canonical().filter(
                 platform="whatsapp",
                 value__endswith="@lid",
                 participations__thread__channel=channel,
@@ -230,12 +231,8 @@ def _resolve_lid_handle(
     """
 
     with transaction.atomic():
-        target_pk = (
-            handle_model._base_manager.filter(platform="whatsapp", value=new_value)
-            .exclude(pk=handle.pk)
-            .values_list("pk", flat=True)
-            .first()
-        )
+        target = handle_model.objects.find_identity(platform="whatsapp", value=new_value)
+        target_pk = target.pk if target is not None and target.pk != handle.pk else None
         # Lock both handles in the parties identity order before anything that
         # points at them moves, then act on the locked rows: a concurrent run
         # may already have resolved this alias.
@@ -243,7 +240,7 @@ def _resolve_lid_handle(
             party_ids=(), handle_ids=(handle.pk,) if target_pk is None else (handle.pk, target_pk)
         )
         locked = handles.get(handle.pk)
-        if locked is None or not locked.value.endswith("@lid"):
+        if locked is None or locked.merged_into_id is not None or not locked.value.endswith("@lid"):
             return None
         target = handles.get(target_pk) if target_pk is not None else None
         if target is None:
@@ -252,12 +249,8 @@ def _resolve_lid_handle(
                     named = _rewrite_lid_handle(locked, new_value=new_value, bare_lid=bare_lid, name=name)
                 return LidOutcome(merged=False, named=named)
             except IntegrityError:
-                target = (
-                    handle_model._base_manager.filter(platform="whatsapp", value=new_value)
-                    .exclude(pk=locked.pk)
-                    .first()
-                )
-                if target is None:
+                target = handle_model.objects.find_identity(platform="whatsapp", value=new_value)
+                if target is None or target.pk == locked.pk:
                     raise
         return _merge_into_phone_handle(locked, target, bare_lid=bare_lid, name=name)
 
@@ -265,7 +258,8 @@ def _resolve_lid_handle(
 def _tally_dry_run(handle_model: Any, handle: Any, *, new_value: str, name: str, stats: LidResolveStats) -> None:
     """Count the merge/name outcomes a real run would produce for one handle."""
 
-    if handle_model._base_manager.filter(platform="whatsapp", value=new_value).exclude(pk=handle.pk).exists():
+    target = handle_model.objects.find_identity(platform="whatsapp", value=new_value)
+    if target is not None and target.pk != handle.pk:
         stats.merged += 1
     if name and not handle.display_name:
         stats.named += 1
@@ -286,22 +280,19 @@ def _rewrite_lid_handle(handle: Any, *, new_value: str, bare_lid: str, name: str
     return named
 
 
-def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: str) -> LidOutcome | None:
+def _merge_into_phone_handle(handle: Any, target: Any, *, bare_lid: str, name: str) -> LidOutcome:
     """Merge a resolved LID handle into the phone handle that already owns its value.
 
-    Parties' handle merge (``Handle.objects.merge``) folds the alias in: the phone
-    handle keeps its own values (and its own ``external_id``), takes the ones it
-    lacks, and receives every row that pointed at the alias — messages,
-    participations, reactions, tags and handle statements, where every party's
-    decisions and evidence survive — before the alias is deleted. This adapter then
-    records what only the store knows: the LID under ``metadata['lid']`` and the
-    store's contact name when the phone handle still has none. ``None`` when a
-    concurrent run removed either handle first.
+    The phone handle folds the alias in: it keeps its own values (and its own
+    ``external_id``), takes the ones it lacks, and receives every row that pointed
+    at the alias — messages, participations, reactions, tags and handle statements,
+    where every party's decisions and evidence survive. The alias remains its
+    retained identity redirect. This adapter then records what only the store knows:
+    the LID under ``metadata['lid']`` and the store's contact name when the phone
+    handle still has none.
     """
 
-    kept = apps.get_model("parties", "Handle").objects.merge(handle, into=target)
-    if kept is None:
-        return None
+    kept = target.fold([handle])
     updates: list[str] = []
     merged_metadata = {**(kept.metadata or {}), "lid": bare_lid}
     if merged_metadata != kept.metadata:
