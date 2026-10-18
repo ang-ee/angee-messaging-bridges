@@ -7,9 +7,9 @@ import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_SPEC = importlib.util.find_spec("angee")
-assert BASE_SPEC is not None and BASE_SPEC.origin is not None
-ANGEE = Path(BASE_SPEC.origin).resolve().parent
+ANGEE_SPEC = importlib.util.find_spec("angee")
+assert ANGEE_SPEC is not None and ANGEE_SPEC.origin is not None
+ANGEE = Path(ANGEE_SPEC.origin).resolve().parent
 INTEGRATE_SPEC = importlib.util.find_spec("angee.integrate")
 assert INTEGRATE_SPEC is not None and INTEGRATE_SPEC.origin is not None
 BASE_ADDONS_ROOT = Path(INTEGRATE_SPEC.origin).resolve().parents[2]
@@ -102,10 +102,10 @@ def _tree_imports(root: Path) -> set[str]:
     return names
 
 
-def test_framework_base_does_not_import_bridge_addons() -> None:
-    """The framework model layer stays below every optional messaging bridge."""
+def test_framework_does_not_import_bridge_addons() -> None:
+    """The framework core and its base addons stay below every optional messaging bridge."""
 
-    imports = _tree_imports(ANGEE / "base")
+    imports = _tree_imports(ANGEE) | _tree_imports(BASE_ADDONS_ROOT)
     assert not any(name.startswith(prefix) for name in imports for prefix in _BRIDGE_PACKAGES)
 
 

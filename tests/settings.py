@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "angee.sequence",
     "angee.spaces",
     "angee.projects",
+    "angee.portfolio",
     "angee.proposals",
     "angee.work",
     "angee.intake",

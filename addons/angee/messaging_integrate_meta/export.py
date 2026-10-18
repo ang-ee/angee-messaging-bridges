@@ -34,13 +34,6 @@ _MESSAGE_FILE = re.compile(r"^message_(\d+)\.json$")
 _MEDIA_KEYS = ("photos", "videos", "audio_files", "files", "gifs")
 
 
-@dataclass(frozen=True)
-class MetaHandle(ParsedHandle):
-    """A Meta handle that can carry typed connection confidence."""
-
-    confidence: float | None = None
-
-
 def message_content_projection(data: Mapping[str, Any]) -> dict[str, Any]:
     """Return the author-written identity content of one Meta message record.
 
@@ -375,7 +368,7 @@ def decode_message(
 
     data = record.data
     sender_name = str(data.get("sender_name") or "Meta User")
-    sender = MetaHandle(
+    sender = ParsedHandle(
         platform=platform,
         value=sender_name,
         display_name=sender_name,
@@ -383,7 +376,7 @@ def decode_message(
     )
     recipients = tuple(
         ParsedRecipient(
-            handle=MetaHandle(
+            handle=ParsedHandle(
                 platform=platform,
                 value=name,
                 display_name=name,

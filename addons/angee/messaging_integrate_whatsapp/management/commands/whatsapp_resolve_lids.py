@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
@@ -22,20 +22,33 @@ class StoreUnreadable(Exception):
     """The whatsmeow store cannot supply its LID map."""
 
 
+class LidResolver(Protocol):
+    """What the resolution needs from a session store: the phone behind a LID and a contact name."""
+
+    def phone_for_lid(self, bare_lid: str) -> str: ...
+
+    def name_for_phone(self, phone_digits: str) -> str: ...
+
+
 @dataclass
 class StoreResolver:
+    """The whatsmeow session store's LID map and contact names, read once."""
+
     lid_to_pn: dict[str, str] = field(default_factory=dict)
     contacts: dict[str, tuple[str, str]] = field(default_factory=dict)
 
     def phone_for_lid(self, bare_lid: str) -> str:
+        """Return the phone digits mapped to ``bare_lid``, or "" when the store has no mapping."""
         return self.lid_to_pn.get(_lid_digits(bare_lid), "")
 
     def name_for_phone(self, phone_digits: str) -> str:
+        """Return the contact's push name, else full name, for a phone number."""
         push, full = self.contacts.get(phone_digits.strip(), ("", ""))
         return (push or full).strip()
 
     @classmethod
     def from_store(cls, db_path: Path) -> StoreResolver:
+        """Read the LID map and contacts from the store; an absent store resolves nothing."""
         if not db_path.exists():
             return cls()
         try:
@@ -62,11 +75,14 @@ class StoreResolver:
 
 
 def _lid_digits(lid: str) -> str:
+    """Return the digits before ``@`` of a LID, lower-cased and trimmed."""
     return lid.strip().lower().split("@", 1)[0]
 
 
 @dataclass
 class LidResolveStats:
+    """Counts of one resolution pass, printed by the command."""
+
     candidates: int = 0
     resolved: int = 0
     merged: int = 0
@@ -75,6 +91,7 @@ class LidResolveStats:
     refused: int = 0
 
     def summary(self, *, dry_run: bool) -> str:
+        """Return the one-line report for the operator."""
         verb = "Would resolve" if dry_run else "Resolved"
         return (
             f"{verb} {self.resolved}/{self.candidates} @lid handle(s): "
@@ -84,7 +101,13 @@ class LidResolveStats:
         )
 
 
-def resolve_channel_lids(channel: Any, resolver: Any, *, dry_run: bool = False) -> LidResolveStats:
+def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool = False) -> LidResolveStats:
+    """Resolve every canonical ``@lid`` handle of ``channel`` the store maps to a phone number.
+
+    A mapped LID whose phone already has a handle is folded into it (the alias stays as a
+    redirect); otherwise the LID handle is rewritten to the phone number. Names fill empty
+    display names only. A merge the handle owner refuses is counted, never forced.
+    """
     model = apps.get_model("parties", "Handle")
     stats = LidResolveStats()
     with system_context(reason="whatsapp_resolve_lids"):
@@ -126,23 +149,30 @@ def resolve_channel_lids(channel: Any, resolver: Any, *, dry_run: bool = False) 
 def _resolve_lid_handle(
     model: Any, handle: Any, *, target: Any | None, value: str, name: str
 ) -> tuple[bool, bool] | None:
-    if target is not None and target.pk != handle.pk:
-        return _fold_lid_handle(handle, target, name=name)
+    """Fold or rewrite one LID handle under its row lock.
+
+    Returns ``(merged, named)``, or ``None`` when a concurrent run already resolved the
+    handle (it is gone, redirected, or no longer a LID), which is a skip, not a refusal.
+    """
     with transaction.atomic():
         locked = model.system_queryset(lock=("self",)).filter(pk=handle.pk).first()
         if locked is None or locked.merged_into_id is not None or not locked.value.endswith("@lid"):
             return None
+        if target is not None and target.pk != locked.pk:
+            return _fold_lid_handle(locked, target, name=name)
         try:
             with transaction.atomic():
                 return False, _rewrite_lid_handle(locked, new_value=value, name=name)
         except IntegrityError:
+            # The phone handle appeared between the lookup and the rewrite: fold into it.
             target = model.objects.find_identity(platform="whatsapp", value=value)
             if target is None or target.pk == locked.pk:
                 raise
-    return _fold_lid_handle(locked, target, name=name)
+        return _fold_lid_handle(locked, target, name=name)
 
 
 def _rewrite_lid_handle(handle: Any, *, new_value: str, name: str) -> bool:
+    """Turn the LID handle into the phone handle in place; return whether a name was filled."""
     handle.value = new_value
     fields = ["value"]
     named = bool(name and not handle.display_name)
@@ -154,6 +184,7 @@ def _rewrite_lid_handle(handle: Any, *, new_value: str, name: str) -> bool:
 
 
 def _fold_lid_handle(handle: Any, target: Any, *, name: str) -> tuple[bool, bool]:
+    """Merge the LID handle into the existing phone handle; return ``(True, named)``."""
     kept = target.fold([handle])
     named = bool(name and not kept.display_name)
     if named:
@@ -163,13 +194,17 @@ def _fold_lid_handle(handle: Any, target: Any, *, name: str) -> tuple[bool, bool
 
 
 class Command(BaseCommand):
+    """Resolve a channel's hidden ``@lid`` senders from its local whatsmeow store."""
+
     help = "Resolve WhatsApp @lid sender handles to phone numbers/names from the channel's session store."
 
     def add_arguments(self, parser: CommandParser) -> None:
+        """Declare the channel and dry-run options."""
         parser.add_argument("--channel", required=True, help="Target WhatsApp channel (sqid).")
         parser.add_argument("--dry-run", action="store_true", help="Report changes without writing them.")
 
     def handle(self, *args: Any, **options: Any) -> None:
+        """Read the store, resolve the channel's LIDs and print the summary."""
         del args
         try:
             channel = confirmed_whatsapp_channel(options["channel"])

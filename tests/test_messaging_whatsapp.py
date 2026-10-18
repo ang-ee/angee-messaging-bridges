@@ -1890,8 +1890,8 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     stats = resolve_channel_lids(channel, resolver)
 
     assert (overlapped[0].resolved, overlapped[0].merged) == (1, 1)
-    # The stale fold is refused after it locks and sees the redirect.
-    assert (stats.candidates, stats.resolved, stats.merged, stats.refused) == (1, 0, 0, 1)
+    # The stale fold locks the alias, sees the redirect and skips it: nothing to refuse.
+    assert (stats.candidates, stats.resolved, stats.merged, stats.refused) == (1, 0, 0, 0)
     _assert_handle_redirect(lid_handle, phone_handle)
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2

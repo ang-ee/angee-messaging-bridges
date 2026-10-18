@@ -43,6 +43,7 @@ from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
 from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
+from angee.portfolio.testing import models as portfolio_models  # noqa: F401 -- the projects test task composes the portfolio extension; its release target must exist
 from angee.provenance.testing import load_statement_sources
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive

@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from angee.messaging.backends import ParsedMessage, ParsedThread, body_part
+from angee.messaging.backends import ParsedHandle, ParsedMessage, ParsedThread, body_part
 from angee.messaging.backup_ingest import ContentKeyCounter
 from angee.messaging_integrate_facebook.archive import (
     FacebookArchive,
@@ -17,7 +17,6 @@ from angee.messaging_integrate_facebook.archive import (
     FacebookPostRecord,
 )
 from angee.messaging_integrate_meta.export import (
-    MetaHandle,
     MetaMessageRecord,
     decode_message,
     media_items,
@@ -175,10 +174,10 @@ def connection_key(record: FacebookConnectionRecord) -> str:
     return f"{record.section}:{record.name}"
 
 
-def _handle(name: str) -> MetaHandle:
+def _handle(name: str) -> ParsedHandle:
     """Return Facebook's accepted name-only handle with explicit confidence."""
 
-    return MetaHandle(
+    return ParsedHandle(
         platform="facebook",
         value=name,
         display_name=name,
