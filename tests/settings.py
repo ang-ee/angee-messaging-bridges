@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     "rebac",
     "simple_history",
     "tests.settings.BareComposeConfig",
-    "angee.base",
+    "angee",
     "angee.provenance",
     "tests.settings.BareGraphQLConfig",
     "angee.jobs",

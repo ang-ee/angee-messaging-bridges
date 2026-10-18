@@ -7,9 +7,9 @@ import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_SPEC = importlib.util.find_spec("angee.base")
+BASE_SPEC = importlib.util.find_spec("angee")
 assert BASE_SPEC is not None and BASE_SPEC.origin is not None
-ANGEE = Path(BASE_SPEC.origin).resolve().parents[1]
+ANGEE = Path(BASE_SPEC.origin).resolve().parent
 INTEGRATE_SPEC = importlib.util.find_spec("angee.integrate")
 assert INTEGRATE_SPEC is not None and INTEGRATE_SPEC.origin is not None
 BASE_ADDONS_ROOT = Path(INTEGRATE_SPEC.origin).resolve().parents[2]

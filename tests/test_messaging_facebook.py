@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from angee.base.models import SourceKind
+from angee.models import SourceKind
 from rebac import system_context, to_subject_ref
 
 from angee.integrate.states import LinkStatus, StreamKind
