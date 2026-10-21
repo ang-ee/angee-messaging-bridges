@@ -13,7 +13,7 @@ from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
-from angee.jobs.enqueue import celery_app
+from angee.posts_integrate_youtube.models import YouTubeFeedState
 from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -37,13 +37,15 @@ from angee.integrate_vcs.models import Repository as AbstractRepository
 from angee.integrate_vcs.models import Source as AbstractSource
 from angee.integrate_vcs.models import Template as AbstractTemplate
 from angee.integrate_vcs.models import VcsBridge as AbstractVcsBridge
+from angee.jobs.enqueue import celery_app
 from angee.messaging.testing import models as messaging_models  # noqa: F401 -- register shared FK targets
+from angee.portfolio.testing import (
+    models as portfolio_models,  # noqa: F401 -- the projects test task composes the portfolio extension; its release target must exist
+)
 from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
-from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
-from angee.portfolio.testing import models as portfolio_models  # noqa: F401 -- the projects test task composes the portfolio extension; its release target must exist
 from angee.provenance.testing import load_statement_sources
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
