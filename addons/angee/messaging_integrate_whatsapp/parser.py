@@ -60,12 +60,6 @@ def is_group_jid(jid: str) -> bool:
     return bare_jid(jid).partition("@")[2] in GROUP_SERVERS
 
 
-def is_lid_jid(jid: str) -> bool:
-    """Return whether a JID is a hidden-identity ``@lid`` address."""
-
-    return bare_jid(jid).partition("@")[2] == "lid"
-
-
 def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> ParsedHandle:
     """Return the whatsapp handle for a JID — phone as the value when derivable.
 
