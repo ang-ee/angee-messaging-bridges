@@ -258,10 +258,10 @@ addons = [
     { name = "requests", specifier = ">=2.32" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "strawberry-django-aggregates", specifier = ">=0.14.0" },
+    { name = "strawberry-django-aggregates", git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc" },
     { name = "strawberry-django-hasura", specifier = ">=0.14.0" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
-    { name = "strawberry-graphql-django", specifier = ">=0.89.2" },
+    { name = "strawberry-graphql-django", git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced" },
     { name = "tablib", specifier = ">=3" },
     { name = "telethon", specifier = ">=1.44" },
     { name = "unpaddedbase64", specifier = ">=2.1" },
@@ -1036,12 +1036,12 @@ requires-dist = [
     { name = "cryptography", specifier = ">=44" },
     { name = "django", specifier = ">=6.0,<6.1" },
     { name = "django-celery-beat", specifier = ">=2.9" },
-    { name = "django-choices-field", specifier = ">=4.0.0" },
+    { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
     { name = "django-environ", specifier = ">=0.12" },
     { name = "django-simple-history", specifier = ">=3.13" },
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "django-zed-rebac", specifier = "==0.27.3" },
+    { name = "django-zed-rebac", git = "https://github.com/ang-ee/django-zed-rebac.git?rev=bf5989e6247fdf9c2c240b961a71cddc174c4216" },
     { name = "hatch-angee", specifier = ">=0.2.4" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
@@ -1091,19 +1091,20 @@ addons = [
     { name = "requests", specifier = ">=2.32" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "strawberry-django-aggregates", specifier = ">=0.14.0" },
+    { name = "strawberry-django-aggregates", git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc" },
     { name = "strawberry-django-hasura", specifier = ">=0.14.0" },
     { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
-    { name = "strawberry-graphql-django", specifier = ">=0.89.2" },
+    { name = "strawberry-graphql-django", git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced" },
     { name = "tablib", specifier = ">=3" },
     { name = "urllib3", specifier = ">=2.2" },
     { name = "vobject", specifier = ">=0.9.9" },
 ]
 dev = [
     { name = "daphne", specifier = ">=4.0" },
+    { name = "django-stubs", extras = ["compatible-mypy"], git = "https://github.com/ang-ee/django-stubs.git?rev=c742042283a82c3248c68493c697f5f30e2fdc6a" },
     { name = "django-zed-rebac", extras = ["caveats"], specifier = "==0.27.3" },
     { name = "faker", specifier = ">=30.0" },
-    { name = "mypy", specifier = ">=1.10" },
+    { name = "mypy", git = "https://github.com/ang-ee/mypy.git?rev=ac3de6e4c34b04728e768e07d4842f4309ff6c45" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-django", specifier = ">=4.8" },
@@ -1162,14 +1163,10 @@ wheels = [
 [[package]]
 name = "django-choices-field"
 version = "4.0.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632#b02c1488660d0bf1f4483d2e73bc842b41b70632" }
 dependencies = [
     { name = "django" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/23/54749b86f605aafeaab81dc8e023968d95a7cc44434eac4df330e8e7f0d8/django_choices_field-4.0.0.tar.gz", hash = "sha256:7b07aacb2ad2b3ee3c8be78be98302ebbcb606285d20547a4163287819364954", size = 6346, upload-time = "2025-12-27T11:53:50.986Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/fd/2e0bb952961ba108bdb82efbb10eaeae5bbb5a687b6bdaf8427af181ac5d/django_choices_field-4.0.0-py3-none-any.whl", hash = "sha256:dfa59033685af989f5bc49d95a586e8de692999d3179bf1cb14ef99879e6ff45", size = 7035, upload-time = "2025-12-27T11:53:50.229Z" },
 ]
 
 [[package]]
@@ -1258,13 +1255,9 @@ wheels = [
 [[package]]
 name = "django-zed-rebac"
 version = "0.27.3"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ang-ee/django-zed-rebac.git?rev=bf5989e6247fdf9c2c240b961a71cddc174c4216#bf5989e6247fdf9c2c240b961a71cddc174c4216" }
 dependencies = [
     { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/de/6c/64e45ca4046217e3a19d2f24a2ea950d3eb6eda4540eea7d2e53572d70c9/django_zed_rebac-0.27.3.tar.gz", hash = "sha256:a4f813471bd4b11cff6a848ad8037b30cd4c64de8b4a1c84f34b138ab212f691", size = 599388, upload-time = "2026-10-14T09:50:06.217Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/61/303b8cc5bca7cb0485eeb5b521e4abe168d56362918988f0b939cb4e5ed7/django_zed_rebac-0.27.3-py3-none-any.whl", hash = "sha256:50d0e0e8507824cbe321105524ec0ab39cd91879ad7b9b855c20486fe370a9d4", size = 314848, upload-time = "2026-10-14T09:50:05.01Z" },
 ]
 
 [package.optional-dependencies]
@@ -3225,15 +3218,11 @@ wheels = [
 [[package]]
 name = "strawberry-django-aggregates"
 version = "0.14.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc#0f374854d19b2709b6d77ae872090ab2a751f1dc" }
 dependencies = [
     { name = "django" },
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/3e/739c73f072e4d43d68b4918319f76fbb6d23420420152a9b1cf27b247c39/strawberry_django_aggregates-0.14.0.tar.gz", hash = "sha256:a837203d4299a6d80ccf1b4880f3c5e402f2c9e9e73ecc9852859403805a17fc", size = 179329, upload-time = "2026-10-05T14:52:08.616Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/15/513e15531c95e737f53f565bb27277b7b05f16a503df7cb2cb51372ff363/strawberry_django_aggregates-0.14.0-py3-none-any.whl", hash = "sha256:29a5652b679aa0897f28096d49805e07453537d57cfe96b3d8680a8a3dd7e81b", size = 115226, upload-time = "2026-10-05T14:52:07.628Z" },
 ]
 
 [[package]]
@@ -3266,15 +3255,11 @@ dependencies = [
 [[package]]
 name = "strawberry-graphql-django"
 version = "0.89.2"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced#091238ecd4ae07798ef12e9eb24281540da41ced" }
 dependencies = [
     { name = "asgiref" },
     { name = "django" },
     { name = "strawberry-graphql" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/6c/b7c0e37062412639d56652295da898e0468ad079f356b6fa09a564562ef8/strawberry_graphql_django-0.89.2.tar.gz", hash = "sha256:2c7d33eaf0ae8029274c446d6fc30a27361040077101473b39b250cd250cf2db", size = 96917, upload-time = "2026-09-13T10:14:05.74Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/88/1bca5f3155c69b963120a1b9c10d85293d954a6766ec44efd1a9e14b2acf/strawberry_graphql_django-0.89.2-py3-none-any.whl", hash = "sha256:e049bb4c08f42fe104390556ae8e723705a39a6bf7913c1afc76b4099a5891c2", size = 121218, upload-time = "2026-09-13T10:14:04.556Z" },
 ]
 
 [[package]]
