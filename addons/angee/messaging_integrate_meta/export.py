@@ -4,7 +4,7 @@ Meta emits Facebook and Instagram archives with the same dialect: recursively
 mojibaked JSON strings, millisecond message timestamps, numbered message chunks,
 and attachment URIs rooted at one of several overlapping export trees. This
 module owns that format once. Network addons provide the activity-directory
-name, folder inventory, platform, and identity-confidence annotation.
+name, folder inventory, platform, and handle confidence.
 """
 
 from __future__ import annotations
@@ -362,18 +362,17 @@ def decode_message(
     *,
     platform: str,
     own_name: str,
-    identity_metadata: Mapping[str, Any] | None = None,
+    confidence: float | None = None,
 ) -> ParsedMessage:
     """Decode one shared-dialect record onto messaging's neutral DTO."""
 
     data = record.data
     sender_name = str(data.get("sender_name") or "Meta User")
-    handle_metadata = dict(identity_metadata or {})
     sender = ParsedHandle(
         platform=platform,
         value=sender_name,
         display_name=sender_name,
-        metadata=handle_metadata,
+        confidence=confidence,
     )
     recipients = tuple(
         ParsedRecipient(
@@ -381,7 +380,7 @@ def decode_message(
                 platform=platform,
                 value=name,
                 display_name=name,
-                metadata=handle_metadata,
+                confidence=confidence,
             )
         )
         for name in record.participants
@@ -396,9 +395,7 @@ def decode_message(
         if isinstance(item, Mapping)
     ]
     metadata = {
-        "source": f"{platform}_takeout",
         "thread": dict(record.thread_metadata),
-        "sender_identity": handle_metadata,
         **({"reactions": reactions} if reactions else {}),
     }
     for key in ("share", "sticker", "ip", "call_duration"):

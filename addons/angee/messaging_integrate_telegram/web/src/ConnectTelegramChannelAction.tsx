@@ -7,6 +7,7 @@ import {
   type AuthoredVariables,
 } from "@angee/refine";
 import {
+  NavLink,
   mutationDialogValueCodecs,
   savedFormSubmitResult,
   useUiT,
@@ -63,9 +64,9 @@ export function ConnectTelegramChannelAction(): React.ReactElement {
             <>
               <span>{translate("channel.telegram.keysHelp")}</span>
               <br />
-              <a href="https://my.telegram.org/" target="_blank" rel="noreferrer">
+              <NavLink variant="inline" href="https://my.telegram.org/" target="_blank">
                 {translate("channel.telegram.keysLink")}
-              </a>
+              </NavLink>
             </>
           ),
         },

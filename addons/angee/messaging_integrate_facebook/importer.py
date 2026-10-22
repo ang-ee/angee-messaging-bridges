@@ -10,7 +10,7 @@ from typing import Any
 from django.apps import apps
 from rebac import system_context
 
-from angee.integrate.states import StreamKind
+from angee.integrate.states import StreamDefinition, StreamKind
 from angee.messaging.backup_ingest import (
     ContentKeyCounter,
     batch_ingest,
@@ -147,7 +147,7 @@ def observe_connections(channel: Any, records: list[FacebookConnectionRecord]) -
     """
 
     stream = apps.get_model("integrate", "SyncStream").objects.current(
-        channel, CONNECTIONS_STREAM, kind=StreamKind.RECORD_REPLICA, snapshot=True
+        channel, StreamDefinition(key=CONNECTIONS_STREAM, kind=StreamKind.RECORD_REPLICA, snapshot=True)
     )
     links = apps.get_model("integrate", "RecordLink").objects
     return [
