@@ -12,4 +12,3 @@ export const useMessagingSignalT = createNamespaceT(
   "messaging",
   enMessagingSignalMessages,
 );
-export type MessagingSignalT = ReturnType<typeof useMessagingSignalT>;

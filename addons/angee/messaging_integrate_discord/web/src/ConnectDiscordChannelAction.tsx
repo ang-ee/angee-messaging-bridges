@@ -4,6 +4,7 @@ import {
 } from "@angee/messaging";
 import type { AuthoredVariables } from "@angee/refine";
 import {
+  NavLink,
   mutationDialogValueCodecs,
   type MutationDialogValues,
 } from "@angee/ui";
@@ -89,13 +90,9 @@ function nextStep(
 ): React.ReactNode {
   return (
     <p>
-      <a
-        href={discordBotInviteUrl(values.applicationId)}
-        target="_blank"
-        rel="noreferrer"
-      >
+      <NavLink variant="inline" href={discordBotInviteUrl(values.applicationId)} target="_blank">
         {t("channel.discord.invite")}
-      </a>
+      </NavLink>
     </p>
   );
 }

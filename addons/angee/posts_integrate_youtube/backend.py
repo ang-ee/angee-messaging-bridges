@@ -18,7 +18,8 @@ from pydantic import ValidationError as CursorValidationError
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError
-from angee.integrate.streams import CursorInvalid, StreamDefinition, StreamPage
+from angee.integrate.states import StreamDefinition
+from angee.integrate.streams import CursorInvalid, StreamPage
 from angee.messaging.backends import DeliveryUncertain, ParsedHandle
 from angee.posts.backends import FeedBackend, ParsedPost, RecordRefusal
 
