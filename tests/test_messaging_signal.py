@@ -631,6 +631,27 @@ def test_signal_stdout_eof_reports_disconnected(
     session.client.shutdown(0.1)
 
 
+def test_signal_vendor_failure_queues_error_after_pairing(tmp_path: Path) -> None:
+    """A producer failure cannot be erased when the task later drains pairing."""
+
+    session_module = _signal_module("session")
+    error = ConnectionError("Signal receive failed.")
+
+    class FailedSession(session_module.SignalSession):
+        def _run_client(self) -> None:
+            self.events.put(("paired", "+420700000000"))
+            raise error
+
+    session = FailedSession(_BareBridge(tmp_path), reporter=_NoopReporter(), stop_event=threading.Event())
+    session._connect()
+
+    assert session.outcome_error is None
+    assert session.events.get_nowait() == ("paired", "+420700000000")
+    assert session.events.get_nowait() == ("error", error)
+    assert session.events.get_nowait() == ("disconnected", None)
+    assert session.events.empty()
+
+
 @pytest.mark.parametrize(
     ("message", "elapsed", "expired"),
     [
@@ -740,9 +761,12 @@ def test_signal_non_expiry_link_error_fails_session(
 
     session._connect()
 
-    assert isinstance(session.outcome_error, session_module.SignalCliRpcError)
-    assert str(session.outcome_error) == message
+    assert session.outcome_error is None
     assert session.events.get_nowait() == ("qr", b"sgnl://linkdevice?uuid=first")
+    kind, error = session.events.get_nowait()
+    assert kind == "error"
+    assert isinstance(error, session_module.SignalCliRpcError)
+    assert str(error) == message
     assert session.events.get_nowait() == ("disconnected", None)
     assert [record["method"] for record in _rpc_transcript(scripted_signal_cli.instances[-1])] == [
         "listAccounts",
