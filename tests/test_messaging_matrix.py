@@ -870,10 +870,21 @@ def test_matrix_mid_session_forbidden_is_retriable_not_logged_out(
 
     session._connect()
 
-    kinds = [session.events.get_nowait()[0] for _ in range(session.events.qsize())]
-    assert kinds == ["paired", "disconnected"]
-    assert isinstance(session.outcome_error, matrix_session_module.MatrixApiError)
-    assert session.outcome_error.errcode == "M_FORBIDDEN"
+    assert session.outcome_error is None
+    with system_context(reason="test matrix retriable error drain"), bridge_advisory_lock(channel) as acquired:
+        assert acquired
+        assert session._drain_once() is True
+        assert session.pairing is PairingState.PAIRED
+        assert session.outcome_error is None
+        assert session._drain_once() is True
+        error = session.outcome_error
+        assert isinstance(error, matrix_session_module.MatrixApiError)
+        assert error.errcode == "M_FORBIDDEN"
+        assert session._drain_once() is False
+    assert session.outcome_error is error
+    assert session.pairing is PairingState.PAIRED
+    assert session.events.empty()
+    assert path.exists()
 
 
 @pytest.mark.django_db(transaction=True)
