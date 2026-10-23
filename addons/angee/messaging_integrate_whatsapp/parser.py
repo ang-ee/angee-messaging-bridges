@@ -60,12 +60,6 @@ def is_group_jid(jid: str) -> bool:
     return bare_jid(jid).partition("@")[2] in GROUP_SERVERS
 
 
-def is_lid_jid(jid: str) -> bool:
-    """Return whether a JID is a hidden-identity ``@lid`` address."""
-
-    return bare_jid(jid).partition("@")[2] == "lid"
-
-
 def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> ParsedHandle:
     """Return the whatsapp handle for a JID — phone as the value when derivable.
 
@@ -78,8 +72,7 @@ def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> 
     handle each time). The LID→phone mapping is stable, so re-sync stays
     idempotent; a LID that only resolves later simply converges onto the phone
     handle while the offline backfill merges the stale LID row. An *unresolved*
-    LID keeps the bare LID as both its ``external_id`` and ``value``. Either way
-    the bare LID is stamped into ``metadata['lid']`` so it stays retrievable.
+    LID keeps the bare LID as both its ``external_id`` and ``value``.
     """
 
     bare = bare_jid(jid)
@@ -94,7 +87,6 @@ def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> 
         value=phone_value or bare,
         display_name=display_name,
         external_id=identity,
-        metadata={"lid": bare} if is_lid else {},
     )
 
 

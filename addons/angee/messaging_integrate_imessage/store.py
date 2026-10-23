@@ -416,9 +416,3 @@ class ImessageStore:
         """Return ``instant`` as Core Data seconds (seconds since 2001-01-01 UTC)."""
 
         return (instant - CORE_DATA_EPOCH).total_seconds()
-
-
-def open_sms_store(backup_dir: Path | str) -> ImessageStore:
-    """Open the Messages store inside one unencrypted iPhone backup directory."""
-
-    return ImessageStore(IosBackup(backup_dir))

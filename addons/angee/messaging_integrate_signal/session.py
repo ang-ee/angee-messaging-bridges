@@ -244,10 +244,10 @@ class SignalSession(LiveChannelSession):
             if error.error_types & _LOGGED_OUT_ERROR_TYPES:
                 self.events.put(("logged_out", None))
             else:
-                self.outcome_error = error
+                self.events.put(("error", error))
                 logger.exception("Signal connection for channel %s failed.", self.bridge.sqid)
         except Exception as error:
-            self.outcome_error = error
+            self.events.put(("error", error))
             logger.exception("Signal connection for channel %s crashed.", self.bridge.sqid)
         finally:
             self.events.put(("disconnected", None))

@@ -135,7 +135,7 @@ def transport(monkeypatch, handler):
 def source(feed, key="history", cursor=None):
     """Open a genuine durable stream through its public declaration contract."""
 
-    adapter = feed.backend
+    adapter = feed.feed_backend
     try:
         definition = next(item for item in adapter.streams() if item.key == key)
         row = open_stream(feed, key, definition.partition, adapter, definition=definition)
@@ -150,7 +150,7 @@ def source(feed, key="history", cursor=None):
 def step(feed, stream, *, bound=10, deadline=None):
     """Let the real driver land records, quarantine refusals and commit or reset cursors."""
 
-    adapter = feed.backend
+    adapter = feed.feed_backend
     try:
         return advance_stream(stream, adapter, page_bound=bound, deadline=deadline)
     finally:
@@ -160,7 +160,7 @@ def step(feed, stream, *, bound=10, deadline=None):
 def drain(feed, stream, *, bound=10):
     """Resume the returned epoch, including the driver's repeated-page checks."""
 
-    adapter = feed.backend
+    adapter = feed.feed_backend
     try:
         previous, resets = None, 0
         for _ in range(200):
@@ -303,7 +303,7 @@ def test_youtube_preset_seed_and_read_only_discovery_field(feed):
     assert GoogleYouTube.defaults["supports_refresh"] and GoogleYouTube.defaults["supports_pkce"]
     assert "uploads_playlist_id" not in YouTubeFeedBackend.Config.model_fields
     assert not feed._meta.get_field("youtube_uploads_playlist_id").editable
-    assert [(item.key, item.partition) for item in feed.backend.streams()] == [
+    assert [(item.key, item.partition) for item in feed.feed_backend.streams()] == [
         ("activity", "channel-demo"), ("history", "channel-demo"), ("reobserve", "channel-demo"),
     ]
 
@@ -311,7 +311,7 @@ def test_youtube_preset_seed_and_read_only_discovery_field(feed):
 def test_youtube_discovery_separates_network_facts_from_database_apply(feed, monkeypatch, wire):
     calls = transport(monkeypatch, lambda *args: wire["channel"])
     before = (feed.external_id, feed.handle_id, feed.youtube_uploads_playlist_id, feed.credential.updated_at)
-    discovery = feed.backend.discover_connection(feed.credential)
+    discovery = feed.feed_backend.discover_connection(feed.credential)
     feed.refresh_from_db()
     assert isinstance(discovery, ConnectionDiscovery) and discovery.credential is None
     assert set(discovery.data) == {"external_id", "display_name", "handle", "uploads_playlist_id"}
@@ -321,7 +321,7 @@ def test_youtube_discovery_separates_network_facts_from_database_apply(feed, mon
     feed.youtube_uploads_playlist_id = ""
     feed.save(update_fields=["youtube_uploads_playlist_id", "updated_at"])
     with transaction.atomic():
-        feed.backend.apply_discovery(discovery)
+        feed.feed_backend.apply_discovery(discovery)
     feed.refresh_from_db()
     assert feed.youtube_uploads_playlist_id == "uploads-demo" and feed.display_name == "Example Channel"
     assert feed.handle.external_id == "channel-demo"
@@ -340,7 +340,7 @@ def test_youtube_discovery_refuses_unusable_channel(feed, monkeypatch, wire, sel
         payload["items"][0]["contentDetails"] = {}
     transport(monkeypatch, lambda *args: payload)
     with pytest.raises(IntegrationError):
-        feed.backend.discover_connection(feed.credential)
+        feed.feed_backend.discover_connection(feed.credential)
 
 
 def test_youtube_history_engine_resumes_all_page_types_and_skips_zero_comments(feed, monkeypatch, wire):
@@ -752,14 +752,14 @@ def test_youtube_polling_limit_protects_reply_units_on_the_real_ledger(feed, rep
     quota = apps.get_model("posts", "Quota").objects
     now = AT.astimezone(ZoneInfo(YouTubeFeedBackend.quota_reset_timezone))
     period = quota.open_period(
-        integration=feed, scope=feed.backend.quota_scope(), reset_timezone="America/Los_Angeles", now=now,
+        integration=feed, scope=feed.feed_backend.quota_scope(), reset_timezone="America/Los_Angeles", now=now,
     )
     quota.filter(pk=period.pk).update(quota_used=50)
     calls = transport(monkeypatch, lambda *args: wire["inserted_reply"])
     with pytest.raises(IntegrationError) as caught:
         step(feed, source(feed, "activity"))
     assert caught.value.transient and caught.value.retry_after == period.period_end - now and calls == []
-    assert feed.backend.deliver(message) == DeliveryOutcome(True, "reply-published")
+    assert feed.feed_backend.deliver(message) == DeliveryOutcome(True, "reply-published")
     period.refresh_from_db()
     assert period.quota_used == 100
     assert period.period_start.astimezone(ZoneInfo(YouTubeFeedBackend.quota_reset_timezone)).hour == 0
@@ -796,7 +796,7 @@ def test_youtube_delivery_inserts_once_without_identical_reply_coalescing(feed, 
         return wire["inserted_reply"]
 
     calls = transport(monkeypatch, respond)
-    assert feed.backend.deliver(message) == DeliveryOutcome(True, "reply-published")
+    assert feed.feed_backend.deliver(message) == DeliveryOutcome(True, "reply-published")
     assert len(calls) == 1
     assert apps.get_model("posts", "Quota").objects.get(integration=feed).quota_used == CALL_COSTS["comments.insert"]
 
@@ -809,9 +809,9 @@ def test_youtube_ambiguous_send_reconciles_only_after_settlement(feed, replier, 
         httpx2.ReadTimeout("Synthetic acknowledgement loss") if method == "POST" else published
     ))
     with pytest.raises(DeliveryUncertain) as raised:
-        feed.backend.deliver(message)
+        feed.feed_backend.deliver(message)
     recovered = settle_uncertain_reply(message, raised.value, monkeypatch=monkeypatch)
-    assert feed.backend.deliver(recovered) == DeliveryOutcome(True, "reply-b")
+    assert feed.feed_backend.deliver(recovered) == DeliveryOutcome(True, "reply-b")
     assert [method for method, _, _, _ in calls] == ["POST", "GET"]
 
 
@@ -834,10 +834,10 @@ def test_youtube_ambiguous_lookup_failure_never_authorizes_resend(feed, replier,
 
     calls = transport(monkeypatch, respond)
     with pytest.raises(DeliveryUncertain) as raised:
-        feed.backend.deliver(message)
+        feed.feed_backend.deliver(message)
     recovered = settle_uncertain_reply(message, raised.value, monkeypatch=monkeypatch)
     with pytest.raises(DeliveryUncertain):
-        feed.backend.deliver(recovered)
+        feed.feed_backend.deliver(recovered)
     assert sum(method == "POST" for method, _, _, _ in calls) == 1
 
 
@@ -848,7 +848,7 @@ def test_youtube_delivery_reports_specific_permanent_refusals(feed, replier, mon
     message = reply(feed, wire, actor=replier)
     transport(monkeypatch, lambda *args: (400, {"error": {"errors": [{"reason": reason}]}}, {}))
     with pytest.raises(IntegrationError) as caught:
-        feed.backend.deliver(message)
+        feed.feed_backend.deliver(message)
     assert not caught.value.transient and phrase in caught.value.public_message
 
 
@@ -856,7 +856,7 @@ def test_youtube_certain_connect_failure_is_retryable(feed, replier, monkeypatch
     message = reply(feed, wire, actor=replier)
     transport(monkeypatch, lambda *args: RequestNotSentError())
     with pytest.raises(RequestNotSentError):
-        feed.backend.deliver(message)
+        feed.feed_backend.deliver(message)
 
 
 @pytest.mark.parametrize("status, fixture", [(429, "rate_limited"), (403, "rate_limited_403")])
@@ -866,7 +866,7 @@ def test_youtube_delivery_and_polling_throttle_keep_retry_hints(
     message = reply(feed, wire, actor=replier)
     transport(monkeypatch, lambda *args: (status, wire[fixture], {"Retry-After": "120"}))
     with pytest.raises(IntegrationError) as delivery:
-        feed.backend.deliver(message)
+        feed.feed_backend.deliver(message)
     with pytest.raises(IntegrationError) as polling:
         step(feed, source(feed, "activity"))
     assert delivery.value.retry_after == polling.value.retry_after == timedelta(seconds=120)
@@ -897,7 +897,7 @@ def test_youtube_lost_lease_after_acceptance_reconciles_with_one_post(feed, repl
     observed["items"][0]["id"] = "reply-published"
     observed["items"][0]["snippet"]["publishedAt"] = AT.isoformat()
     calls = transport(monkeypatch, lambda method, *args: wire["inserted_reply"] if method == "POST" else observed)
-    accepted = feed.backend.deliver(message)
+    accepted = feed.feed_backend.deliver(message)
     model = type(message)
     assert model.objects.claim_delivery(message.pk, token=message.external_id) is None
     model.objects.filter(pk=message.pk).update(delivery_lease_until=AT - timedelta(seconds=1))
@@ -905,7 +905,7 @@ def test_youtube_lost_lease_after_acceptance_reconciles_with_one_post(feed, repl
     message.refresh_from_db()
     assert message.status == "uncertain"
     assert message.delivery_lease_until is None
-    assert message.scheduled_at == AT + feed.backend.delivery_visibility_delay
+    assert message.scheduled_at == AT + feed.feed_backend.delivery_visibility_delay
     moment = message.scheduled_at
     monkeypatch.setattr(timezone, "now", lambda: moment)
     result = run_message_delivery(message._meta.label_lower, message.pk, message.external_id)
@@ -930,12 +930,12 @@ def test_youtube_two_channels_on_one_oauth_client_share_the_budget(feed, monkeyp
     )
     feed.config = {"quota_limit": 101, "reply_reserve": 1}
     feed.save(update_fields=["config", "updated_at"])
-    first = feed.backend.consume_quota(60)
-    second = other.backend.consume_quota(40)
+    first = feed.feed_backend.consume_quota(60)
+    second = other.feed_backend.consume_quota(40)
     assert first.pk == second.pk
     assert first.scope == f"youtube:oauth-client:{feed.credential.oauth_client_id}"
     with pytest.raises(IntegrationError) as raised:
-        other.backend.consume_quota(1)
+        other.feed_backend.consume_quota(1)
     assert raised.value.transient
     first.refresh_from_db()
     assert first.quota_used == 100
@@ -1022,7 +1022,7 @@ def test_youtube_hide_detection_uses_current_provider_provenance(
         replies=[ReplyPosition(parent_id=parent.external_id, video_id="video-fresh")] if read_path == "replies" else [],
     )
     state = source(feed, "reobserve", cursor.model_dump(mode="json"))
-    adapter = feed.backend
+    adapter = feed.feed_backend
     try:
         page = adapter.extract(state, 10)
     finally:
@@ -1056,7 +1056,7 @@ def test_youtube_reobservation_budget_pauses_and_resumes_the_unlanded_page(feed,
     feed.save(update_fields=["config", "updated_at"])
     cursor = ReobserveCursor(stage="comments")
     state = source(feed, "reobserve", cursor.model_dump(mode="json"))
-    adapter = feed.backend
+    adapter = feed.feed_backend
     first = advance_stream(state, adapter, page_bound=1)
     paused = advance_stream(first.stream, adapter, page_bound=1)
     assert paused.exhausted and paused.stream.cursor == first.stream.cursor
@@ -1068,7 +1068,7 @@ def test_youtube_reobservation_budget_pauses_and_resumes_the_unlanded_page(feed,
 def test_youtube_quarantine_is_owned_by_the_page_transaction(feed, monkeypatch):
     calls = transport(monkeypatch, lambda *args: {"items": [{"id": "thread-malformed"}]})
     state = source(feed, "activity")
-    page = feed.backend.extract(state, 10)
+    page = feed.feed_backend.extract(state, 10)
     assert len(page.records) == 1 and calls
     assert not _failures(feed)
 
@@ -1096,7 +1096,7 @@ def test_youtube_lookup_does_not_assume_provider_order_and_matches_anchor_and_wi
     calls = transport(monkeypatch, lambda method, resource, query, kwargs: (
         {"items": [raw]} if query.get("pageToken") else {"items": [old, foreign], "nextPageToken": "next"}
     ))
-    assert feed.backend.find_published_reply(message, since=AT) == "reply-b"
+    assert feed.feed_backend.find_published_reply(message, since=AT) == "reply-b"
     assert len(calls) == 2
 
 
@@ -1117,7 +1117,7 @@ def test_youtube_pinned_client_connect_error_is_native_not_sent(feed, replier, w
 
     monkeypatch.setattr(httpcore2.SyncBackend, "connect_tcp", fail_connect)
     with pytest.raises(IntegrationError) as raised:
-        feed.backend.deliver(reply(feed, wire, actor=replier))
+        feed.feed_backend.deliver(reply(feed, wire, actor=replier))
     # A refused connect is retryable as not sent; the SSRF policy refusal is permanent.
     assert isinstance(raised.value, RequestNotSentError) is (address == "8.8.8.8")
     assert raised.value.transient is (address == "8.8.8.8")
@@ -1146,7 +1146,7 @@ def test_youtube_reobservation_budget_exhaustion_does_not_stop_live_comments(fee
     feed.save(update_fields=["config", "updated_at"])
     calls = transport(monkeypatch, activity(wire))
     state = source(feed, "reobserve", ReobserveCursor(stage="comments").model_dump(mode="json"))
-    adapter = feed.backend
+    adapter = feed.feed_backend
     if budget:
         assert adapter.consume_reobserve_quota(1)
     previous = len(calls)
@@ -1166,7 +1166,7 @@ def test_youtube_daily_exhaustion_stops_only_reobservation_without_cycle_debit(f
     seed(feed, wire, count=0)
     feed.config = {"quota_limit": 2, "reply_reserve": 1}
     feed.save(update_fields=["config", "updated_at"])
-    adapter = feed.backend
+    adapter = feed.feed_backend
     period = adapter.consume_quota(1)
     calls = transport(monkeypatch, lambda *args: pytest.fail("Exhausted polling reached YouTube"))
     state = source(feed, "reobserve", ReobserveCursor(stage="comments").model_dump(mode="json"))
@@ -1228,7 +1228,7 @@ def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcome
     expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
     with pytest.raises(expected) as caught:
         if method == "POST":
-            feed.backend.deliver(reply(feed, wire, actor=replier))
+            feed.feed_backend.deliver(reply(feed, wire, actor=replier))
         else:
             step(feed, source(feed, "activity"))
     if expected is IntegrationError:
@@ -1237,7 +1237,7 @@ def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcome
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):
-    adapter = feed.backend
+    adapter = feed.feed_backend
     original = adapter.consume_quota
     midnight = AT.astimezone(ZoneInfo(adapter.quota_reset_timezone)).replace(
         hour=0, minute=0, second=0, microsecond=0,
@@ -1265,7 +1265,7 @@ def test_youtube_first_reconciliation_waits_for_visibility_without_spending_look
 ):
     calls = transport(monkeypatch, lambda *args: httpx2.ReadTimeout("Synthetic lost acknowledgement"))
     message = claim_feed_reply(reply(feed, wire, actor=replier), actor=feed.owner)
-    adapter = feed.backend
+    adapter = feed.feed_backend
     with pytest.raises(DeliveryUncertain) as uncertain:
         adapter.deliver(message)
     assert type(message).objects.record_delivery(
