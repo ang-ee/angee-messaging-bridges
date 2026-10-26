@@ -13,6 +13,8 @@ jobs:
     secrets: inherit
     with:
       python-version: "3.14"
+      # Match the framework manifests used to generate this dependency lock.
+      framework-ref: "7126d1934b63c23116ca6d92a3e768e4e13f5de7"
       # The suite resolves base addons from the sibling slot and the
       # fragments' @angee/gql fixture is the stack root's composed runtime/,
       # so pytest + typecheck/test run in the stack lane.
