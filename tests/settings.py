@@ -103,7 +103,7 @@ DATABASES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
 USE_TZ = True
-ANGEE_RUNTIME_MODULE = "tests.runtime"
+COMPOSE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_ADDON_DIRS = (
     Path(__file__).resolve().parent.parent / "addons",
     Path(integrate.__file__).resolve().parents[2],
