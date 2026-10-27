@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 from angee.addons import addon_manifest
 from django.apps import apps
+from django.core.exceptions import ValidationError
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
@@ -244,10 +245,12 @@ def test_app_keys_credential_kind_owns_the_application_pair() -> None:
     handler = app_keys.handler
     assert handler.material_field == "app_secret"
     assert handler.input_material_fields() == ("app_id", "app_secret")
-    with pytest.raises(ValueError, match="app_id and app_secret"):
+    with pytest.raises(ValidationError) as missing_id:
         handler.validate({"app_id": "", "app_secret": "secret"})
-    with pytest.raises(ValueError, match="app_id and app_secret"):
+    assert missing_id.value.message_dict == {"app_id": ["This field is required."]}
+    with pytest.raises(ValidationError) as missing_secret:
         handler.validate({"app_id": "123456", "app_secret": ""})
+    assert missing_secret.value.message_dict == {"app_secret": ["This field is required."]}
     assert handler.auth_headers(SimpleNamespace()) == {}
 
 
