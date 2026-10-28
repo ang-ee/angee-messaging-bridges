@@ -5,9 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from angee.compose.autoconfig import AutoConfig
+from angee.conf import prepend_import_paths
 from django.apps import AppConfig
 
 from angee import integrate
+
+ANGEE_ADDON_DIRS = (
+    Path(__file__).resolve().parent.parent / "addons",
+    Path(integrate.__file__).resolve().parents[2],
+)
+prepend_import_paths(ANGEE_ADDON_DIRS)
 
 
 class BareComposeConfig(AppConfig):
@@ -105,10 +112,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
 USE_TZ = True
 COMPOSE_RUNTIME_MODULE = "tests.runtime"
-ANGEE_ADDON_DIRS = (
-    Path(__file__).resolve().parent.parent / "addons",
-    Path(integrate.__file__).resolve().parents[2],
-)
 ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
 ANGEE_STORAGE_DRAFT_TTL_HOURS = 24
