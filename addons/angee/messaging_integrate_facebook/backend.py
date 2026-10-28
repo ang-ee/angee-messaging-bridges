@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from angee.models import SourceKind
+from angee.provenance.statements import SourceKind
 
 from angee.messaging.backends import ChannelBackend
 

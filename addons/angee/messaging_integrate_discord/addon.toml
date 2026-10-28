@@ -5,7 +5,7 @@ name = "angee.messaging_integrate_discord"
 description = "Discord messaging sync — runs a sanctioned bot on the Gateway"
 keywords = ["discord", "bot", "gateway", "chat", "messaging"]
 category = "Integration"
-depends_on = ["angee.messaging", "angee.integrate", "angee.parties"]
+depends_on = ["angee.messaging", "angee.integrate", "angee.parties", "angee.web"]
 dependencies = [
   "discord-py>=2.7",
 ]

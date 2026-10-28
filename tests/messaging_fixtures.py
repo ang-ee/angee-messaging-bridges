@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from angee.models import AngeeModel, AuditMixin, SqidMixin
+from angee.base.models import AngeeModel, AuditMixin, SqidMixin
 from django.conf import settings
 from django.db import models
 
