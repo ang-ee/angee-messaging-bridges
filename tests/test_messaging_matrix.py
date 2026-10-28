@@ -783,6 +783,7 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
         operator.start()
         outcome = session.run()
         operator.join(timeout=3)
+        assert not operator.is_alive()
 
     assert failures == []
     assert outcome is PairingState.PAIRED
@@ -866,25 +867,19 @@ def test_matrix_mid_session_forbidden_is_retriable_not_logged_out(
         reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
-    session.client = session._build_client(path)
-
-    session._connect()
-
-    assert session.outcome_error is None
-    with system_context(reason="test matrix retriable error drain"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.retriable_error.run"), bridge_advisory_lock(channel) as acquired:
         assert acquired
-        assert session._drain_once() is True
-        assert session.pairing is PairingState.PAIRED
-        assert session.outcome_error is None
-        assert session._drain_once() is True
-        error = session.outcome_error
-        assert isinstance(error, matrix_session_module.MatrixApiError)
-        assert error.errcode == "M_FORBIDDEN"
-        assert session._drain_once() is False
-    assert session.outcome_error is error
-    assert session.pairing is PairingState.PAIRED
+        outcome = session.run()
+
+    error = session.outcome_error
+    assert isinstance(error, matrix_session_module.MatrixApiError)
+    assert error.errcode == "M_FORBIDDEN"
+    assert outcome is PairingState.PAIRED
+    assert session.store_released
     assert session.events.empty()
     assert path.exists()
+    with session.live_impl.account_lock(session.own_id) as acquired:
+        assert acquired
 
 
 @pytest.mark.django_db(transaction=True)
