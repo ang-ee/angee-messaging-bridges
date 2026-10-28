@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo
 import httpx2
 import pytest
 import yaml
-from angee.jobs.enqueue import celery_app
 from django.apps import apps
 from django.conf import settings
 from django.db import connection, transaction
@@ -27,6 +26,7 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
 from angee.integrate.testing.models import SyncStream
+from angee.jobs.enqueue import celery_app
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.delivery import RECONCILE_BACKOFF, run_message_delivery
 from angee.messaging.events import message_ingested
@@ -94,7 +94,7 @@ def feed(composed_tables):
         "youtube", model=apps.get_model("posts", "Feed"), kind=CredentialKind.OAUTH, backend_class="feed",
         feed_backend_class="youtube",
         material={"access_token": "synthetic-access", "refresh_token": "synthetic-refresh"},
-        external_id="channel-demo", youtube_uploads_playlist_id="uploads-demo", cursor={},
+        external_id="channel-demo", youtube_uploads_playlist_id="uploads-demo",
         live_since=AT - timedelta(days=2),
     )
     row.handle = apps.get_model("parties", "Handle").objects.upsert(
@@ -355,7 +355,6 @@ def test_youtube_history_engine_resumes_all_page_types_and_skips_zero_comments(f
     }
     assert not any(query.get("videoId") == "video-archive" for _, _, query, _ in calls)
     assert not any("allThreadsRelatedToChannelId" in query for _, _, query, _ in calls)
-    assert feed.cursor == {}
     assert messages(feed).get(external_id="reply-b").parent.external_id == "comment-a"
 
 
