@@ -353,7 +353,7 @@ def test_telegram_backend_registration_and_pairing_projection(telegram_tables: A
     config = apps.get_app_config("messaging_integrate_telegram")
     providers = metadata.entry_points(group="angee.addons", name=config.name)
     assert len(providers) == 1
-    contract = providers[0].dist
+    contract = next(iter(providers)).dist
     assert contract is not None
     assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
     autoconfig = _telegram_module("autoconfig")

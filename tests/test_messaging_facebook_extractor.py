@@ -82,7 +82,7 @@ def test_addon_registers_backend_and_both_extractors() -> None:
     config = apps.get_app_config("messaging_integrate_facebook")
     providers = metadata.entry_points(group="angee.addons", name=config.name)
     assert len(providers) == 1
-    contract = providers[0].dist
+    contract = next(iter(providers)).dist
 
     assert contract is not None
     assert "angee-messaging-integrate-meta" in {Requirement(raw).name for raw in contract.requires or ()}

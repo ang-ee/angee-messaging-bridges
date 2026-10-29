@@ -122,7 +122,7 @@ def test_imessage_addon_registers_extractor_and_depends_on_bridge() -> None:
     config = apps.get_app_config("messaging_integrate_imessage")
     providers = metadata.entry_points(group="angee.addons", name=config.name)
     assert len(providers) == 1
-    contract = providers[0].dist
+    contract = next(iter(providers)).dist
 
     assert contract is not None
     assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
