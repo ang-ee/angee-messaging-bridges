@@ -7,5 +7,5 @@ keywords = ["facebook", "meta", "takeout", "messages", "posts", "connections"]
 category = "Integration"
 depends_on = [
     "angee.messaging", "angee.integrate", "angee.parties", "angee.posts",
-    "angee.workflows_integrate", "angee.messaging_integrate_meta",
+    "angee.workflows_integrate", "angee.messaging_integrate_meta", "angee.provenance",
 ]

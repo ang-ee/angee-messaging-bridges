@@ -5,7 +5,7 @@ name = "angee.messaging_integrate_signal"
 description = "Signal sync — pairs signal-cli as a linked device and pulls chats into messaging"
 keywords = ["signal", "chat", "sync"]
 category = "Integration"
-depends_on = ["angee.messaging", "angee.integrate", "angee.parties"]
+depends_on = ["angee.messaging", "angee.integrate", "angee.parties", "angee.web"]
 
 [resources]
 master = [{ path = "resources/master/010_integrate.vendor.yaml", adopt = "slug" }]
