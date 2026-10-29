@@ -11,8 +11,10 @@ dependencies = ["angee-messaging>=3,<4"]
 "angee.addons" = {"angee.messaging_integrate_meta" = "angee.messaging_integrate_meta"}
 
 [tool.angee]
-category = "Integration"
 
 [[tool.angee.resources.master]]
 path = "master/010_integrate.vendor.yaml"
 adopt = "slug"
+
+[tool.angee.platform]
+category = "Integration"

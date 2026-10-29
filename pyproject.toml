@@ -5,18 +5,7 @@ description = "angee-messaging-bridges addon collection"
 requires-python = ">=3.14"
 license = "LGPL-3.0-or-later"
 license-files = ["LICENSE", "LICENSE.GPL"]
-dependencies = [
-    "angee-messaging-integrate-discord==1.0.0",
-    "angee-messaging-integrate-facebook==1.0.0",
-    "angee-messaging-integrate-imessage==1.0.0",
-    "angee-messaging-integrate-matrix==1.0.0",
-    "angee-messaging-integrate-meta==1.0.0",
-    "angee-messaging-integrate-signal==1.0.0",
-    "angee-messaging-integrate-telegram==1.0.0",
-    "angee-messaging-integrate-whatsapp==1.0.0",
-    "angee-posts-integrate-facebook==1.0.0",
-    "angee-posts-integrate-youtube==1.0.0",
-]
+dependencies = ["angee-messaging-integrate-discord==1.0.0", "angee-messaging-integrate-facebook==1.0.0", "angee-messaging-integrate-imessage==1.0.0", "angee-messaging-integrate-matrix==1.0.0", "angee-messaging-integrate-meta==1.0.0", "angee-messaging-integrate-signal==1.0.0", "angee-messaging-integrate-telegram==1.0.0", "angee-messaging-integrate-whatsapp==1.0.0", "angee-posts-integrate-facebook==1.0.0", "angee-posts-integrate-youtube==1.0.0"]
 
 [dependency-groups]
 dev = [
@@ -93,6 +82,7 @@ angee-provenance = {path = "../angee/addons/angee/provenance", editable = true}
 angee-resources = {path = "../angee/addons/angee/resources", editable = true}
 angee-scheduling = {path = "../angee/addons/angee/scheduling", editable = true}
 angee-sequence = {path = "../angee/addons/angee/sequence", editable = true}
+angee-server = {path = "../angee/addons/angee/server", editable = true}
 angee-spaces = {path = "../angee/addons/angee/spaces", editable = true}
 angee-storage = {path = "../angee/addons/angee/storage", editable = true}
 angee-storage-integrate = {path = "../angee/addons/angee/storage_integrate", editable = true}
@@ -136,11 +126,12 @@ arp-rating = {path = "../angee-arp/addons/arp/rating", editable = true}
 arp-sales = {path = "../angee-arp/addons/arp/sales", editable = true}
 example-notes = {path = "../angee/examples/addons/example/notes", editable = true}
 example-theme = {path = "../angee/examples/addons/example/theme", editable = true}
+hatch-angee = {path = "../angee/tools/hatch-angee"}
 phrogg-ap = {path = "../angee-phrogg/addons/phrogg/ap", editable = true}
 phrogg-painkiller = {path = "../angee-phrogg/addons/phrogg/painkiller", editable = true}
 phrogg-theme-phrogg = {path = "../angee-phrogg/addons/phrogg/theme_phrogg", editable = true}
 tests-blankchoices = {path = "../angee/tests/blankchoices", editable = true}
-django-angee = {path = "../angee/core", editable = true}
+django-compose = {path = "../django-compose", editable = true}
 
 [tool.uv.workspace]
 members = ["addons/angee/messaging_integrate_discord", "addons/angee/messaging_integrate_facebook", "addons/angee/messaging_integrate_imessage", "addons/angee/messaging_integrate_matrix", "addons/angee/messaging_integrate_meta", "addons/angee/messaging_integrate_signal", "addons/angee/messaging_integrate_telegram", "addons/angee/messaging_integrate_whatsapp", "addons/angee/posts_integrate_facebook", "addons/angee/posts_integrate_youtube"]

@@ -140,26 +140,36 @@ version = "3.0.0"
 source = { editable = "../angee/addons/angee/base" }
 dependencies = [
     { name = "cryptography" },
-    { name = "django-angee" },
+    { name = "django" },
     { name = "django-choices-field" },
+    { name = "django-compose" },
+    { name = "django-environ" },
     { name = "django-sqids" },
+    { name = "django-yamlconf" },
     { name = "django-zed-rebac" },
     { name = "jsonschema", extra = ["format-nongpl"] },
+    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic" },
     { name = "referencing" },
+    { name = "sentry-sdk" },
     { name = "sqids" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "cryptography", specifier = ">=44" },
-    { name = "django-angee", editable = "../angee/core" },
+    { name = "django", specifier = ">=6.1.2,<6.2" },
     { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
+    { name = "django-compose", editable = "../django-compose" },
+    { name = "django-environ", specifier = ">=0.12" },
     { name = "django-sqids", specifier = ">=0.1" },
+    { name = "django-yamlconf", specifier = ">=1.5.0" },
     { name = "django-zed-rebac", specifier = ">=0.30.0" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "referencing", specifier = ">=0.37" },
+    { name = "sentry-sdk", specifier = ">=2.71.0" },
     { name = "sqids", specifier = ">=0.4.1" },
 ]
 
@@ -192,9 +202,9 @@ version = "3.0.0"
 source = { editable = "../angee/addons/angee/graphql" }
 dependencies = [
     { name = "angee-base" },
+    { name = "angee-server" },
     { name = "channels" },
     { name = "channels-redis" },
-    { name = "django-angee" },
     { name = "django-zed-rebac", extra = ["strawberry-django"] },
     { name = "graphql-core" },
     { name = "pydantic" },
@@ -208,9 +218,9 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
-    { name = "django-angee", editable = "../angee/core" },
     { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.30.0" },
     { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
     { name = "pydantic", specifier = ">=2.13" },
@@ -256,7 +266,7 @@ dependencies = [
     { name = "angee-web" },
     { name = "authlib" },
     { name = "deepdiff" },
-    { name = "django-angee" },
+    { name = "django-compose" },
     { name = "httpcore2" },
     { name = "httpx2" },
     { name = "qrcode", extra = ["pil"] },
@@ -273,7 +283,7 @@ requires-dist = [
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "authlib", specifier = ">=1.8.0" },
     { name = "deepdiff", specifier = ">=9.1.0" },
-    { name = "django-angee", editable = "../angee/core" },
+    { name = "django-compose", editable = "../django-compose" },
     { name = "httpcore2", specifier = ">=2.10,<3" },
     { name = "httpx2", specifier = ">=2.10,<3" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
@@ -283,29 +293,23 @@ requires-dist = [
 name = "angee-integrate-iphone"
 version = "3.0.0"
 source = { editable = "../angee/addons/angee/integrate_iphone" }
-dependencies = [
-    { name = "django-angee" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "django-angee", editable = "../angee/core" }]
 
 [[package]]
 name = "angee-jobs"
 version = "3.0.0"
 source = { editable = "../angee/addons/angee/jobs" }
 dependencies = [
+    { name = "angee-base" },
     { name = "billiard" },
     { name = "celery", extra = ["redis"] },
-    { name = "django-angee" },
     { name = "django-celery-beat" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
     { name = "billiard", specifier = ">=4.2.1,<4.3" },
     { name = "celery", extras = ["redis"], specifier = ">=5.5" },
-    { name = "django-angee", editable = "../angee/core" },
     { name = "django-celery-beat", git = "https://github.com/celery/django-celery-beat.git?rev=b5e3443d647baf910c0168f25b512dd388ba669e" },
 ]
 
@@ -325,8 +329,8 @@ dependencies = [
     { name = "angee-tags" },
     { name = "angee-timeline" },
     { name = "angee-web" },
-    { name = "django-angee" },
     { name = "django-anymail" },
+    { name = "django-compose" },
     { name = "requests" },
     { name = "urllib3" },
 ]
@@ -344,8 +348,8 @@ requires-dist = [
     { name = "angee-tags", editable = "../angee/addons/angee/tags" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-angee", editable = "../angee/core" },
     { name = "django-anymail", specifier = ">=15.1" },
+    { name = "django-compose", editable = "../django-compose" },
     { name = "requests", specifier = ">=2.32" },
     { name = "urllib3", specifier = ">=2.2" },
 ]
@@ -593,7 +597,7 @@ dependencies = [
     { name = "angee-storage" },
     { name = "angee-tags" },
     { name = "angee-web" },
-    { name = "django-angee" },
+    { name = "django-compose" },
     { name = "django-countries" },
     { name = "phonenumbers" },
     { name = "pycountry" },
@@ -610,7 +614,7 @@ requires-dist = [
     { name = "angee-storage", editable = "../angee/addons/angee/storage" },
     { name = "angee-tags", editable = "../angee/addons/angee/tags" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-angee", editable = "../angee/core" },
+    { name = "django-compose", editable = "../django-compose" },
     { name = "django-countries", specifier = ">=9,<10" },
     { name = "phonenumbers", specifier = ">=9.0" },
     { name = "pycountry", specifier = ">=26,<27" },
@@ -628,6 +632,7 @@ dependencies = [
     { name = "angee-parties" },
     { name = "angee-provenance" },
     { name = "angee-web" },
+    { name = "django-compose" },
 ]
 
 [package.metadata]
@@ -639,6 +644,7 @@ requires-dist = [
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", editable = "../django-compose" },
 ]
 
 [[package]]
@@ -668,6 +674,7 @@ dependencies = [
     { name = "angee-integrate" },
     { name = "angee-parties" },
     { name = "angee-posts" },
+    { name = "django-compose" },
 ]
 
 [package.metadata]
@@ -675,6 +682,7 @@ requires-dist = [
     { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "django-compose", editable = "../django-compose" },
 ]
 
 [[package]]
@@ -686,7 +694,7 @@ dependencies = [
     { name = "angee-graphql" },
     { name = "angee-timeline" },
     { name = "angee-web" },
-    { name = "django-angee" },
+    { name = "django-compose" },
     { name = "django-simple-history" },
 ]
 
@@ -696,7 +704,7 @@ requires-dist = [
     { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-angee", editable = "../angee/core" },
+    { name = "django-compose", editable = "../django-compose" },
     { name = "django-simple-history", specifier = ">=3.13" },
 ]
 
@@ -706,7 +714,6 @@ version = "3.0.0"
 source = { editable = "../angee/addons/angee/resources" }
 dependencies = [
     { name = "angee-base" },
-    { name = "django-angee" },
     { name = "django-import-export" },
     { name = "pyyaml" },
     { name = "tablib" },
@@ -715,10 +722,26 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "django-angee", editable = "../angee/core" },
     { name = "django-import-export", specifier = ">=4.4" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "tablib", specifier = ">=3" },
+]
+
+[[package]]
+name = "angee-server"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/server" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "django-compose" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "django-compose", editable = "../django-compose" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
 [[package]]
@@ -819,7 +842,6 @@ dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
     { name = "angee-web" },
-    { name = "django-angee" },
 ]
 
 [package.metadata]
@@ -827,7 +849,6 @@ requires-dist = [
     { name = "angee-base", editable = "../angee/addons/angee/base" },
     { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-angee", editable = "../angee/core" },
 ]
 
 [[package]]
@@ -835,11 +856,15 @@ name = "angee-web"
 version = "3.0.0"
 source = { editable = "../angee/addons/angee/web" }
 dependencies = [
-    { name = "django-angee" },
+    { name = "angee-base" },
+    { name = "angee-server" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "django-angee", editable = "../angee/core" }]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
+]
 
 [[package]]
 name = "angee-workflows"
@@ -855,7 +880,7 @@ dependencies = [
     { name = "angee-resources" },
     { name = "angee-timeline" },
     { name = "angee-web" },
-    { name = "django-angee" },
+    { name = "django-compose" },
 ]
 
 [package.metadata]
@@ -869,7 +894,7 @@ requires-dist = [
     { name = "angee-resources", editable = "../angee/addons/angee/resources" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-angee", editable = "../angee/core" },
+    { name = "django-compose", editable = "../django-compose" },
 ]
 
 [[package]]
@@ -1562,35 +1587,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-angee"
-version = "3.0.0"
-source = { editable = "../angee/core" }
-dependencies = [
-    { name = "channels" },
-    { name = "django" },
-    { name = "django-environ" },
-    { name = "django-yamlconf" },
-    { name = "hatch-angee" },
-    { name = "packaging" },
-    { name = "sentry-sdk" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "channels", specifier = ">=4.0" },
-    { name = "django", specifier = ">=6.1.2,<6.2" },
-    { name = "django-environ", specifier = ">=0.12" },
-    { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "hatch-angee", specifier = ">=1,<2" },
-    { name = "packaging", specifier = ">=24" },
-    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
-    { name = "sentry-sdk", specifier = ">=2.71.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-]
-provides-extras = ["postgres"]
-
-[[package]]
 name = "django-anymail"
 version = "15.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1638,6 +1634,34 @@ source = { git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c148
 dependencies = [
     { name = "django" },
     { name = "typing-extensions" },
+]
+
+[[package]]
+name = "django-compose"
+version = "0.1.0.dev0"
+source = { editable = "../django-compose" }
+dependencies = [
+    { name = "django" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "django", specifier = ">=6.1.2,<6.2" },
+    { name = "django-stubs", extras = ["compatible-mypy"], marker = "extra == 'typing'", git = "https://github.com/ang-ee/django-stubs.git?rev=423ed850e5f2d7ea9e67f3e0f9e8bee4be215988" },
+    { name = "django-stubs-ext", marker = "extra == 'typing'", git = "https://github.com/ang-ee/django-stubs.git?subdirectory=ext&rev=423ed850e5f2d7ea9e67f3e0f9e8bee4be215988" },
+    { name = "mypy", marker = "extra == 'typing'", git = "https://github.com/ang-ee/mypy.git?rev=ac3de6e4c34b04728e768e07d4842f4309ff6c45" },
+    { name = "packaging", marker = "extra == 'addons'", specifier = ">=26" },
+]
+provides-extras = ["addons", "typing"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "build", specifier = ">=1.2" },
+    { name = "hatchling", specifier = ">=1.27" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-django", specifier = ">=4.8" },
+    { name = "ruff", specifier = ">=0.15.12" },
+    { name = "twine", specifier = ">=6" },
 ]
 
 [[package]]
@@ -1831,34 +1855,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e7/85/7c366e69d84c17bb778fe41419e1fbcce3033d5b7ce29bbffff0a98b859f/h2-4.4.1.tar.gz", hash = "sha256:4e866ffb1a869ae14dd9b5e6beb5c24a13da0495ad72b65925ded182521c1516", size = 2157281, upload-time = "2026-08-03T11:45:09.509Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/22/e85faf23bd72a92d1921e37d674ca56eb298a3c8be31fdecef0ff2b3aaac/h2-4.4.1-py3-none-any.whl", hash = "sha256:0e25f1462b23c9cb82d9eb02e28bc706dac2a68cb457c6a0d74d63c8a2a5d0e6", size = 62636, upload-time = "2026-08-03T11:44:59.164Z" },
-]
-
-[[package]]
-name = "hatch-angee"
-version = "1.0.0"
-source = { registry = "/tmp/hatch-angee-candidate" }
-dependencies = [
-    { name = "hatchling" },
-]
-sdist = { path = "/tmp/hatch-angee-candidate/hatch_angee-1.0.0.tar.gz" }
-wheels = [
-    { path = "/tmp/hatch-angee-candidate/hatch_angee-1.0.0-py3-none-any.whl" },
-]
-
-[[package]]
-name = "hatchling"
-version = "1.32.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-    { name = "pathspec" },
-    { name = "pluggy" },
-    { name = "tomlkit" },
-    { name = "trove-classifiers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/69/08/33331757185504aae48b8d9bd78cec03a76e3aecfb52e549d05a2347c0dd/hatchling-1.32.0.tar.gz", hash = "sha256:0bdbde4a52b06c37e3eca395f85a762bf0ef06fe374fd8ae429dc6be10230f5f", size = 57783, upload-time = "2026-08-11T05:03:44.114Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/84/1798b6d85ecde0e31546004efd25c5de1b1f49250644a60cce460e12593a/hatchling-1.32.0-py3-none-any.whl", hash = "sha256:0e17c9c3b9aa7c625acc8d0f5b622f107d5049af9ecf5ada4de1aada5be7cdbc", size = 78435, upload-time = "2026-08-11T05:03:42.644Z" },
 ]
 
 [[package]]
@@ -2275,15 +2271,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pathspec"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5a/82/42f767fc1c1143d6fd36efb827202a2d997a375e160a71eb2888a925aac1/pathspec-1.1.1.tar.gz", hash = "sha256:17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a", size = 135180, upload-time = "2026-04-27T01:46:08.907Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl", hash = "sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189", size = 57328, upload-time = "2026-04-27T01:46:07.06Z" },
-]
-
-[[package]]
 name = "peewee"
 version = "3.19.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2428,6 +2415,67 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d8/bc/6d6c7ba8709c85f8f2c390b2b118d6fb08a783676a572271851bf45a7d22/protobuf-7.35.1-cp310-abi3-win32.whl", hash = "sha256:353652e4efd0bca5b5fc2656abf8307ef351f0cf938c9eba09f0e09c20a25c30", size = 428945, upload-time = "2026-06-11T21:55:37.034Z" },
     { url = "https://files.pythonhosted.org/packages/0a/19/8d0cb6f20a1ef7b18f1c8986ad5783f22f84cce39c6ce9a6e645ea55192e/protobuf-7.35.1-cp310-abi3-win_amd64.whl", hash = "sha256:230a75ddfc2de4806e56696ce9640c1cdfdb6543b7cfce98d42a4c0a0e7bdb87", size = 439996, upload-time = "2026-06-11T21:55:38.123Z" },
     { url = "https://files.pythonhosted.org/packages/19/c7/5f7c636ec43e0c545e28d1f1db71990108306f7bdcb89f069ba97e428e7f/protobuf-7.35.1-py3-none-any.whl", hash = "sha256:4bc97768d8fe4ad6743c8a19403e314511ed9f6d13205b687e52421c023ac1b9", size = 171659, upload-time = "2026-06-11T21:55:39.155Z" },
+]
+
+[[package]]
+name = "psycopg"
+version = "3.3.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/76/26/3ea4ca5eaea1c0debcdf7ee7c1613fbe721dc27a03c461c0817ffd8a0601/psycopg-3.3.6.tar.gz", hash = "sha256:c081f2250df751a943036e42db6df4571c66cd0aabe8291a7a506512b12007d2", size = 168171, upload-time = "2026-09-18T13:22:55.152Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/de/748bd7609c71cae5d737f0ba9192f19329f70180ecda8fff3cac02c5abe3/psycopg-3.3.6-py3-none-any.whl", hash = "sha256:a1db9f7148b06a28606767efaca51fa6f9398c5c0a3810519be69d7000bdb631", size = 215490, upload-time = "2026-09-18T13:15:29.374Z" },
+]
+
+[package.optional-dependencies]
+binary = [
+    { name = "psycopg-binary", marker = "implementation_name != 'pypy'" },
+]
+pool = [
+    { name = "psycopg-pool" },
+]
+
+[[package]]
+name = "psycopg-binary"
+version = "3.3.6"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/b9/60711317c284a442511644ea7185b56ebe627606d6741e732cd16108c47b/psycopg_binary-3.3.6-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:b3f75dee0f9afafabe4edc52c4842f1e1878ed2069bd05b22d6fe961e97e4dba", size = 4720512, upload-time = "2026-09-18T13:20:29.278Z" },
+    { url = "https://files.pythonhosted.org/packages/63/da/28befc84454cbc6374550de7746f591f8fe1b6165c1fce249652cc8291c4/psycopg_binary-3.3.6-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:5927b7ba63153cd8e9862987290a2b783a5c590daf2a4ef981700cc3569166d4", size = 4782318, upload-time = "2026-09-18T13:20:35.401Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/8a/0d21c2c833cdc0d4244c77e858e0ed37fa2abec2623be4fd686f617109ce/psycopg_binary-3.3.6-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:0bf08b749cc144f33b44a91b78e3f71c60eb07963746a0df5a100b36ce3d7475", size = 5567460, upload-time = "2026-09-18T13:20:41.902Z" },
+    { url = "https://files.pythonhosted.org/packages/49/6d/7692d0d4e656b6cc9868d8acc2e3b42f17a0db4a625400a6d093cb0533a1/psycopg_binary-3.3.6-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:31cd942c23f613276b81a6e6598cefa12960058b0f46e1e874b540c793f6aca5", size = 5246902, upload-time = "2026-09-18T13:20:47.661Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/c1/b8a1f18fb1b7558a17f57f7cb3fc8bc93189feea2958925950b3acb15743/psycopg_binary-3.3.6-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4690cf67738f0e0e49a32aeec99bf0e4595cc2b4f1af984a4345394b1dcff91a", size = 6847192, upload-time = "2026-09-18T13:20:56.874Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/76/404f33519167c65cca88ec4998776f1dbebccc301ee977f0e62c47fb0826/psycopg_binary-3.3.6-cp314-cp314-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:ad1c785e784cfd87e8436c6b7702f2d321fc39601bbaf29bc63a41a867091638", size = 5079573, upload-time = "2026-09-18T13:21:04.155Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/d9/79e8fbc8f37262a415f3550f0bcc5f98037442bf3d12ef6cbae2056655ae/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:79a2a1c3449f6c3409427078ed1cec10de79f3023cb5f2504f0597d350ad46c7", size = 4613633, upload-time = "2026-09-18T13:21:10.664Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/47/96225db74be7d2ce04b3a58678b53cda610225055edf5faa775c9f501d8b/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:86147cb5d140341c3363fb5bacce31f8d5543902a46699d3c536b101bbceaf9e", size = 4293375, upload-time = "2026-09-18T13:21:16.027Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/d2/18e9c779a5efd565250329adaf529ecc2b8b2ed5be5cb0f6ccee208cbfd9/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_riscv64.whl", hash = "sha256:7308c93cf0b19bbaf8e6ff0a6ad50d3c442385739245fe15a8d593bf841734a6", size = 4019883, upload-time = "2026-09-18T13:21:21.587Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/28/0cc654afc6c2cda982767f5679d3646b30b1ec86545bdaa9402202d6776c/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:05a83ac9fd52b9bca7cb5ab04b3691163170bd16f53defa27216ea3aa07ee781", size = 4332607, upload-time = "2026-09-18T13:21:27.63Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/3e/0a753a74fbd7aef120f286c016e09d3cc3f1daf7688f4a145d27281260b2/psycopg_binary-3.3.6-cp314-cp314-win_amd64.whl", hash = "sha256:1fbd30e537dab22cafdf080608f10148fe2a5f3a61294ddb5113caac8a623840", size = 3755671, upload-time = "2026-09-18T13:21:33.855Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/b1/a372b9c02aea50148e71c9853e19efca8fa5ae2010a8e27243b9b8f790c0/psycopg_binary-3.3.6-cp315-cp315-macosx_10_15_x86_64.whl", hash = "sha256:bf8c8481d026b85dd70c5fa7dde85b2333aed0b32a2602bcd38a900cbd78a49c", size = 4719571, upload-time = "2026-09-18T13:21:41.437Z" },
+    { url = "https://files.pythonhosted.org/packages/65/7c/811e3828c6b82e2f10c6c9cdd963cfc66f3e024026e5a69ac18530bad984/psycopg_binary-3.3.6-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:b599defe9190b17e9907c8b4d114c181e702c87efcd1b8a0ad40971cdcc4634a", size = 4781230, upload-time = "2026-09-18T13:21:49.516Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/15/9a784eed813ea9e97c294af3ead63d02b7b203502c66380336c50065e441/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:b8ece331509f7a975b90501f41e83ad905e4141753fedf3f2711b2bc70a8efbc", size = 5566111, upload-time = "2026-09-18T13:21:58.089Z" },
+    { url = "https://files.pythonhosted.org/packages/68/16/47194e002007c27337b11e49bf459c4b19727463f9aff2e1a90917bcc806/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:c61617eaae0112ca154da87ffb99b73af2c74067acac28dfb9a4455b019dff2e", size = 5249963, upload-time = "2026-09-18T13:22:06.695Z" },
+    { url = "https://files.pythonhosted.org/packages/53/84/5dcf9f310b11f0675cd860c6b2c70f58ce61798a3ee3f6f962b53fa358ca/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c6d19cb4999d03231e8730a5f66c8f5068bc3b532677eb39dab0f600bff3e312", size = 6847925, upload-time = "2026-09-18T13:22:13.088Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/06/1957a06dc22963c418c27b284929579de84f29c37ad1abe6dc6ee9e8cf25/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:e8cbb54454dbf1bbf2ff08dd7693e8d94ac94b1a20f70f4b3b813d52ecb5cbc1", size = 5087720, upload-time = "2026-09-18T13:22:17.959Z" },
+    { url = "https://files.pythonhosted.org/packages/21/43/ac07d042bae99b57bf123bb473632f29af544008094da0ffd285ab8011e2/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_aarch64.whl", hash = "sha256:dc75da5a20951049f7b773145f998f69d181adad9c58a0ff36e0cf1d73c10e10", size = 4613412, upload-time = "2026-09-18T13:22:26.719Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/b1/019156fbeafcefb4cccc9d109de4699493bceb8313c7545c8349e089dfbc/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_ppc64le.whl", hash = "sha256:955e3dd94da361e052d2e49acf591017158dc8f8ed2c8a42c2e3943403c39dc2", size = 4292618, upload-time = "2026-09-18T13:22:33.042Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/0f/62113dc6b1df65983a1f2fc816c04b1edfa22f2ae9d4abee74ed267f4a96/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_riscv64.whl", hash = "sha256:c7753871eb57e6a5f4646f6168590c6653073dea5e9e720b201c8875332df4c8", size = 4027121, upload-time = "2026-09-18T13:22:38.334Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/d5/cf0cbd1ea5a7d8167fe2c6953efde19101f7b193bd61a23e6d622ad6854c/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:303732e798fe6729f8e12021b9c96107df8e95ecec4dd487c67b98ec2a59435e", size = 4336388, upload-time = "2026-09-18T13:22:45.576Z" },
+    { url = "https://files.pythonhosted.org/packages/98/33/e2a5b36edf8aa422f6fa4b894756eb33dc93b36df5f65121280bb8b929c4/psycopg_binary-3.3.6-cp315-cp315-win_amd64.whl", hash = "sha256:2f122603f36050937982abf9668d8bc4769a79f7c93a65013b1c49f1cab7b56b", size = 3756154, upload-time = "2026-09-18T13:22:51.283Z" },
+]
+
+[[package]]
+name = "psycopg-pool"
+version = "3.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/74/5e/c0664b968b102ff68b811d999c728546c48d5c1eec03e3bbaf88c0cb4472/psycopg_pool-3.3.3.tar.gz", hash = "sha256:df87b5d9d0ad7db37f6cdad4fa8ce113d250f5997f6db38e9a99192fb67f9e1d", size = 32006, upload-time = "2026-09-22T15:53:24.947Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/b4/452c6607a0f479465cd8a9b0d9956919fcb150050c1f83f9f11e6b8ee8dc/psycopg_pool-3.3.3-py3-none-any.whl", hash = "sha256:9b9cd6a4fcec47a410f7e82d408540e7f77b478509e91b44c1a5457a13e5ff37", size = 40304, upload-time = "2026-09-22T15:53:23.712Z" },
 ]
 
 [[package]]
@@ -2997,15 +3045,6 @@ wheels = [
 ]
 
 [[package]]
-name = "tomlkit"
-version = "0.15.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/96/e07752635b98536177fa1f37671c8f3cdde2e724c6bcf6034b2cfb571565/tomlkit-0.15.1.tar.gz", hash = "sha256:e25bbf38843005246210a12982776f27f99cb9be67160e14434d0c0d21ee1e97", size = 180129, upload-time = "2026-07-17T01:48:04.562Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/bc/8c13eb66537dce1d2bd3a57132902f38d0e7f5bb46fa9f4daed9fe9d76ee/tomlkit-0.15.1-py3-none-any.whl", hash = "sha256:177a05aece5a8ca5266fd3c448abb47b8d352f09d477d3ca8332db4d89b24304", size = 49449, upload-time = "2026-07-17T01:48:05.728Z" },
-]
-
-[[package]]
 name = "tqdm"
 version = "4.70.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3015,15 +3054,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/21/3b/6c24bec5be5e743ffd99576daa5cc077722fc7d5bbc00bd133fa0c698dc6/tqdm-4.70.0.tar.gz", hash = "sha256:55b0b0dbd97462d06ebee91e4dac24ed4d4702be82b24f07e6c1d27e08cea220", size = 795438, upload-time = "2026-07-27T11:33:15.271Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/1c/01bfd571a64e7f270e6bab5e33777debe0edc56759233ce84f27dec92d14/tqdm-4.70.0-py3-none-any.whl", hash = "sha256:7f585706bfddbdebf89daac705b2dfcc16890130727d3197ca62c732b4310953", size = 80184, upload-time = "2026-07-27T11:33:13.167Z" },
-]
-
-[[package]]
-name = "trove-classifiers"
-version = "2026.6.1.19"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c2/e3/7ca82ee24c82d344584abd5b8637b3bd056f2900226e8d82fc22f1184b92/trove_classifiers-2026.6.1.19.tar.gz", hash = "sha256:c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745", size = 17059, upload-time = "2026-06-01T19:41:34.649Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/a4/81502f486f01db95bc8320646a8a12511f5e556cb63d5e224d91816605c4/trove_classifiers-2026.6.1.19-py3-none-any.whl", hash = "sha256:ab4c4ec93cc4a4e7815fa759906e05e6bb3f2fbd92ea0f897288c6a43efd15b3", size = 14211, upload-time = "2026-06-01T19:41:33.434Z" },
 ]
 
 [[package]]
