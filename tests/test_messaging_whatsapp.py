@@ -1196,7 +1196,7 @@ def test_mount_backup_extractor_reuses_importer_per_domain(
         # The extractor asks the File owner for its real path (File.local_path).
         local_path=lambda: manifest_path,
     )
-    monkeypatch.setattr(mount_extractor, "_manifest_file", lambda drive: fake_manifest)
+    monkeypatch.setattr(mount_extractor, "backup_root", lambda drive: fake_manifest.local_path().parent)
     drive = object()  # the resolved manifest row stands in for a real drive lookup
 
     channel = make_integration("whatsapp", model=Channel, backend_class="whatsapp")
@@ -1260,7 +1260,7 @@ def test_whatsapp_import_command_dry_run_counts(whatsapp_tables: Any, tmp_path: 
 
 # --- (d) @lid sender resolution: live session + the store-backed backfill ---
 
-from angee.messaging_integrate_whatsapp.management.commands.whatsapp_resolve_lids import (  # noqa: E402
+from angee.messaging_integrate_whatsapp.backend import (  # noqa: E402
     StoreResolver,
     StoreUnreadable,
     resolve_channel_lids,

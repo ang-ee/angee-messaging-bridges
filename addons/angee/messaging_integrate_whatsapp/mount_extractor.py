@@ -13,17 +13,12 @@ its confirmed channel.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, ClassVar
-
-from django.apps import apps
-from rebac import system_context
 
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
+from angee.storage_integrate_iphone.mounts import backup_root
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
-
-_MANIFEST_NAME = "Manifest.db"
 
 
 class WhatsAppMountBackupExtractor(ArchiveExtractor):
@@ -43,7 +38,7 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
     def recognizes(self, subject: Any) -> bool:
         """Return whether this domain's chat store resolves in the drive's backup."""
 
-        root = _backup_root(subject)
+        root = backup_root(subject)
         if root is None:
             return False
         try:
@@ -66,7 +61,7 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
         """Import this domain's chats from the drive's backup into the confirmed channel."""
 
         channel = confirmed_whatsapp_channel(target_pk)
-        root = _backup_root(subject)
+        root = backup_root(subject)
         if root is None:
             raise backup.BackupError("This drive does not expose an iPhone backup on disk.")
         total = backup.import_backup(
@@ -93,34 +88,3 @@ class WhatsAppBusinessMountExtractor(WhatsAppMountBackupExtractor):
     key = "whatsapp_smb_iphone_mount"
     label = "WhatsApp Business iPhone backup (mounted)"
     domain = backup.WHATSAPP_SMB_DOMAIN
-
-
-def _backup_root(drive: Any) -> Path | None:
-    """Return the on-disk iPhone-backup root inside ``drive``, or ``None``.
-
-    The backup root is the directory holding ``Manifest.db``. Only reference
-    mounts expose real bytes on disk (``File.storage.path``); a managed/copy or
-    non-filesystem drive returns ``None`` — sqlite cannot open its blobs in
-    place. A drive bundling several device backups resolves the lexicographically
-    first deterministically.
-    """
-
-    manifest = _manifest_file(drive)
-    if manifest is None:
-        return None
-    local = manifest.local_path()
-    if local is None or not local.exists():
-        return None
-    return local.parent
-
-
-def _manifest_file(drive: Any) -> Any:
-    """Return the drive's ``Manifest.db`` File row (deterministic on multiples)."""
-
-    file_model = apps.get_model("storage", "File")
-    with system_context(reason="messaging_integrate_whatsapp.mount.manifest"):
-        return (
-            file_model._base_manager.filter(drive=drive, filename=_MANIFEST_NAME, is_trashed=False)
-            .order_by("storage_path")
-            .first()
-        )

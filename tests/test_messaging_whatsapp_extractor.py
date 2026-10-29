@@ -22,6 +22,7 @@ from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_S
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
 from angee.resources.testing.models import Resource
+from angee.storage_integrate_iphone import archives as iphone_archives
 
 
 class _BackupArchiveFile:
@@ -44,13 +45,13 @@ def test_whatsapp_iphone_backup_recognizes_manifest_resolved_chat_store(
 
     consumed: list[int] = []
 
-    class RecordingReader(extractor_module.BoundedReader):
+    class RecordingReader(iphone_archives.BoundedReader):
         def read(self, size: int = -1) -> bytes:
             value = super().read(size)
             consumed.append(len(value))
             return value
 
-    monkeypatch.setattr(extractor_module, "BoundedReader", RecordingReader)
+    monkeypatch.setattr(iphone_archives, "BoundedReader", RecordingReader)
     store_padding = 1024 * 1024
     archive = _minimal_backup_archive(tmp_path, store_padding=store_padding)
 

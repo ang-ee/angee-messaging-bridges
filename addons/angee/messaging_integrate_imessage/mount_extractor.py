@@ -13,19 +13,14 @@ backup root inside the drive.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
-
-from django.apps import apps
-from rebac import system_context
 
 from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging_integrate_imessage.backend import confirmed_imessage_channel
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import has_sms_store
+from angee.storage_integrate_iphone.mounts import backup_root
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
-
-_MANIFEST_NAME = "Manifest.db"
 
 
 class ImessageMountBackupExtractor(ArchiveExtractor):
@@ -44,7 +39,7 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
     def recognizes(self, subject: Any) -> bool:
         """Return whether the Messages store resolves in the drive's backup."""
 
-        root = _backup_root(subject)
+        root = backup_root(subject)
         if root is None:
             return False
         try:
@@ -67,42 +62,8 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
         """Import the drive's backup Messages store into the confirmed channel."""
 
         channel = confirmed_imessage_channel(target_pk)
-        root = _backup_root(subject)
+        root = backup_root(subject)
         if root is None:
             raise BackupError("This drive does not expose an iPhone backup on disk.")
         total = import_backup(channel, root, resume=True, on_batch=lambda _total: reporter.heartbeat())
         return {"channel": str(channel.sqid), "imported": total}
-
-
-# FOLLOW-UP: lift the drive→backup-root resolver below into a shared owner (the
-# natural home is `angee.messaging`, which both messaging backup addons depend on,
-# or `angee.integrate_iphone` once it may know `storage`) and compose it here and in
-# `angee.messaging_integrate_whatsapp.mount_extractor` — these three helpers are
-# byte-for-byte platform-neutral. Kept mirrored for now to leave WhatsApp untouched.
-def _backup_root(drive: Any) -> Path | None:
-    """Return the on-disk iPhone-backup root inside ``drive``, or ``None``.
-
-    The backup root is the directory holding ``Manifest.db``. Only reference
-    mounts expose real bytes on disk (``File.storage.path``); a managed/copy or
-    non-filesystem drive returns ``None`` — sqlite cannot open its blobs in place.
-    """
-
-    manifest = _manifest_file(drive)
-    if manifest is None:
-        return None
-    local = manifest.local_path()
-    if local is None or not local.exists():
-        return None
-    return local.parent
-
-
-def _manifest_file(drive: Any) -> Any:
-    """Return the drive's ``Manifest.db`` File row (deterministic on multiples)."""
-
-    file_model = apps.get_model("storage", "File")
-    with system_context(reason="messaging_integrate_imessage.mount.manifest"):
-        return (
-            file_model._base_manager.filter(drive=drive, filename=_MANIFEST_NAME, is_trashed=False)
-            .order_by("storage_path")
-            .first()
-        )

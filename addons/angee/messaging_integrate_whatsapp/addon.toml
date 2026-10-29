@@ -10,7 +10,7 @@ depends_on = [
   "angee.integrate",
   "angee.integrate_iphone",
   "angee.parties",
-  "angee.storage",
+  "angee.storage", "angee.storage_integrate_iphone",
   "angee.workflows_integrate",
   "angee.web",
 ]
