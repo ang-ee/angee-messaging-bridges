@@ -1,31 +1,27 @@
-"""Guard the generated dependency group against addon-manifest drift."""
+"""Keep the collection dependency cohort aligned with its native uv members."""
 
 from __future__ import annotations
 
 import tomllib
 from pathlib import Path
-from typing import Any
 
-from django.conf import settings
-from hatch_angee import compile_dependencies, parse_manifest
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ADDON_ROOTS = settings.ANGEE_ADDON_DIRS
 
 
-def _read_toml(path: Path) -> dict[str, Any]:
-    """Return the TOML document at ``path`` using the standard-library parser."""
+def test_collection_requires_each_workspace_addon() -> None:
+    """uv resolves transitive requirements; the collection names every member."""
 
-    with path.open("rb") as stream:
-        return tomllib.load(stream)
-
-
-def test_addon_dependency_group_matches_manifests() -> None:
-    """The checked-in group is the exact union for both composed addon roots."""
-
-    markers = sorted(marker for addon_root in ADDON_ROOTS for marker in addon_root.glob("**/addon.toml"))
-    manifests = tuple(parse_manifest(marker) for marker in markers)
-    expected = compile_dependencies(manifests)
-    actual = _read_toml(PROJECT_ROOT / "pyproject.toml")["dependency-groups"]["addons"]
-
-    assert tuple(actual) == expected
+    project = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+    expected = {}
+    for pattern in project["tool"]["uv"]["workspace"]["members"]:
+        for member in sorted(PROJECT_ROOT.glob(pattern)):
+            metadata = tomllib.loads((member / "pyproject.toml").read_text())["project"]
+            name = canonicalize_name(metadata["name"])
+            assert name not in expected, f"duplicate workspace distribution: {name}"
+            expected[name] = f"=={metadata['version']}"
+    requirements = [Requirement(value) for value in project["project"]["dependencies"]]
+    assert len(requirements) == len(expected)
+    assert {canonicalize_name(item.name): str(item.specifier) for item in requirements} == expected

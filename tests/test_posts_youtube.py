@@ -49,7 +49,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
 """A fixed instant for synthetic publication, watermark and quota assertions."""
 ADDON = Path(__file__).resolve().parents[1] / "addons/angee/posts_integrate_youtube"
-"""The addon-owned manifest and adopted OAuth client resource."""
+"""The addon-owned package metadata and adopted OAuth client resource."""
 
 
 
@@ -292,8 +292,8 @@ def activity(wire):
 
 
 def test_youtube_preset_seed_and_read_only_discovery_field(feed):
-    manifest = tomllib.loads((ADDON / "addon.toml").read_text())
-    resource = manifest["resources"]["install"][0]
+    metadata = tomllib.loads((ADDON / "pyproject.toml").read_text())
+    resource = metadata["tool"]["angee"]["resources"]["install"][0]
     [client] = yaml.safe_load((ADDON / resource["path"]).read_text())
     assert resource["adopt"] == ["slug", "environment"]
     assert client["xref"] == "oauth_youtube" and client["slug"] == YouTubeFeedBackend.oauth_client
