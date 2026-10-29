@@ -5,13 +5,14 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 import zipfile
+from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
+from packaging.requirements import Requirement
 
 from angee.messaging_integrate_imessage import extractor as extractor_module
 from angee.messaging_integrate_imessage.autoconfig import SETTINGS as IMESSAGE_SETTINGS
@@ -119,10 +120,12 @@ def test_imessage_addon_registers_extractor_and_depends_on_bridge() -> None:
     """iMessage contributes its vendor extractor through the bridge's settings seam."""
 
     config = apps.get_app_config("messaging_integrate_imessage")
-    contract = addon_manifest(config)
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = providers[0].dist
 
     assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
+    assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
     assert IMESSAGE_SETTINGS[
         "ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.imessage_iphone_backup"
     ] == "angee.messaging_integrate_imessage.extractor.ImessageIphoneBackupExtractor"
