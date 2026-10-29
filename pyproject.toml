@@ -9,6 +9,8 @@ dependencies = ["angee-messaging-integrate-discord==1.0.0", "angee-messaging-int
 
 [dependency-groups]
 dev = [
+    "angee>=3,<4",
+    "angee-base[testing]>=3,<4",
     "daphne>=4.0",
     "faker>=30.0",
     "pytest>=8.0",
@@ -27,6 +29,7 @@ default-groups = ["dev"]
 # default per-user cache is shared and correct.
 
 [tool.uv.sources]
+angee = {path = "../angee"}
 angee-agents = {path = "../angee/addons/angee/agents", editable = true}
 angee-agents-integrate-anthropic = {path = "../angee/addons/angee/agents_integrate_anthropic", editable = true}
 angee-agents-integrate-ollama = {path = "../angee/addons/angee/agents_integrate_ollama", editable = true}
@@ -140,7 +143,7 @@ cache_dir = ".pytest_cache"
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
-pythonpath = [".", "addons", "../angee/addons"]
+pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib"
 
 [tool.ruff]
