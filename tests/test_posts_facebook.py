@@ -55,7 +55,7 @@ def feed(composed_tables):
         row = make_integration(
             "facebook-page", model=apps.get_model("posts", "Feed"), backend_class="feed",
             feed_backend_class="facebook", material={"api_key": "synthetic-page-token"},
-            external_id="900001", display_name="Example Workshop", config={}, cursor={},
+            external_id="900001", display_name="Example Workshop", config={},
         )
         row.handle = apps.get_model("parties", "Handle").objects.upsert(
             platform="facebook", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
