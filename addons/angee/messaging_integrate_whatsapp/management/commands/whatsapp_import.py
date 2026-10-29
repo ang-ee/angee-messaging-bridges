@@ -104,6 +104,8 @@ class Command(BaseCommand):
     def _channel(self, options: dict[str, Any]) -> Any:
         """Resolve the target channel from ``--channel`` or create one for ``--create``."""
 
+        if options["dry_run"] and options["create"]:
+            raise CommandError("--dry-run requires an existing --channel; it never creates a target.")
         if options["channel"] and options["create"]:
             raise CommandError("Pass either --channel or --create, not both.")
         if options["channel"]:

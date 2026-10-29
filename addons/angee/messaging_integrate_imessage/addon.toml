@@ -5,7 +5,7 @@ name = "angee.messaging_integrate_imessage"
 description = "SMS + iMessage import — reads Apple's Messages store from an unencrypted iPhone backup into messaging threads and messages"
 keywords = ["imessage", "sms", "chat", "iphone", "backup"]
 category = "Integration"
-depends_on = ["angee.messaging", "angee.integrate", "angee.integrate_iphone", "angee.parties", "angee.storage", "angee.workflows_integrate"]
+depends_on = ["angee.messaging", "angee.integrate", "angee.integrate_iphone", "angee.parties", "angee.storage", "angee.storage_integrate_iphone", "angee.workflows_integrate"]
 
 [resources]
 master = [{ path = "resources/master/010_integrate.vendor.yaml", adopt = "slug" }]

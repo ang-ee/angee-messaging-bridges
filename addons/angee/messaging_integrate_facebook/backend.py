@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from angee.provenance.statements import SourceKind
-
 from angee.messaging.backends import ChannelBackend
+from angee.provenance.statements import SourceKind
 
 
 class FacebookChannelBackend(ChannelBackend):

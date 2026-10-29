@@ -27,10 +27,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from django.apps import apps
-from django.db.models import Max
-from rebac import system_context
-
 from angee.integrate_iphone.backup import (
     SQLITE_HEADER_LENGTH,
     BackupError,
@@ -38,7 +34,7 @@ from angee.integrate_iphone.backup import (
     is_sqlite_header,
 )
 from angee.messaging.backends import MediaItem
-from angee.messaging.backup_ingest import batch_ingest
+from angee.messaging.backup_ingest import batch_ingest, thread_watermarks
 from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, is_group_jid, parsed_message
 
 WHATSAPP_DOMAIN = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
@@ -271,22 +267,12 @@ class BackupImporter:
 
         if not self.resume or self.dry_run:
             return {}
-        message_model = apps.get_model("messaging", "Message")
-        prefix = apps.get_model("messaging", "Thread").objects.chat_key_prefix(self.channel)
-        watermarks: dict[str, float] = {}
-        with system_context(reason="messaging_integrate_whatsapp.backup.watermarks"):
-            rows = (
-                message_model._base_manager.filter(thread__channel=self.channel, sent_at__isnull=False)
-                .values("thread__external_id")
-                .annotate(latest=Max("sent_at"))
-            )
-            for row in rows:
-                external_id = str(row["thread__external_id"] or "")
-                if external_id.startswith(prefix) and row["latest"] is not None:
-                    chat_jid = bare_jid(external_id[len(prefix) :])
-                    if chat_jid:
-                        watermarks[chat_jid] = (row["latest"] - CORE_DATA_EPOCH).total_seconds()
-        return watermarks
+        return {
+            bare_jid(key): (instant - CORE_DATA_EPOCH).total_seconds()
+            for key, instant in thread_watermarks(
+                self.channel, reason="messaging_integrate_whatsapp.backup.watermarks",
+            ).items() if bare_jid(key)
+        }
 
     def run(self, *, on_batch: Any = None) -> int:
         """Import (or, dry-run, count) selected messages through shared batching."""
