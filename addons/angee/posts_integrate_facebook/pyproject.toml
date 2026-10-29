@@ -1,0 +1,18 @@
+build-system = { requires = ["hatch-angee>=1,<2"], build-backend = "hatch_angee" }
+
+[project]
+name = "angee-posts-integrate-facebook"
+version = "1.0.0"
+description = "Connect a Facebook Page, poll its comments, and publish replies"
+keywords = ["facebook", "meta", "pages", "comments"]
+dependencies = ["angee-posts>=3,<4", "angee-integrate>=3,<4", "angee-parties>=3,<4", "angee-messaging-integrate-meta>=1,<2"]
+
+[project.entry-points]
+"angee.addons" = {"angee.posts_integrate_facebook" = "angee.posts_integrate_facebook"}
+
+[tool.angee]
+category = "Integration"
+
+[[tool.angee.resources.install]]
+path = "install/010_integrate.oauthclient.yaml"
+adopt = ["slug", "environment"]
