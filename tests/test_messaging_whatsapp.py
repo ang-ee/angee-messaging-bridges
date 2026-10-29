@@ -12,15 +12,22 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from django.apps import apps
+from django.db import connection
+from django.db.migrations.state import ProjectState
+
+from angee.base.fields.state import StateField
 from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
     external_id,
     handle_for_jid,
+    is_group_jid,
     parsed_message,
     phone_for_jid,
 )
+from angee.messaging_integrate_whatsapp.runtime_migrations.classify_status_feeds import Migration as StatusMigration
 
 UTC = timezone.utc
 
@@ -193,7 +200,6 @@ import time  # noqa: E402
 from typing import Any, ClassVar, cast  # noqa: E402
 
 import pytest  # noqa: E402
-from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from rebac import system_context  # noqa: E402
 
@@ -203,6 +209,7 @@ from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
+from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
 from tests.conftest import make_integration  # noqa: E402
 from tests.messaging_fixtures import Message, Thread  # noqa: E402
@@ -1895,3 +1902,52 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     _assert_handle_redirect(lid_handle, phone_handle)
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2
+
+
+@pytest.mark.parametrize("group", [None, False, True])
+def test_status_feed_is_not_a_group_even_when_vendor_flags_it_as_one(group):
+    parsed = parsed_message(ChatMessage(chat_jid="Status@Broadcast", stanza_id="STATUS1", group=group,
+        chat_name="An unrelated participant", sender_jid="4917000001@s.whatsapp.net",
+        sender_name="Ada", text="My update", quoted_stanza_id="PARENT"))
+    assert parsed.thread.modality == "status"
+    assert parsed.thread.title == ""
+    assert parsed.thread.external_id == "status@broadcast"
+    assert parsed.sender.display_name == "Ada"
+    assert parsed.external_id == "status@broadcast/STATUS1"
+    assert parsed.in_reply_to == "status@broadcast/PARENT"
+    assert parsed.body.text == "My update"
+
+
+def test_non_status_broadcast_remains_distinct_from_the_status_feed():
+    assert not is_group_jid("Status@Broadcast")
+    assert is_group_jid("12345@broadcast")
+    assert is_group_jid("12345@g.us")
+    assert not is_group_jid("4917000001@s.whatsapp.net")
+
+
+def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
+    Thread = apps.get_model("messaging", "Thread")
+    Message = apps.get_model("messaging", "Message")
+    with system_context(reason="test.whatsapp.status_history"):
+        feeds = [Thread._base_manager.create(platform="whatsapp", external_id=key, modality="group")
+                 for key in ("status@broadcast", "chat:42:status@broadcast", "chat:43:Status@Broadcast")]
+        others = [Thread._base_manager.create(platform=platform, external_id=key, modality="group")
+                  for platform, key in [("whatsapp", "123@broadcast"), ("whatsapp", "prefix-status@broadcast"),
+                                        ("telegram", "status@broadcast")]]
+        update = Message._base_manager.create(thread=feeds[0], external_id="status@broadcast/one", platform="whatsapp")
+        before = list(Message._base_manager.filter(pk=update.pk).values())
+        historical = ProjectState.from_apps(apps)
+        for model in ("thread", "historicalthread"):
+            field = historical.models["messaging", model].fields["modality"]
+            _, _, args, kwargs = field.deconstruct()
+            kwargs["choices"] = [(value, label) for value, label in field.choices if value != "status"]
+            historical.models["messaging", model].fields["modality"] = StateField(*args, **kwargs)
+        migration = StatusMigration("classify_status_feeds", "messaging")
+        with connection.schema_editor() as editor:
+            repaired = migration.apply(historical, editor)
+            migration.apply(repaired, editor)
+        assert set(Thread._base_manager.filter(pk__in=[row.pk for row in feeds])
+                   .values_list("modality", flat=True)) == {"status"}
+        assert set(Thread._base_manager.filter(pk__in=[row.pk for row in others])
+                   .values_list("modality", flat=True)) == {"group"}
+        assert list(Message._base_manager.filter(pk=update.pk).values()) == before

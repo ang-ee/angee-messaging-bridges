@@ -20,3 +20,8 @@ dependencies = [
 
 [resources]
 master = [{ path = "resources/master/010_integrate.vendor.yaml", adopt = "slug" }]
+
+[[migrations]]
+name = "classify_status_feeds"
+app_label = "messaging"
+module = "runtime_migrations.classify_status_feeds"

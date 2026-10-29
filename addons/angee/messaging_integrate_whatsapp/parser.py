@@ -15,6 +15,7 @@ from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, Par
 
 PLATFORM = "whatsapp"
 GROUP_SERVERS = ("g.us", "broadcast")
+STATUS_BROADCAST_JID = "status@broadcast"
 INDIVIDUAL_SERVER = "s.whatsapp.net"
 
 DIRECTION_INBOUND = "inbound"
@@ -57,7 +58,8 @@ def phone_for_jid(jid: str) -> str:
 def is_group_jid(jid: str) -> bool:
     """Return whether a chat JID names a group or broadcast conversation."""
 
-    return bare_jid(jid).partition("@")[2] in GROUP_SERVERS
+    bare = bare_jid(jid)
+    return bare != STATUS_BROADCAST_JID and bare.partition("@")[2] in GROUP_SERVERS
 
 
 def handle_for_jid(jid: str, display_name: str = "", *, phone_jid: str = "") -> ParsedHandle:
@@ -140,8 +142,8 @@ def parsed_message(message: ChatMessage) -> ParsedMessage:
         in_reply_to=external_id(chat, message.quoted_stanza_id) if message.quoted_stanza_id else "",
         thread=ParsedThread(
             external_id=chat,
-            modality="group" if group else "direct",
-            title=message.chat_name,
+            modality="status" if chat == STATUS_BROADCAST_JID else "group" if group else "direct",
+            title="" if chat == STATUS_BROADCAST_JID else message.chat_name,
         ),
         body=body_part(message.text, message.media),
         metadata={"chat_jid": chat, **message.metadata},

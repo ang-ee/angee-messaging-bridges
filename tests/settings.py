@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from angee.compose.autoconfig import AutoConfig
 from angee.conf import prepend_import_paths
+from angee.utils.autoconfig import AutoConfig
 from django.apps import AppConfig
 
 from angee import integrate
@@ -15,6 +15,12 @@ ANGEE_ADDON_DIRS = (
     Path(integrate.__file__).resolve().parents[2],
 )
 prepend_import_paths(ANGEE_ADDON_DIRS)
+
+
+class BareAngeeConfig(AppConfig):
+    """Register source-only tests without building the stack runtime."""
+
+    name = "angee"
 
 
 class BareComposeConfig(AppConfig):
@@ -40,7 +46,7 @@ INSTALLED_APPS = [
     "rebac",
     "simple_history",
     "tests.settings.BareComposeConfig",
-    "angee",
+    "tests.settings.BareAngeeConfig",
     "angee.base",
     "angee.provenance",
     "tests.settings.BareGraphQLConfig",
