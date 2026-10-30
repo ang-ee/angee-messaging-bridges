@@ -316,13 +316,13 @@ provides-extras = ["postgres"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "angee-django-stubs", extras = ["compatible-mypy"], specifier = "==6.1.2.post1" },
+    { name = "angee-mypy", specifier = "==2.1.0" },
     { name = "daphne", specifier = ">=4.0" },
-    { name = "django-stubs", extras = ["compatible-mypy"], git = "https://github.com/ang-ee/django-stubs.git?rev=3596899b3620c1f8f6d27b0f9cb70e69d8c554b1" },
-    { name = "django-zed-rebac", extras = ["caveats"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=610548cda530d1faca2def1190e000d2c7a883d6" },
+    { name = "django-zed-rebac", extras = ["caveats"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
     { name = "example-notes", editable = "../angee/examples/addons/example/notes" },
     { name = "example-theme", editable = "../angee/examples/addons/example/theme" },
     { name = "faker", specifier = ">=30.0" },
-    { name = "mypy", git = "https://github.com/ang-ee/mypy.git?rev=ac3de6e4c34b04728e768e07d4842f4309ff6c45" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-django", specifier = ">=4.8" },
@@ -371,7 +371,7 @@ requires-dist = [
     { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
     { name = "angee-resources", editable = "../angee/addons/angee/resources" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "pydantic-ai-slim", specifier = ">=2.13" },
 ]
@@ -520,11 +520,11 @@ requires-dist = [
     { name = "cryptography", specifier = ">=44" },
     { name = "django", specifier = ">=6.1.2,<6.2" },
     { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "django-environ", specifier = ">=0.12" },
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "django-zed-rebac", git = "https://github.com/ang-ee/django-zed-rebac.git?rev=610548cda530d1faca2def1190e000d2c7a883d6" },
+    { name = "django-zed-rebac", git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
     { name = "packaging", marker = "extra == 'testing'", specifier = ">=24" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
@@ -640,7 +640,7 @@ requires-dist = [
     { name = "angee-server", editable = "../angee/addons/angee/server" },
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=610548cda530d1faca2def1190e000d2c7a883d6" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
     { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "sentry-sdk", specifier = ">=2.71.0" },
@@ -690,7 +690,7 @@ requires-dist = [
     { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
 ]
 
@@ -724,7 +724,7 @@ requires-dist = [
     { name = "angee-resources", editable = "../angee/addons/angee/resources" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "angee-work", editable = "../angee/addons/angee/work" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -758,7 +758,7 @@ requires-dist = [
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "authlib", specifier = ">=1.8.0" },
     { name = "deepdiff", specifier = ">=9.1.0" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "httpcore2", specifier = ">=2.10,<3" },
     { name = "httpx2", specifier = ">=2.10,<3" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
@@ -841,7 +841,7 @@ requires-dist = [
     { name = "angee-resources", editable = "../angee/addons/angee/resources" },
     { name = "angee-tags", editable = "../angee/addons/angee/tags" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "markdown-it-py", specifier = ">=4.2" },
 ]
 
@@ -940,7 +940,7 @@ requires-dist = [
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "django-anymail", specifier = ">=15.1" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "requests", specifier = ">=2.32" },
     { name = "urllib3", specifier = ">=2.2" },
 ]
@@ -1064,7 +1064,7 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "imapclient", specifier = ">=3.1.0" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
 ]
@@ -1324,7 +1324,7 @@ requires-dist = [
     { name = "angee-storage", editable = "../angee/addons/angee/storage" },
     { name = "angee-tags", editable = "../angee/addons/angee/tags" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "django-countries", specifier = ">=9,<10" },
     { name = "phonenumbers", specifier = ">=9.0" },
     { name = "pycountry", specifier = ">=26,<27" },
@@ -1407,7 +1407,7 @@ requires-dist = [
     { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
     { name = "angee-platform", editable = "../angee/addons/angee/platform" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1453,7 +1453,7 @@ requires-dist = [
     { name = "angee-projects", editable = "../angee/addons/angee/projects" },
     { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1480,7 +1480,7 @@ requires-dist = [
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1518,7 +1518,7 @@ requires-dist = [
     { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-posts", editable = "../angee/addons/angee/posts" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1555,7 +1555,7 @@ requires-dist = [
     { name = "angee-tags", editable = "../angee/addons/angee/tags" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1590,7 +1590,7 @@ requires-dist = [
     { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
     { name = "angee-storage", editable = "../angee/addons/angee/storage" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1609,7 +1609,7 @@ requires-dist = [
     { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "angee-work", editable = "../angee/addons/angee/work" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1631,8 +1631,8 @@ requires-dist = [
     { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
-    { name = "django-simple-history", git = "https://github.com/ang-ee/django-simple-history.git?rev=406461d07597b6fd3448f175817851da04d42818" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "django-simple-history", git = "https://github.com/ang-ee/django-simple-history.git?rev=014c0a56b6e80080b56483120172d417d5c7920b" },
 ]
 
 [[package]]
@@ -1699,7 +1699,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
@@ -1725,7 +1725,7 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
     { name = "angee-parties", editable = "../angee/addons/angee/parties" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -1983,7 +1983,7 @@ requires-dist = [
     { name = "angee-sequence", editable = "../angee/addons/angee/sequence" },
     { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -2014,7 +2014,7 @@ requires-dist = [
     { name = "angee-resources", editable = "../angee/addons/angee/resources" },
     { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -2094,7 +2094,7 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
     { name = "angee-web", editable = "../angee/addons/angee/web" },
     { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
-    { name = "django-compose", git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
 ]
 
 [[package]]
@@ -2924,12 +2924,16 @@ dependencies = [
 
 [[package]]
 name = "django-compose"
-version = "0.1.0.dev0"
-source = { git = "https://github.com/ang-ee/django-compose.git?rev=c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb#c7e61d587a91adeba8d26e9551e6c1ffc2dd6ddb" }
+version = "0.1.0.dev1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-yamlconf" },
     { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/59/d60d05f122069e3b2424259d00f8154d4898b02ecb1f103d476372a461c4/django_compose-0.1.0.dev1.tar.gz", hash = "sha256:75cd4b1fd437992b8f77de28f38c00e0268835536aaae75709c8c85826765a10", size = 227556, upload-time = "2026-10-30T01:23:55.383Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/74/dd/e89104ce72d5c9f8dc8a933a5475529360ed437ab3c10b28563ec30ea42c/django_compose-0.1.0.dev1-py3-none-any.whl", hash = "sha256:0c6d108ee25ff6948a2a2cf030a164cf388725fa7866e567b5163f002b1622e4", size = 92660, upload-time = "2026-10-30T01:23:54.257Z" },
 ]
 
 [[package]]
@@ -2970,8 +2974,8 @@ wheels = [
 
 [[package]]
 name = "django-simple-history"
-version = "3.13.0.post1.dev2+g406461d07"
-source = { git = "https://github.com/ang-ee/django-simple-history.git?rev=406461d07597b6fd3448f175817851da04d42818#406461d07597b6fd3448f175817851da04d42818" }
+version = "3.13.0.post1.dev3+g014c0a56b"
+source = { git = "https://github.com/ang-ee/django-simple-history.git?rev=014c0a56b6e80080b56483120172d417d5c7920b#014c0a56b6e80080b56483120172d417d5c7920b" }
 dependencies = [
     { name = "django" },
 ]
@@ -3014,7 +3018,7 @@ wheels = [
 [[package]]
 name = "django-zed-rebac"
 version = "0.30.0"
-source = { git = "https://github.com/ang-ee/django-zed-rebac.git?rev=610548cda530d1faca2def1190e000d2c7a883d6#610548cda530d1faca2def1190e000d2c7a883d6" }
+source = { git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13#f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" }
 dependencies = [
     { name = "django" },
 ]
