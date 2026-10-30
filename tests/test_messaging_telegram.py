@@ -1127,3 +1127,20 @@ def test_telegram_client_session_path_derives_from_the_passed_store(
     client = session._build_client(store)
 
     assert client.session == str(store.with_suffix(""))
+
+
+def test_live_channel_resolves_uncached_entity_before_mapping_audience(telegram_session_module):
+    from unittest.mock import AsyncMock
+
+    session = telegram_session_module.TelegramSession.__new__(telegram_session_module.TelegramSession)
+    session.events = queue.Queue()
+    entity = SimpleNamespace(id=42, title="Public channel", username="public_chat")
+    event = SimpleNamespace(
+        message=_message(id=19), chat_id=-10042, chat=None,
+        is_private=False, is_group=False, is_channel=True, get_chat=AsyncMock(return_value=entity),
+    )
+    asyncio.run(session._on_new_message(event))
+    event.get_chat.assert_awaited_once()
+    kind, batch = session.events.get_nowait()
+    assert kind == "messages"
+    assert batch[0][0].thread.visibility == "public"

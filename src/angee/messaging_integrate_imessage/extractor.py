@@ -5,7 +5,9 @@ from __future__ import annotations
 import sqlite3
 import zipfile
 from pathlib import PurePosixPath
-from typing import Any
+from typing import Any, BinaryIO, cast
+
+from angee.integrate_iphone.archives import backup_manifest
 
 from angee.integrate_iphone.backup import (
     BackupError,
@@ -14,10 +16,12 @@ from angee.messaging_integrate_imessage.backend import confirmed_imessage_channe
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import SMS_DOMAIN, SMS_PATH
 from angee.storage.archives import (
+    RECOGNITION_READ_LIMIT,
     ArchiveError,
+    BoundedReader,
+    archive_entries,
     stage_subtree,
 )
-from angee.storage_integrate_iphone.archives import backup_manifest, recognizes_backup
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -36,7 +40,19 @@ class ImessageIphoneBackupExtractor(ArchiveExtractor):
     def recognizes(self, file: Any) -> bool:
         """Spot-check the manifest-resolved Messages store without parsing messages."""
 
-        return recognizes_backup(file, domain=SMS_DOMAIN, relative_path=SMS_PATH)
+        try:
+            with file.open_stream() as stream:
+                bounded = BoundedReader(stream, limit=RECOGNITION_READ_LIMIT)
+                with zipfile.ZipFile(cast(BinaryIO, bounded)) as archive:
+                    def reset_budget():
+                        bounded.remaining = RECOGNITION_READ_LIMIT
+                    return backup_manifest(
+                        archive, archive_entries(archive), domain=SMS_DOMAIN, relative_path=SMS_PATH,
+                        before_candidate=reset_budget,
+                    ) is not None
+        except (ArchiveError, BackupError, NotImplementedError, OSError, sqlite3.DatabaseError,
+                zipfile.BadZipFile, zipfile.LargeZipFile):
+            return False
 
     def execute(
         self,
@@ -61,7 +77,9 @@ def _import_archive(
 
     try:
         with file.open_stream() as stream, zipfile.ZipFile(stream) as archive:
-            manifest_name = backup_manifest(archive, domain=SMS_DOMAIN, relative_path=SMS_PATH)
+            manifest_name = backup_manifest(
+                archive, archive_entries(archive), domain=SMS_DOMAIN, relative_path=SMS_PATH,
+            )
             if manifest_name is None:
                 raise BackupError("This archive contains no iMessage iPhone backup.")
             parent = PurePosixPath(manifest_name).parent

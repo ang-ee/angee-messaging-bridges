@@ -7,9 +7,9 @@ from typing import cast
 import strawberry
 from django.apps import apps
 
-from angee.graphql.actions import resolve_action_target
+from angee.graphql.actions import resolve_action_target, session_user
 from angee.graphql.ids import PublicID
-from angee.iam.permissions import ADMIN_PERMISSION_CLASSES, session_user
+from angee.iam.permissions import ADMIN_PERMISSION_CLASSES
 from angee.messaging.schema import ChannelType
 from angee.messaging_integrate_telegram.connect import create_telegram_channel
 
