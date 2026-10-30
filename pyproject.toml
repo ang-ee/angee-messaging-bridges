@@ -30,112 +30,112 @@ default-groups = ["dev"]
 
 [tool.uv.sources]
 angee = {path = "../angee"}
-angee-agents = {path = "../angee/addons/angee/agents", editable = true}
-angee-agents-integrate-anthropic = {path = "../angee/addons/angee/agents_integrate_anthropic", editable = true}
-angee-agents-integrate-ollama = {path = "../angee/addons/angee/agents_integrate_ollama", editable = true}
-angee-agents-integrate-openai = {path = "../angee/addons/angee/agents_integrate_openai", editable = true}
-angee-agents-runtime-pydantic = {path = "../angee/addons/angee/agents_runtime_pydantic", editable = true}
-angee-appearance = {path = "../angee/addons/angee/appearance", editable = true}
-angee-appearance-integrate = {path = "../angee/addons/angee/appearance_integrate", editable = true}
-angee-base = {path = "../angee/addons/angee/base", editable = true}
-angee-dashboards = {path = "../angee/addons/angee/dashboards", editable = true}
-angee-decisions = {path = "../angee/addons/angee/decisions", editable = true}
-angee-extraction = {path = "../angee/addons/angee/extraction", editable = true}
-angee-graphql = {path = "../angee/addons/angee/graphql", editable = true}
-angee-iam = {path = "../angee/addons/angee/iam", editable = true}
-angee-iam-integrate-oidc = {path = "../angee/addons/angee/iam_integrate_oidc", editable = true}
-angee-intake = {path = "../angee/addons/angee/intake", editable = true}
-angee-integrate = {path = "../angee/addons/angee/integrate", editable = true}
-angee-integrate-github = {path = "../angee/addons/angee/integrate_github", editable = true}
-angee-integrate-iphone = {path = "../angee/addons/angee/integrate_iphone", editable = true}
-angee-integrate-vcs = {path = "../angee/addons/angee/integrate_vcs", editable = true}
-angee-jobs = {path = "../angee/addons/angee/jobs", editable = true}
-angee-knowledge = {path = "../angee/addons/angee/knowledge", editable = true}
-angee-knowledge-graph-pgvector = {path = "../angee/addons/angee/knowledge_graph_pgvector", editable = true}
-angee-knowledge-integrate-notion = {path = "../angee/addons/angee/knowledge_integrate_notion", editable = true}
-angee-mcp = {path = "../angee/addons/angee/mcp", editable = true}
-angee-messaging = {path = "../angee/addons/angee/messaging", editable = true}
+angee-agents = {path = "../angee/src/angee/agents", editable = true}
+angee-agents-integrate-anthropic = {path = "../angee/src/angee/agents_integrate_anthropic", editable = true}
+angee-agents-integrate-ollama = {path = "../angee/src/angee/agents_integrate_ollama", editable = true}
+angee-agents-integrate-openai = {path = "../angee/src/angee/agents_integrate_openai", editable = true}
+angee-agents-runtime-pydantic = {path = "../angee/src/angee/agents_runtime_pydantic", editable = true}
+angee-appearance = {path = "../angee/src/angee/appearance", editable = true}
+angee-appearance-integrate = {path = "../angee/src/angee/appearance_integrate", editable = true}
+angee-base = {path = "../angee/src/angee/base", editable = true}
+angee-dashboards = {path = "../angee/src/angee/dashboards", editable = true}
+angee-decisions = {path = "../angee/src/angee/decisions", editable = true}
+angee-extraction = {path = "../angee/src/angee/extraction", editable = true}
+angee-graphql = {path = "../angee/src/angee/graphql", editable = true}
+angee-iam = {path = "../angee/src/angee/iam", editable = true}
+angee-iam-integrate-oidc = {path = "../angee/src/angee/iam_integrate_oidc", editable = true}
+angee-intake = {path = "../angee/src/angee/intake", editable = true}
+angee-integrate = {path = "../angee/src/angee/integrate", editable = true}
+angee-integrate-github = {path = "../angee/src/angee/integrate_github", editable = true}
+angee-integrate-iphone = {path = "../angee/src/angee/integrate_iphone", editable = true}
+angee-integrate-vcs = {path = "../angee/src/angee/integrate_vcs", editable = true}
+angee-jobs = {path = "../angee/src/angee/jobs", editable = true}
+angee-knowledge = {path = "../angee/src/angee/knowledge", editable = true}
+angee-knowledge-graph-pgvector = {path = "../angee/src/angee/knowledge_graph_pgvector", editable = true}
+angee-knowledge-integrate-notion = {path = "../angee/src/angee/knowledge_integrate_notion", editable = true}
+angee-mcp = {path = "../angee/src/angee/mcp", editable = true}
+angee-messaging = {path = "../angee/src/angee/messaging", editable = true}
 angee-messaging-integrate-discord = {workspace = true}
 angee-messaging-integrate-facebook = {workspace = true}
-angee-messaging-integrate-imap = {path = "../angee/addons/angee/messaging_integrate_imap", editable = true}
+angee-messaging-integrate-imap = {path = "../angee/src/angee/messaging_integrate_imap", editable = true}
 angee-messaging-integrate-imessage = {workspace = true}
 angee-messaging-integrate-matrix = {workspace = true}
 angee-messaging-integrate-meta = {workspace = true}
 angee-messaging-integrate-signal = {workspace = true}
-angee-messaging-integrate-slack = {path = "../angee/addons/angee/messaging_integrate_slack", editable = true}
+angee-messaging-integrate-slack = {path = "../angee/src/angee/messaging_integrate_slack", editable = true}
 angee-messaging-integrate-telegram = {workspace = true}
 angee-messaging-integrate-whatsapp = {workspace = true}
-angee-money = {path = "../angee/addons/angee/money", editable = true}
-angee-nexus = {path = "../angee/addons/angee/nexus", editable = true}
-angee-operator = {path = "../angee/addons/angee/operator", editable = true}
-angee-parties = {path = "../angee/addons/angee/parties", editable = true}
-angee-parties-integrate-carddav = {path = "../angee/addons/angee/parties_integrate_carddav", editable = true}
-angee-platform = {path = "../angee/addons/angee/platform", editable = true}
-angee-platform-integrate-operator = {path = "../angee/addons/angee/platform_integrate_operator", editable = true}
-angee-platform-integrate-vcs = {path = "../angee/addons/angee/platform_integrate_vcs", editable = true}
-angee-pm = {path = "../angee/addons/angee/pm", editable = true}
-angee-portfolio = {path = "../angee/addons/angee/portfolio", editable = true}
-angee-posts = {path = "../angee/addons/angee/posts", editable = true}
+angee-money = {path = "../angee/src/angee/money", editable = true}
+angee-nexus = {path = "../angee/src/angee/nexus", editable = true}
+angee-operator = {path = "../angee/src/angee/operator", editable = true}
+angee-parties = {path = "../angee/src/angee/parties", editable = true}
+angee-parties-integrate-carddav = {path = "../angee/src/angee/parties_integrate_carddav", editable = true}
+angee-platform = {path = "../angee/src/angee/platform", editable = true}
+angee-platform-integrate-operator = {path = "../angee/src/angee/platform_integrate_operator", editable = true}
+angee-platform-integrate-vcs = {path = "../angee/src/angee/platform_integrate_vcs", editable = true}
+angee-pm = {path = "../angee/src/angee/pm", editable = true}
+angee-portfolio = {path = "../angee/src/angee/portfolio", editable = true}
+angee-posts = {path = "../angee/src/angee/posts", editable = true}
 angee-posts-integrate-facebook = {workspace = true}
 angee-posts-integrate-youtube = {workspace = true}
-angee-projects = {path = "../angee/addons/angee/projects", editable = true}
-angee-proposals = {path = "../angee/addons/angee/proposals", editable = true}
-angee-proposals-work = {path = "../angee/addons/angee/proposals_work", editable = true}
-angee-provenance = {path = "../angee/addons/angee/provenance", editable = true}
-angee-resources = {path = "../angee/addons/angee/resources", editable = true}
-angee-scheduling = {path = "../angee/addons/angee/scheduling", editable = true}
-angee-sequence = {path = "../angee/addons/angee/sequence", editable = true}
-angee-server = {path = "../angee/addons/angee/server", editable = true}
-angee-spaces = {path = "../angee/addons/angee/spaces", editable = true}
-angee-storage = {path = "../angee/addons/angee/storage", editable = true}
-angee-storage-integrate = {path = "../angee/addons/angee/storage_integrate", editable = true}
-angee-storage-integrate-iphone = {path = "../angee/addons/angee/storage_integrate_iphone", editable = true}
-angee-tags = {path = "../angee/addons/angee/tags", editable = true}
-angee-theme-angee = {path = "../angee/addons/angee/theme_angee", editable = true}
-angee-theme-aurora = {path = "../angee/addons/angee/theme_aurora", editable = true}
-angee-theme-carbon = {path = "../angee/addons/angee/theme_carbon", editable = true}
-angee-theme-fyltr = {path = "../angee/addons/angee/theme_fyltr", editable = true}
-angee-theme-ledger = {path = "../angee/addons/angee/theme_ledger", editable = true}
-angee-theme-midnight = {path = "../angee/addons/angee/theme_midnight", editable = true}
-angee-theme-stock = {path = "../angee/addons/angee/theme_stock", editable = true}
-angee-theme-warm-red = {path = "../angee/addons/angee/theme_warm_red", editable = true}
-angee-timeline = {path = "../angee/addons/angee/timeline", editable = true}
-angee-uom = {path = "../angee/addons/angee/uom", editable = true}
-angee-web = {path = "../angee/addons/angee/web", editable = true}
-angee-work = {path = "../angee/addons/angee/work", editable = true}
-angee-workflows = {path = "../angee/addons/angee/workflows", editable = true}
-angee-workflows-agents = {path = "../angee/addons/angee/workflows_agents", editable = true}
-angee-workflows-extraction = {path = "../angee/addons/angee/workflows_extraction", editable = true}
-angee-workflows-integrate = {path = "../angee/addons/angee/workflows_integrate", editable = true}
-angee-workflows-messaging = {path = "../angee/addons/angee/workflows_messaging", editable = true}
-angee-workflows-parties = {path = "../angee/addons/angee/workflows_parties", editable = true}
-angee-workflows-posts = {path = "../angee/addons/angee/workflows_posts", editable = true}
-arp-accounting = {path = "../angee-arp/addons/arp/accounting", editable = true}
-arp-accounting-intake = {path = "../angee-arp/addons/arp/accounting_intake", editable = true}
-arp-accounting-integrate-odoo = {path = "../angee-odoo/addons/arp/accounting_integrate_odoo", editable = true}
-arp-accounting-workflows = {path = "../angee-arp/addons/arp/accounting_workflows", editable = true}
-arp-analytic = {path = "../angee-arp/addons/arp/analytic", editable = true}
-arp-base = {path = "../angee-arp/addons/arp/base", editable = true}
-arp-calendar = {path = "../angee-arp/addons/arp/calendar", editable = true}
-arp-crm = {path = "../angee-arp/addons/arp/crm", editable = true}
-arp-discuss = {path = "../angee-arp/addons/arp/discuss", editable = true}
-arp-edi = {path = "../angee-arp/addons/arp/edi", editable = true}
-arp-integrate-accounting = {path = "../angee-arp/addons/arp/integrate_accounting", editable = true}
-arp-integrate-odoo = {path = "../angee-odoo/addons/arp/integrate_odoo", editable = true}
-arp-inventory = {path = "../angee-arp/addons/arp/inventory", editable = true}
-arp-products = {path = "../angee-arp/addons/arp/products", editable = true}
-arp-purchase = {path = "../angee-arp/addons/arp/purchase", editable = true}
-arp-rating = {path = "../angee-arp/addons/arp/rating", editable = true}
-arp-sales = {path = "../angee-arp/addons/arp/sales", editable = true}
-example-notes = {path = "../angee/examples/addons/example/notes", editable = true}
-example-theme = {path = "../angee/examples/addons/example/theme", editable = true}
-phrogg-ap = {path = "../angee-phrogg/addons/phrogg/ap", editable = true}
-phrogg-painkiller = {path = "../angee-phrogg/addons/phrogg/painkiller", editable = true}
-phrogg-theme-phrogg = {path = "../angee-phrogg/addons/phrogg/theme_phrogg", editable = true}
+angee-projects = {path = "../angee/src/angee/projects", editable = true}
+angee-proposals = {path = "../angee/src/angee/proposals", editable = true}
+angee-proposals-work = {path = "../angee/src/angee/proposals_work", editable = true}
+angee-provenance = {path = "../angee/src/angee/provenance", editable = true}
+angee-resources = {path = "../angee/src/angee/resources", editable = true}
+angee-scheduling = {path = "../angee/src/angee/scheduling", editable = true}
+angee-sequence = {path = "../angee/src/angee/sequence", editable = true}
+angee-server = {path = "../angee/src/angee/server", editable = true}
+angee-spaces = {path = "../angee/src/angee/spaces", editable = true}
+angee-storage = {path = "../angee/src/angee/storage", editable = true}
+angee-storage-integrate = {path = "../angee/src/angee/storage_integrate", editable = true}
+angee-storage-integrate-iphone = {path = "../angee/src/angee/storage_integrate_iphone", editable = true}
+angee-tags = {path = "../angee/src/angee/tags", editable = true}
+angee-theme-angee = {path = "../angee/src/angee/theme_angee", editable = true}
+angee-theme-aurora = {path = "../angee/src/angee/theme_aurora", editable = true}
+angee-theme-carbon = {path = "../angee/src/angee/theme_carbon", editable = true}
+angee-theme-fyltr = {path = "../angee/src/angee/theme_fyltr", editable = true}
+angee-theme-ledger = {path = "../angee/src/angee/theme_ledger", editable = true}
+angee-theme-midnight = {path = "../angee/src/angee/theme_midnight", editable = true}
+angee-theme-stock = {path = "../angee/src/angee/theme_stock", editable = true}
+angee-theme-warm-red = {path = "../angee/src/angee/theme_warm_red", editable = true}
+angee-timeline = {path = "../angee/src/angee/timeline", editable = true}
+angee-uom = {path = "../angee/src/angee/uom", editable = true}
+angee-web = {path = "../angee/src/angee/web", editable = true}
+angee-work = {path = "../angee/src/angee/work", editable = true}
+angee-workflows = {path = "../angee/src/angee/workflows", editable = true}
+angee-workflows-agents = {path = "../angee/src/angee/workflows_agents", editable = true}
+angee-workflows-extraction = {path = "../angee/src/angee/workflows_extraction", editable = true}
+angee-workflows-integrate = {path = "../angee/src/angee/workflows_integrate", editable = true}
+angee-workflows-messaging = {path = "../angee/src/angee/workflows_messaging", editable = true}
+angee-workflows-parties = {path = "../angee/src/angee/workflows_parties", editable = true}
+angee-workflows-posts = {path = "../angee/src/angee/workflows_posts", editable = true}
+arp-accounting = {path = "../angee-arp/src/arp/accounting", editable = true}
+arp-accounting-intake = {path = "../angee-arp/src/arp/accounting_intake", editable = true}
+arp-accounting-integrate-odoo = {path = "../angee-odoo/src/arp/accounting_integrate_odoo", editable = true}
+arp-accounting-workflows = {path = "../angee-arp/src/arp/accounting_workflows", editable = true}
+arp-analytic = {path = "../angee-arp/src/arp/analytic", editable = true}
+arp-base = {path = "../angee-arp/src/arp/base", editable = true}
+arp-calendar = {path = "../angee-arp/src/arp/calendar", editable = true}
+arp-crm = {path = "../angee-arp/src/arp/crm", editable = true}
+arp-discuss = {path = "../angee-arp/src/arp/discuss", editable = true}
+arp-edi = {path = "../angee-arp/src/arp/edi", editable = true}
+arp-integrate-accounting = {path = "../angee-arp/src/arp/integrate_accounting", editable = true}
+arp-integrate-odoo = {path = "../angee-odoo/src/arp/integrate_odoo", editable = true}
+arp-inventory = {path = "../angee-arp/src/arp/inventory", editable = true}
+arp-products = {path = "../angee-arp/src/arp/products", editable = true}
+arp-purchase = {path = "../angee-arp/src/arp/purchase", editable = true}
+arp-rating = {path = "../angee-arp/src/arp/rating", editable = true}
+arp-sales = {path = "../angee-arp/src/arp/sales", editable = true}
+example-notes = {path = "../angee/examples/src/example/notes", editable = true}
+example-theme = {path = "../angee/examples/src/example/theme", editable = true}
+phrogg-ap = {path = "../angee-phrogg/src/phrogg/ap", editable = true}
+phrogg-painkiller = {path = "../angee-phrogg/src/phrogg/painkiller", editable = true}
+phrogg-theme-phrogg = {path = "../angee-phrogg/src/phrogg/theme_phrogg", editable = true}
 tests-blankchoices = {path = "../angee/tests/blankchoices", editable = true}
 
 [tool.uv.workspace]
-members = ["addons/angee/messaging_integrate_discord", "addons/angee/messaging_integrate_facebook", "addons/angee/messaging_integrate_imessage", "addons/angee/messaging_integrate_matrix", "addons/angee/messaging_integrate_meta", "addons/angee/messaging_integrate_signal", "addons/angee/messaging_integrate_telegram", "addons/angee/messaging_integrate_whatsapp", "addons/angee/posts_integrate_facebook", "addons/angee/posts_integrate_youtube"]
+members = ["src/angee/messaging_integrate_discord", "src/angee/messaging_integrate_facebook", "src/angee/messaging_integrate_imessage", "src/angee/messaging_integrate_matrix", "src/angee/messaging_integrate_meta", "src/angee/messaging_integrate_signal", "src/angee/messaging_integrate_telegram", "src/angee/messaging_integrate_whatsapp", "src/angee/posts_integrate_facebook", "src/angee/posts_integrate_youtube"]
 [tool.pytest.ini_options]
 cache_dir = ".pytest_cache"
 DJANGO_SETTINGS_MODULE = "tests.settings"
@@ -148,7 +148,7 @@ addopts = "-ra --strict-markers --import-mode=importlib"
 line-length = 120
 target-version = "py314"
 cache-dir = ".ruff_cache"
-src = [".", "addons", "../angee/addons"]
+src = [".", "src", "../angee/src"]
 exclude = [
   ".angee",
   ".git",

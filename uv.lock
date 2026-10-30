@@ -240,76 +240,76 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-agents-integrate-anthropic", editable = "../angee/addons/angee/agents_integrate_anthropic" },
-    { name = "angee-agents-integrate-ollama", editable = "../angee/addons/angee/agents_integrate_ollama" },
-    { name = "angee-agents-integrate-openai", editable = "../angee/addons/angee/agents_integrate_openai" },
-    { name = "angee-agents-runtime-pydantic", editable = "../angee/addons/angee/agents_runtime_pydantic" },
-    { name = "angee-appearance", editable = "../angee/addons/angee/appearance" },
-    { name = "angee-appearance-integrate", editable = "../angee/addons/angee/appearance_integrate" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-dashboards", editable = "../angee/addons/angee/dashboards" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-extraction", editable = "../angee/addons/angee/extraction" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-iam-integrate-oidc", editable = "../angee/addons/angee/iam_integrate_oidc" },
-    { name = "angee-intake", editable = "../angee/addons/angee/intake" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-integrate-github", editable = "../angee/addons/angee/integrate_github" },
-    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
-    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
-    { name = "angee-knowledge-graph-pgvector", editable = "../angee/addons/angee/knowledge_graph_pgvector" },
-    { name = "angee-knowledge-integrate-notion", editable = "../angee/addons/angee/knowledge_integrate_notion" },
-    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-messaging-integrate-imap", editable = "../angee/addons/angee/messaging_integrate_imap" },
-    { name = "angee-messaging-integrate-slack", editable = "../angee/addons/angee/messaging_integrate_slack" },
-    { name = "angee-money", editable = "../angee/addons/angee/money" },
-    { name = "angee-nexus", editable = "../angee/addons/angee/nexus" },
-    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-parties-integrate-carddav", editable = "../angee/addons/angee/parties_integrate_carddav" },
-    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
-    { name = "angee-platform-integrate-operator", editable = "../angee/addons/angee/platform_integrate_operator" },
-    { name = "angee-platform-integrate-vcs", editable = "../angee/addons/angee/platform_integrate_vcs" },
-    { name = "angee-pm", editable = "../angee/addons/angee/pm" },
-    { name = "angee-portfolio", editable = "../angee/addons/angee/portfolio" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
-    { name = "angee-proposals-work", editable = "../angee/addons/angee/proposals_work" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-scheduling", editable = "../angee/addons/angee/scheduling" },
-    { name = "angee-sequence", editable = "../angee/addons/angee/sequence" },
-    { name = "angee-server", editable = "../angee/addons/angee/server" },
-    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-storage-integrate", editable = "../angee/addons/angee/storage_integrate" },
-    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-theme-angee", editable = "../angee/addons/angee/theme_angee" },
-    { name = "angee-theme-aurora", editable = "../angee/addons/angee/theme_aurora" },
-    { name = "angee-theme-carbon", editable = "../angee/addons/angee/theme_carbon" },
-    { name = "angee-theme-fyltr", editable = "../angee/addons/angee/theme_fyltr" },
-    { name = "angee-theme-ledger", editable = "../angee/addons/angee/theme_ledger" },
-    { name = "angee-theme-midnight", editable = "../angee/addons/angee/theme_midnight" },
-    { name = "angee-theme-stock", editable = "../angee/addons/angee/theme_stock" },
-    { name = "angee-theme-warm-red", editable = "../angee/addons/angee/theme_warm_red" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-uom", editable = "../angee/addons/angee/uom" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-work", editable = "../angee/addons/angee/work" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
-    { name = "angee-workflows-agents", editable = "../angee/addons/angee/workflows_agents" },
-    { name = "angee-workflows-extraction", editable = "../angee/addons/angee/workflows_extraction" },
-    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
-    { name = "angee-workflows-messaging", editable = "../angee/addons/angee/workflows_messaging" },
-    { name = "angee-workflows-parties", editable = "../angee/addons/angee/workflows_parties" },
-    { name = "angee-workflows-posts", editable = "../angee/addons/angee/workflows_posts" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-agents-integrate-anthropic", editable = "../angee/src/angee/agents_integrate_anthropic" },
+    { name = "angee-agents-integrate-ollama", editable = "../angee/src/angee/agents_integrate_ollama" },
+    { name = "angee-agents-integrate-openai", editable = "../angee/src/angee/agents_integrate_openai" },
+    { name = "angee-agents-runtime-pydantic", editable = "../angee/src/angee/agents_runtime_pydantic" },
+    { name = "angee-appearance", editable = "../angee/src/angee/appearance" },
+    { name = "angee-appearance-integrate", editable = "../angee/src/angee/appearance_integrate" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-dashboards", editable = "../angee/src/angee/dashboards" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-extraction", editable = "../angee/src/angee/extraction" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-iam-integrate-oidc", editable = "../angee/src/angee/iam_integrate_oidc" },
+    { name = "angee-intake", editable = "../angee/src/angee/intake" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-github", editable = "../angee/src/angee/integrate_github" },
+    { name = "angee-integrate-iphone", editable = "../angee/src/angee/integrate_iphone" },
+    { name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
+    { name = "angee-knowledge-graph-pgvector", editable = "../angee/src/angee/knowledge_graph_pgvector" },
+    { name = "angee-knowledge-integrate-notion", editable = "../angee/src/angee/knowledge_integrate_notion" },
+    { name = "angee-mcp", editable = "../angee/src/angee/mcp" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-messaging-integrate-imap", editable = "../angee/src/angee/messaging_integrate_imap" },
+    { name = "angee-messaging-integrate-slack", editable = "../angee/src/angee/messaging_integrate_slack" },
+    { name = "angee-money", editable = "../angee/src/angee/money" },
+    { name = "angee-nexus", editable = "../angee/src/angee/nexus" },
+    { name = "angee-operator", editable = "../angee/src/angee/operator" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-parties-integrate-carddav", editable = "../angee/src/angee/parties_integrate_carddav" },
+    { name = "angee-platform", editable = "../angee/src/angee/platform" },
+    { name = "angee-platform-integrate-operator", editable = "../angee/src/angee/platform_integrate_operator" },
+    { name = "angee-platform-integrate-vcs", editable = "../angee/src/angee/platform_integrate_vcs" },
+    { name = "angee-pm", editable = "../angee/src/angee/pm" },
+    { name = "angee-portfolio", editable = "../angee/src/angee/portfolio" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-proposals", editable = "../angee/src/angee/proposals" },
+    { name = "angee-proposals-work", editable = "../angee/src/angee/proposals_work" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-scheduling", editable = "../angee/src/angee/scheduling" },
+    { name = "angee-sequence", editable = "../angee/src/angee/sequence" },
+    { name = "angee-server", editable = "../angee/src/angee/server" },
+    { name = "angee-spaces", editable = "../angee/src/angee/spaces" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-storage-integrate", editable = "../angee/src/angee/storage_integrate" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/src/angee/storage_integrate_iphone" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-theme-angee", editable = "../angee/src/angee/theme_angee" },
+    { name = "angee-theme-aurora", editable = "../angee/src/angee/theme_aurora" },
+    { name = "angee-theme-carbon", editable = "../angee/src/angee/theme_carbon" },
+    { name = "angee-theme-fyltr", editable = "../angee/src/angee/theme_fyltr" },
+    { name = "angee-theme-ledger", editable = "../angee/src/angee/theme_ledger" },
+    { name = "angee-theme-midnight", editable = "../angee/src/angee/theme_midnight" },
+    { name = "angee-theme-stock", editable = "../angee/src/angee/theme_stock" },
+    { name = "angee-theme-warm-red", editable = "../angee/src/angee/theme_warm_red" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-uom", editable = "../angee/src/angee/uom" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-work", editable = "../angee/src/angee/work" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
+    { name = "angee-workflows-agents", editable = "../angee/src/angee/workflows_agents" },
+    { name = "angee-workflows-extraction", editable = "../angee/src/angee/workflows_extraction" },
+    { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
+    { name = "angee-workflows-messaging", editable = "../angee/src/angee/workflows_messaging" },
+    { name = "angee-workflows-parties", editable = "../angee/src/angee/workflows_parties" },
+    { name = "angee-workflows-posts", editable = "../angee/src/angee/workflows_posts" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
 ]
 provides-extras = ["postgres"]
@@ -320,8 +320,8 @@ dev = [
     { name = "angee-mypy", specifier = "==2.1.0" },
     { name = "daphne", specifier = ">=4.0" },
     { name = "django-zed-rebac", extras = ["caveats"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
-    { name = "example-notes", editable = "../angee/examples/addons/example/notes" },
-    { name = "example-theme", editable = "../angee/examples/addons/example/theme" },
+    { name = "example-notes", editable = "../angee/examples/src/example/notes" },
+    { name = "example-theme", editable = "../angee/examples/src/example/theme" },
     { name = "faker", specifier = ">=30.0" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.0" },
@@ -338,7 +338,7 @@ dev = [
 [[package]]
 name = "angee-agents"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/agents" }
+source = { editable = "../angee/src/angee/agents" }
 dependencies = [
     { name = "agent-client-protocol" },
     { name = "angee-base" },
@@ -360,17 +360,17 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
-    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-mcp", editable = "../angee/src/angee/mcp" },
+    { name = "angee-operator", editable = "../angee/src/angee/operator" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29" },
     { name = "pydantic-ai-slim", specifier = ">=2.13" },
@@ -379,7 +379,7 @@ requires-dist = [
 [[package]]
 name = "angee-agents-integrate-anthropic"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/agents_integrate_anthropic" }
+source = { editable = "../angee/src/angee/agents_integrate_anthropic" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-integrate" },
@@ -389,8 +389,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
     { name = "anthropic", specifier = ">=0.109.2" },
     { name = "pydantic-ai-slim", extras = ["anthropic"], specifier = ">=2.13" },
 ]
@@ -398,7 +398,7 @@ requires-dist = [
 [[package]]
 name = "angee-agents-integrate-ollama"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/agents_integrate_ollama" }
+source = { editable = "../angee/src/angee/agents_integrate_ollama" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-agents-integrate-openai" },
@@ -407,15 +407,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-agents-integrate-openai", editable = "../angee/addons/angee/agents_integrate_openai" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-agents-integrate-openai", editable = "../angee/src/angee/agents_integrate_openai" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
 ]
 
 [[package]]
 name = "angee-agents-integrate-openai"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/agents_integrate_openai" }
+source = { editable = "../angee/src/angee/agents_integrate_openai" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-integrate" },
@@ -425,8 +425,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
     { name = "openai", specifier = ">=2.43.0" },
     { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
 ]
@@ -434,7 +434,7 @@ requires-dist = [
 [[package]]
 name = "angee-agents-runtime-pydantic"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/agents_runtime_pydantic" }
+source = { editable = "../angee/src/angee/agents_runtime_pydantic" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-base" },
@@ -445,17 +445,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-mcp", editable = "../angee/src/angee/mcp" },
     { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
 ]
 
 [[package]]
 name = "angee-appearance"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/appearance" }
+source = { editable = "../angee/src/angee/appearance" }
 dependencies = [
     { name = "angee-iam" },
     { name = "angee-web" },
@@ -463,14 +463,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-appearance-integrate"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/appearance_integrate" }
+source = { editable = "../angee/src/angee/appearance_integrate" }
 dependencies = [
     { name = "angee-appearance" },
     { name = "angee-base" },
@@ -480,16 +480,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-appearance", editable = "../angee/addons/angee/appearance" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-appearance", editable = "../angee/src/angee/appearance" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-base"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/base" }
+source = { editable = "../angee/src/angee/base" }
 dependencies = [
     { name = "cryptography" },
     { name = "django" },
@@ -541,7 +541,7 @@ provides-extras = ["testing"]
 [[package]]
 name = "angee-dashboards"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/dashboards" }
+source = { editable = "../angee/src/angee/dashboards" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -553,18 +553,18 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-decisions"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/decisions" }
+source = { editable = "../angee/src/angee/decisions" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -576,18 +576,18 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-extraction"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/extraction" }
+source = { editable = "../angee/src/angee/extraction" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-base" },
@@ -603,13 +603,13 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
     { name = "jsonpointer", specifier = ">=3.1" },
     { name = "pillow", specifier = ">=11.0" },
     { name = "pypdfium2", specifier = ">=4.30" },
@@ -618,7 +618,7 @@ requires-dist = [
 [[package]]
 name = "angee-graphql"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/graphql" }
+source = { editable = "../angee/src/angee/graphql" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-server" },
@@ -637,8 +637,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-server", editable = "../angee/src/angee/server" },
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
@@ -655,7 +655,7 @@ requires-dist = [
 [[package]]
 name = "angee-iam"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/iam" }
+source = { editable = "../angee/src/angee/iam" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -666,17 +666,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-axes", specifier = ">=8.0" },
 ]
 
 [[package]]
 name = "angee-iam-integrate-oidc"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/iam_integrate_oidc" }
+source = { editable = "../angee/src/angee/iam_integrate_oidc" }
 dependencies = [
     { name = "angee-iam" },
     { name = "angee-integrate" },
@@ -688,10 +688,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
 ]
@@ -699,7 +699,7 @@ requires-dist = [
 [[package]]
 name = "angee-intake"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/intake" }
+source = { editable = "../angee/src/angee/intake" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-decisions" },
@@ -716,23 +716,23 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-work", editable = "../angee/src/angee/work" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-integrate"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/integrate" }
+source = { editable = "../angee/src/angee/integrate" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -751,13 +751,13 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "authlib", specifier = ">=1.8.0" },
     { name = "deepdiff", specifier = ">=9.1.0" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
@@ -769,23 +769,23 @@ requires-dist = [
 [[package]]
 name = "angee-integrate-github"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/integrate_github" }
+source = { editable = "../angee/src/angee/integrate_github" }
 dependencies = [
     { name = "angee-integrate-vcs" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" }]
+requires-dist = [{ name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" }]
 
 [[package]]
 name = "angee-integrate-iphone"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/integrate_iphone" }
+source = { editable = "../angee/src/angee/integrate_iphone" }
 
 [[package]]
 name = "angee-integrate-vcs"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/integrate_vcs" }
+source = { editable = "../angee/src/angee/integrate_vcs" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-integrate" },
@@ -794,15 +794,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-jobs"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/jobs" }
+source = { editable = "../angee/src/angee/jobs" }
 dependencies = [
     { name = "angee-base" },
     { name = "billiard" },
@@ -813,7 +813,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
     { name = "billiard", specifier = ">=4.2.1,<4.3" },
     { name = "celery", extras = ["redis"], specifier = ">=5.5" },
     { name = "django-celery-beat", git = "https://github.com/celery/django-celery-beat.git?rev=b5e3443d647baf910c0168f25b512dd388ba669e" },
@@ -823,7 +823,7 @@ requires-dist = [
 [[package]]
 name = "angee-knowledge"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/knowledge" }
+source = { editable = "../angee/src/angee/knowledge" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -838,13 +838,13 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "markdown-it-py", specifier = ">=4.2" },
 ]
@@ -852,7 +852,7 @@ requires-dist = [
 [[package]]
 name = "angee-knowledge-graph-pgvector"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/knowledge_graph_pgvector" }
+source = { editable = "../angee/src/angee/knowledge_graph_pgvector" }
 dependencies = [
     { name = "angee-knowledge" },
     { name = "angee-mcp" },
@@ -860,14 +860,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
-    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+    { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
+    { name = "angee-mcp", editable = "../angee/src/angee/mcp" },
 ]
 
 [[package]]
 name = "angee-knowledge-integrate-notion"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/knowledge_integrate_notion" }
+source = { editable = "../angee/src/angee/knowledge_integrate_notion" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-integrate" },
@@ -878,17 +878,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "markdown-it-py", specifier = ">=4.2" },
 ]
 
 [[package]]
 name = "angee-mcp"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/mcp" }
+source = { editable = "../angee/src/angee/mcp" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -901,10 +901,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-server", editable = "../angee/src/angee/server" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
     { name = "fastmcp", specifier = ">=3.4.7,<4" },
     { name = "mcp", specifier = ">=1.2" },
@@ -913,7 +913,7 @@ requires-dist = [
 [[package]]
 name = "angee-messaging"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/messaging" }
+source = { editable = "../angee/src/angee/messaging" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -934,17 +934,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-anymail", specifier = ">=15.1" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "requests", specifier = ">=2.32" },
@@ -981,22 +981,22 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-messaging-integrate-discord", editable = "addons/angee/messaging_integrate_discord" },
-    { name = "angee-messaging-integrate-facebook", editable = "addons/angee/messaging_integrate_facebook" },
-    { name = "angee-messaging-integrate-imessage", editable = "addons/angee/messaging_integrate_imessage" },
-    { name = "angee-messaging-integrate-matrix", editable = "addons/angee/messaging_integrate_matrix" },
-    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
-    { name = "angee-messaging-integrate-signal", editable = "addons/angee/messaging_integrate_signal" },
-    { name = "angee-messaging-integrate-telegram", editable = "addons/angee/messaging_integrate_telegram" },
-    { name = "angee-messaging-integrate-whatsapp", editable = "addons/angee/messaging_integrate_whatsapp" },
-    { name = "angee-posts-integrate-facebook", editable = "addons/angee/posts_integrate_facebook" },
-    { name = "angee-posts-integrate-youtube", editable = "addons/angee/posts_integrate_youtube" },
+    { name = "angee-messaging-integrate-discord", editable = "src/angee/messaging_integrate_discord" },
+    { name = "angee-messaging-integrate-facebook", editable = "src/angee/messaging_integrate_facebook" },
+    { name = "angee-messaging-integrate-imessage", editable = "src/angee/messaging_integrate_imessage" },
+    { name = "angee-messaging-integrate-matrix", editable = "src/angee/messaging_integrate_matrix" },
+    { name = "angee-messaging-integrate-meta", editable = "src/angee/messaging_integrate_meta" },
+    { name = "angee-messaging-integrate-signal", editable = "src/angee/messaging_integrate_signal" },
+    { name = "angee-messaging-integrate-telegram", editable = "src/angee/messaging_integrate_telegram" },
+    { name = "angee-messaging-integrate-whatsapp", editable = "src/angee/messaging_integrate_whatsapp" },
+    { name = "angee-posts-integrate-facebook", editable = "src/angee/posts_integrate_facebook" },
+    { name = "angee-posts-integrate-youtube", editable = "src/angee/posts_integrate_youtube" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "angee", directory = "../angee" },
-    { name = "angee-base", extras = ["testing"], editable = "../angee/addons/angee/base" },
+    { name = "angee-base", extras = ["testing"], editable = "../angee/src/angee/base" },
     { name = "daphne", specifier = ">=4.0" },
     { name = "faker", specifier = ">=30.0" },
     { name = "pytest", specifier = ">=8.0" },
@@ -1007,7 +1007,7 @@ dev = [
 [[package]]
 name = "angee-messaging-integrate-discord"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_discord" }
+source = { editable = "src/angee/messaging_integrate_discord" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1018,17 +1018,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "discord-py", specifier = ">=2.7" },
 ]
 
 [[package]]
 name = "angee-messaging-integrate-facebook"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_facebook" }
+source = { editable = "src/angee/messaging_integrate_facebook" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1041,19 +1041,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-messaging-integrate-meta", editable = "src/angee/messaging_integrate_meta" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
 ]
 
 [[package]]
 name = "angee-messaging-integrate-imap"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/messaging_integrate_imap" }
+source = { editable = "../angee/src/angee/messaging_integrate_imap" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1066,10 +1066,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "imapclient", specifier = ">=3.1.0" },
     { name = "mail-parser-reply", specifier = ">=1.36" },
@@ -1078,7 +1078,7 @@ requires-dist = [
 [[package]]
 name = "angee-messaging-integrate-imessage"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_imessage" }
+source = { editable = "src/angee/messaging_integrate_imessage" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-integrate-iphone" },
@@ -1091,19 +1091,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
-    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/src/angee/integrate_iphone" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/src/angee/storage_integrate_iphone" },
+    { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
 ]
 
 [[package]]
 name = "angee-messaging-integrate-matrix"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_matrix" }
+source = { editable = "src/angee/messaging_integrate_matrix" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1116,10 +1116,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "matrix-nio", extras = ["e2e"], specifier = ">=0.26" },
     { name = "pycryptodome", specifier = ">=3.18" },
     { name = "unpaddedbase64", specifier = ">=2.1" },
@@ -1128,18 +1128,18 @@ requires-dist = [
 [[package]]
 name = "angee-messaging-integrate-meta"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_meta" }
+source = { editable = "src/angee/messaging_integrate_meta" }
 dependencies = [
     { name = "angee-messaging" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-messaging", editable = "../angee/addons/angee/messaging" }]
+requires-dist = [{ name = "angee-messaging", editable = "../angee/src/angee/messaging" }]
 
 [[package]]
 name = "angee-messaging-integrate-signal"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_signal" }
+source = { editable = "src/angee/messaging_integrate_signal" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1149,16 +1149,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-messaging-integrate-slack"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/messaging_integrate_slack" }
+source = { editable = "../angee/src/angee/messaging_integrate_slack" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1169,17 +1169,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "slack-sdk", specifier = ">=3.43.0" },
 ]
 
 [[package]]
 name = "angee-messaging-integrate-telegram"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_telegram" }
+source = { editable = "src/angee/messaging_integrate_telegram" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging" },
@@ -1192,11 +1192,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
     { name = "cryptg", specifier = ">=0.6.0" },
     { name = "telethon", specifier = ">=1.44" },
 ]
@@ -1204,7 +1204,7 @@ requires-dist = [
 [[package]]
 name = "angee-messaging-integrate-whatsapp"
 version = "1.0.0"
-source = { editable = "addons/angee/messaging_integrate_whatsapp" }
+source = { editable = "src/angee/messaging_integrate_whatsapp" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-integrate-iphone" },
@@ -1219,21 +1219,21 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/src/angee/integrate_iphone" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/src/angee/storage_integrate_iphone" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
     { name = "neonize", specifier = ">=0.4.3.post0" },
 ]
 
 [[package]]
 name = "angee-money"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/money" }
+source = { editable = "../angee/src/angee/money" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1245,18 +1245,18 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-nexus"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/nexus" }
+source = { editable = "../angee/src/angee/nexus" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-jobs" },
@@ -1270,20 +1270,20 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
-    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
+    { name = "angee-spaces", editable = "../angee/src/angee/spaces" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-operator"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/operator" }
+source = { editable = "../angee/src/angee/operator" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -1293,16 +1293,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-parties"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/parties" }
+source = { editable = "../angee/src/angee/parties" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1321,15 +1321,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "django-countries", specifier = ">=9,<10" },
     { name = "phonenumbers", specifier = ">=9.0" },
@@ -1339,7 +1339,7 @@ requires-dist = [
 [[package]]
 name = "angee-parties-integrate-carddav"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/parties_integrate_carddav" }
+source = { editable = "../angee/src/angee/parties_integrate_carddav" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-integrate" },
@@ -1350,17 +1350,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "vobject", specifier = ">=0.9.9" },
 ]
 
 [[package]]
 name = "angee-platform"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/platform" }
+source = { editable = "../angee/src/angee/platform" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -1372,10 +1372,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
 ]
@@ -1383,7 +1383,7 @@ requires-dist = [
 [[package]]
 name = "angee-platform-integrate-operator"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/platform_integrate_operator" }
+source = { editable = "../angee/src/angee/platform_integrate_operator" }
 dependencies = [
     { name = "angee-operator" },
     { name = "angee-platform" },
@@ -1392,15 +1392,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
-    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-operator", editable = "../angee/src/angee/operator" },
+    { name = "angee-platform", editable = "../angee/src/angee/platform" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-platform-integrate-vcs"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/platform_integrate_vcs" }
+source = { editable = "../angee/src/angee/platform_integrate_vcs" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-integrate-vcs" },
@@ -1411,17 +1411,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
-    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" },
+    { name = "angee-platform", editable = "../angee/src/angee/platform" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-pm"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/pm" }
+source = { editable = "../angee/src/angee/pm" }
 dependencies = [
     { name = "angee-intake" },
     { name = "angee-portfolio" },
@@ -1434,19 +1434,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-intake", editable = "../angee/addons/angee/intake" },
-    { name = "angee-portfolio", editable = "../angee/addons/angee/portfolio" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
-    { name = "angee-proposals-work", editable = "../angee/addons/angee/proposals_work" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "angee-intake", editable = "../angee/src/angee/intake" },
+    { name = "angee-portfolio", editable = "../angee/src/angee/portfolio" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-proposals", editable = "../angee/src/angee/proposals" },
+    { name = "angee-proposals-work", editable = "../angee/src/angee/proposals_work" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-work", editable = "../angee/src/angee/work" },
 ]
 
 [[package]]
 name = "angee-portfolio"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/portfolio" }
+source = { editable = "../angee/src/angee/portfolio" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-projects" },
@@ -1457,17 +1457,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-posts"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/posts" }
+source = { editable = "../angee/src/angee/posts" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1481,20 +1481,20 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-posts-integrate-facebook"
 version = "1.0.0"
-source = { editable = "addons/angee/posts_integrate_facebook" }
+source = { editable = "src/angee/posts_integrate_facebook" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-messaging-integrate-meta" },
@@ -1504,16 +1504,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-messaging-integrate-meta", editable = "src/angee/messaging_integrate_meta" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
 ]
 
 [[package]]
 name = "angee-posts-integrate-youtube"
 version = "1.0.0"
-source = { editable = "addons/angee/posts_integrate_youtube" }
+source = { editable = "src/angee/posts_integrate_youtube" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-parties" },
@@ -1523,16 +1523,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-projects"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/projects" }
+source = { editable = "../angee/src/angee/projects" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -1551,25 +1551,25 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-scheduling", editable = "../angee/addons/angee/scheduling" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-scheduling", editable = "../angee/src/angee/scheduling" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-proposals"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/proposals" }
+source = { editable = "../angee/src/angee/proposals" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1587,24 +1587,24 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-money", editable = "../angee/addons/angee/money" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-money", editable = "../angee/src/angee/money" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-spaces", editable = "../angee/src/angee/spaces" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-proposals-work"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/proposals_work" }
+source = { editable = "../angee/src/angee/proposals_work" }
 dependencies = [
     { name = "angee-proposals" },
     { name = "angee-web" },
@@ -1614,16 +1614,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "angee-proposals", editable = "../angee/src/angee/proposals" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-work", editable = "../angee/src/angee/work" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-provenance"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/provenance" }
+source = { editable = "../angee/src/angee/provenance" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1635,10 +1635,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
     { name = "django-simple-history", git = "https://github.com/ang-ee/django-simple-history.git?rev=014c0a56b6e80080b56483120172d417d5c7920b" },
 ]
@@ -1646,7 +1646,7 @@ requires-dist = [
 [[package]]
 name = "angee-resources"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/resources" }
+source = { editable = "../angee/src/angee/resources" }
 dependencies = [
     { name = "angee-base" },
     { name = "django-compose" },
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
     { name = "django-import-export", specifier = ">=4.4" },
     { name = "pyyaml", specifier = ">=6" },
@@ -1667,7 +1667,7 @@ requires-dist = [
 [[package]]
 name = "angee-scheduling"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/scheduling" }
+source = { editable = "../angee/src/angee/scheduling" }
 dependencies = [
     { name = "angee-graphql" },
     { name = "python-dateutil" },
@@ -1675,14 +1675,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
     { name = "python-dateutil", specifier = ">=2.9" },
 ]
 
 [[package]]
 name = "angee-sequence"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/sequence" }
+source = { editable = "../angee/src/angee/sequence" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1691,15 +1691,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
 ]
 
 [[package]]
 name = "angee-server"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/server" }
+source = { editable = "../angee/src/angee/server" }
 dependencies = [
     { name = "angee-base" },
     { name = "django-compose" },
@@ -1708,7 +1708,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -1716,7 +1716,7 @@ requires-dist = [
 [[package]]
 name = "angee-spaces"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/spaces" }
+source = { editable = "../angee/src/angee/spaces" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -1729,19 +1729,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-storage"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/storage" }
+source = { editable = "../angee/src/angee/storage" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1755,20 +1755,20 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-tags", editable = "../angee/src/angee/tags" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "python-magic", specifier = ">=0.4.27" },
 ]
 
 [[package]]
 name = "angee-storage-integrate"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/storage_integrate" }
+source = { editable = "../angee/src/angee/storage_integrate" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-integrate" },
@@ -1778,16 +1778,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-storage-integrate-iphone"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/storage_integrate_iphone" }
+source = { editable = "../angee/src/angee/storage_integrate_iphone" }
 dependencies = [
     { name = "angee-integrate" },
     { name = "angee-integrate-iphone" },
@@ -1798,17 +1798,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-storage-integrate", editable = "../angee/addons/angee/storage_integrate" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/src/angee/integrate_iphone" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-storage-integrate", editable = "../angee/src/angee/storage_integrate" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-tags"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/tags" }
+source = { editable = "../angee/src/angee/tags" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1820,106 +1820,106 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-theme-angee"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_angee" }
+source = { editable = "../angee/src/angee/theme_angee" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-aurora"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_aurora" }
+source = { editable = "../angee/src/angee/theme_aurora" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-carbon"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_carbon" }
+source = { editable = "../angee/src/angee/theme_carbon" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-fyltr"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_fyltr" }
+source = { editable = "../angee/src/angee/theme_fyltr" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-ledger"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_ledger" }
+source = { editable = "../angee/src/angee/theme_ledger" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-midnight"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_midnight" }
+source = { editable = "../angee/src/angee/theme_midnight" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-stock"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_stock" }
+source = { editable = "../angee/src/angee/theme_stock" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-theme-warm-red"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/theme_warm_red" }
+source = { editable = "../angee/src/angee/theme_warm_red" }
 dependencies = [
     { name = "angee-web" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+requires-dist = [{ name = "angee-web", editable = "../angee/src/angee/web" }]
 
 [[package]]
 name = "angee-timeline"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/timeline" }
+source = { editable = "../angee/src/angee/timeline" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1928,15 +1928,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
 ]
 
 [[package]]
 name = "angee-uom"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/uom" }
+source = { editable = "../angee/src/angee/uom" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-graphql" },
@@ -1946,16 +1946,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
 ]
 
 [[package]]
 name = "angee-web"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/web" }
+source = { editable = "../angee/src/angee/web" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-server" },
@@ -1964,15 +1964,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-server", editable = "../angee/src/angee/server" },
     { name = "django-compose", specifier = ">=0.1.0.dev2,<0.2" },
 ]
 
 [[package]]
 name = "angee-work"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/work" }
+source = { editable = "../angee/src/angee/work" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-iam" },
@@ -1987,21 +1987,21 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
-    { name = "angee-sequence", editable = "../angee/addons/angee/sequence" },
-    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-projects", editable = "../angee/src/angee/projects" },
+    { name = "angee-sequence", editable = "../angee/src/angee/sequence" },
+    { name = "angee-spaces", editable = "../angee/src/angee/spaces" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-workflows"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows" }
+source = { editable = "../angee/src/angee/workflows" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-decisions" },
@@ -2017,22 +2017,22 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
-    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
-    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
+    { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-workflows-agents"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_agents" }
+source = { editable = "../angee/src/angee/workflows_agents" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-base" },
@@ -2042,16 +2042,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
 ]
 
 [[package]]
 name = "angee-workflows-extraction"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_extraction" }
+source = { editable = "../angee/src/angee/workflows_extraction" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-extraction" },
@@ -2060,15 +2060,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-extraction", editable = "../angee/addons/angee/extraction" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-extraction", editable = "../angee/src/angee/extraction" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
 ]
 
 [[package]]
 name = "angee-workflows-integrate"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_integrate" }
+source = { editable = "../angee/src/angee/workflows_integrate" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-decisions" },
@@ -2081,19 +2081,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
-    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/src/angee/storage" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
 ]
 
 [[package]]
 name = "angee-workflows-messaging"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_messaging" }
+source = { editable = "../angee/src/angee/workflows_messaging" }
 dependencies = [
     { name = "angee-messaging" },
     { name = "angee-web" },
@@ -2103,16 +2103,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
-    { name = "angee-web", editable = "../angee/addons/angee/web" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
 ]
 
 [[package]]
 name = "angee-workflows-parties"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_parties" }
+source = { editable = "../angee/src/angee/workflows_parties" }
 dependencies = [
     { name = "angee-base" },
     { name = "angee-decisions" },
@@ -2123,17 +2123,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
-    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
-    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
-    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-decisions", editable = "../angee/src/angee/decisions" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-workflows", editable = "../angee/src/angee/workflows" },
 ]
 
 [[package]]
 name = "angee-workflows-posts"
 version = "3.0.0"
-source = { editable = "../angee/addons/angee/workflows_posts" }
+source = { editable = "../angee/src/angee/workflows_posts" }
 dependencies = [
     { name = "angee-agents" },
     { name = "angee-base" },
@@ -2143,10 +2143,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
-    { name = "angee-base", editable = "../angee/addons/angee/base" },
-    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
-    { name = "angee-workflows-agents", editable = "../angee/addons/angee/workflows_agents" },
+    { name = "angee-agents", editable = "../angee/src/angee/agents" },
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-posts", editable = "../angee/src/angee/posts" },
+    { name = "angee-workflows-agents", editable = "../angee/src/angee/workflows_agents" },
 ]
 
 [[package]]

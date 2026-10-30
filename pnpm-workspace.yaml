@@ -1,7 +1,7 @@
 packages:
   - "../angee/packages/*"
-  - "../angee/addons/angee/*/web"
-  - "addons/angee/*/web"
+  - "../angee/src/angee/*/web"
+  - "src/angee/*/web"
 allowBuilds:
   esbuild: true
   "@tailwindcss/oxide": true

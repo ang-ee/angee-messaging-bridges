@@ -1,13 +1,13 @@
 # Angee messaging bridges
 
 This repository owns Angee's opt-in external messaging bridge folders under
-`addons/angee/*`. Each addon is a distribution with its own `pyproject.toml`;
+`src/angee/*`. Each addon is a distribution with its own `pyproject.toml`;
 the root file defines the collection and uv workspace. Keep protocol/vendor behavior, resources,
 permissions, and web fragments with the bridge that owns them.
 
 The supported layout is a stack workspace slot: this checkout sits at
 `<stack>/workspaces/<ws>/angee-messaging-bridges` with the consolidated
-`angee/` repository (`addons/` and `packages/`) as a sibling slot. The stack root owns
+`angee/` repository (`src/` and `packages/`) as a sibling slot. The stack root owns
 the composed host — the `@angee/gql` fixture resolves from the stack root's
 `runtime/` (the owning stack's native compose, provision and codegen jobs
 regenerate it after native uv dependency installation).

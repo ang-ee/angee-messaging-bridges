@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from angee.provenance.statements import SourceKind
 from rebac import system_context, to_subject_ref
 
 from angee.integrate.states import LinkStatus, StreamKind
@@ -26,6 +25,7 @@ from angee.messaging_integrate_facebook.parser import (
     parsed_comment,
     parsed_message,
 )
+from angee.provenance.statements import SourceKind
 from tests.conftest import make_integration
 from tests.messaging_fixtures import (
     Handle,
