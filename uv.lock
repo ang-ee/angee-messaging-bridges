@@ -316,7 +316,7 @@ provides-extras = ["postgres"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "angee-django-stubs", extras = ["compatible-mypy"], specifier = "==6.1.2.post1" },
+    { name = "angee-django-stubs", extras = ["compatible-mypy"], specifier = "==6.1.2.post2" },
     { name = "angee-mypy", specifier = "==2.1.0" },
     { name = "daphne", specifier = ">=4.0" },
     { name = "django-zed-rebac", extras = ["caveats"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
