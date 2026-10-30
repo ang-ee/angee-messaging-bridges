@@ -12,12 +12,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from django.apps import apps
+from django.db import connection
+from django.db.migrations.state import ProjectState
+
+from angee.base.fields.state import StateField
 from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
+from angee.messaging_integrate_whatsapp.compose_migrations.messaging.classify_status_feeds import (
+    Migration as StatusMigration,
+)
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
     external_id,
     handle_for_jid,
+    is_group_jid,
     parsed_message,
     phone_for_jid,
 )
@@ -1833,7 +1842,9 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
 
     with system_context(reason="phone identity committed by a concurrent sync"):
         phone_handle = Handle._base_manager.create(
-            platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net",
+            platform="whatsapp",
+            value="+18583421935",
+            external_id="18583421935@s.whatsapp.net",
         )
     manager = Handle.objects
     find_identity = manager.find_identity
@@ -1915,8 +1926,16 @@ def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_t
     from django.test.utils import CaptureQueriesContext
 
     channel = _whatsapp_channel("whatsapp-lid-dry-run")
-    _ingest_whatsapp(channel, ChatMessage(chat_jid="111-222@g.us", stanza_id="G1",
-                                       sender_jid="113352894324870@lid", sender_name=source_name, text="group"))
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(
+            chat_jid="111-222@g.us",
+            stanza_id="G1",
+            sender_jid="113352894324870@lid",
+            sender_name=source_name,
+            text="group",
+        ),
+    )
     with system_context(reason="WhatsApp dry-run target fixture"):
         Handle.objects.create(platform="whatsapp", value="+18583421935", display_name=target_name)
     resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": "Resolved"})
@@ -1924,9 +1943,77 @@ def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_t
         preview = resolve_channel_lids(channel, resolver, dry_run=True)
     # Native elevated-read audit records remain; identity/provenance rows do not change.
     audit = connection.ops.quote_name(apps.get_model("rebac", "PermissionAuditEvent")._meta.db_table)
-    writes = [query["sql"] for query in queries
-              if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))]
+    writes = [
+        query["sql"] for query in queries if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
+    ]
     assert writes and all(sql.startswith(f"INSERT INTO {audit}") for sql in writes)
     result = resolve_channel_lids(channel, resolver)
     assert preview == result
     assert (result.resolved, result.merged, result.named) == (1, 1, not bool(source_name or target_name))
+
+
+@pytest.mark.parametrize("group", [None, False, True])
+def test_status_feed_is_not_a_group_even_when_vendor_flags_it_as_one(group):
+    parsed = parsed_message(
+        ChatMessage(
+            chat_jid="Status@Broadcast",
+            stanza_id="STATUS1",
+            group=group,
+            chat_name="An unrelated participant",
+            sender_jid="4917000001@s.whatsapp.net",
+            sender_name="Ada",
+            text="My update",
+            quoted_stanza_id="PARENT",
+        )
+    )
+    assert parsed.thread.modality == "status"
+    assert parsed.thread.title == ""
+    assert parsed.thread.external_id == "status@broadcast"
+    assert parsed.sender.display_name == "Ada"
+    assert parsed.external_id == "status@broadcast/STATUS1"
+    assert parsed.in_reply_to == "status@broadcast/PARENT"
+    assert parsed.body.text == "My update"
+
+
+def test_non_status_broadcast_remains_distinct_from_the_status_feed():
+    assert not is_group_jid("Status@Broadcast")
+    assert is_group_jid("12345@broadcast")
+    assert is_group_jid("12345@g.us")
+    assert not is_group_jid("4917000001@s.whatsapp.net")
+
+
+def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
+    Thread = apps.get_model("messaging", "Thread")
+    Message = apps.get_model("messaging", "Message")
+    with system_context(reason="test.whatsapp.status_history"):
+        feeds = [
+            Thread._base_manager.create(platform="whatsapp", external_id=key, modality="group")
+            for key in ("status@broadcast", "chat:42:status@broadcast", "chat:43:Status@Broadcast")
+        ]
+        others = [
+            Thread._base_manager.create(platform=platform, external_id=key, modality="group")
+            for platform, key in [
+                ("whatsapp", "123@broadcast"),
+                ("whatsapp", "prefix-status@broadcast"),
+                ("telegram", "status@broadcast"),
+            ]
+        ]
+        update = Message._base_manager.create(thread=feeds[0], external_id="status@broadcast/one", platform="whatsapp")
+        before = list(Message._base_manager.filter(pk=update.pk).values())
+        historical = ProjectState.from_apps(apps)
+        for model in ("thread", "historicalthread"):
+            field = historical.models["messaging", model].fields["modality"]
+            _, _, args, kwargs = field.deconstruct()
+            kwargs["choices"] = [(value, label) for value, label in field.choices if value != "status"]
+            historical.models["messaging", model].fields["modality"] = StateField(*args, **kwargs)
+        migration = StatusMigration("classify_status_feeds", "messaging")
+        with connection.schema_editor() as editor:
+            repaired = migration.apply(historical, editor)
+            migration.apply(repaired, editor)
+        assert set(
+            Thread._base_manager.filter(pk__in=[row.pk for row in feeds]).values_list("modality", flat=True)
+        ) == {"status"}
+        assert set(
+            Thread._base_manager.filter(pk__in=[row.pk for row in others]).values_list("modality", flat=True)
+        ) == {"group"}
+        assert list(Message._base_manager.filter(pk=update.pk).values()) == before
