@@ -168,6 +168,7 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
     A mapped LID whose phone already has a handle is folded into it (the alias stays as a
     redirect); otherwise the LID handle is rewritten to the phone number. Names fill empty
     display names only. A merge the handle owner refuses is counted, never forced.
+    Dry runs compose the same owner and retain native elevated-read audit records.
     """
     model = apps.get_model("parties", "Handle")
     stats = LidResolveStats()
@@ -189,15 +190,9 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
                 continue
             new_value = f"+{phone_digits}"
             name = resolver.name_for_phone(phone_digits)
-            target = model.objects.find_identity(platform="whatsapp", value=new_value)
-            if dry_run:
-                stats.resolved += 1
-                stats.merged += target is not None and target.pk != handle.pk
-                stats.named += bool(name and not handle.display_name)
-                continue
             try:
                 outcome = model.objects.reidentify(
-                    handle, expected_value=handle.value, value=new_value, display_name=name,
+                    handle, expected_value=handle.value, value=new_value, display_name=name, dry_run=dry_run,
                 )
             except ValidationError:
                 stats.refused += 1

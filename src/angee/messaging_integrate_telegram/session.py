@@ -220,9 +220,14 @@ class TelegramSession(AsyncioLiveSession):
         message = getattr(event, "message", None)
         if message is None:
             return
+        chat = getattr(event, "chat", None)
+        if chat is None and bool(getattr(event, "is_channel", False)):
+            # Telethon may omit the cached entity on an update. Resolve its
+            # audience before the first ingest fixes the thread visibility.
+            chat = await event.get_chat()
         queued = self._queued_message(
             message,
-            chat=getattr(event, "chat", None),
+            chat=chat,
             chat_id=getattr(event, "chat_id", None),
             is_private=bool(getattr(event, "is_private", False)),
             is_group=bool(getattr(event, "is_group", False)),

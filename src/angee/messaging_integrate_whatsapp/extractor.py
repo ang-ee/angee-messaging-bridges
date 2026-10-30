@@ -7,13 +7,15 @@ import zipfile
 from pathlib import PurePosixPath
 from typing import Any
 
+from angee.integrate_iphone.archives import backup_manifest
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
 from angee.storage.archives import (
     ArchiveError,
+    archive_entries,
+    probe_archive,
     stage_subtree,
 )
-from angee.storage_integrate_iphone.archives import backup_manifest, recognizes_backup
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -32,7 +34,14 @@ class WhatsAppIphoneBackupExtractor(ArchiveExtractor):
     def recognizes(self, file: Any) -> bool:
         """Spot-check the manifest-resolved chat store without parsing messages."""
 
-        return recognizes_backup(file, domain=backup.WHATSAPP_DOMAIN, relative_path=backup.CHAT_STORAGE_PATH)
+        try:
+            with probe_archive(file) as (archive, entries, bounded):
+                return backup_manifest(
+                    archive, entries, domain=backup.WHATSAPP_DOMAIN, relative_path=backup.CHAT_STORAGE_PATH,
+                    before_candidate=bounded.reset_budget,
+                ) is not None
+        except (ArchiveError, backup.BackupError, sqlite3.DatabaseError):
+            return False
 
     def execute(
         self,
@@ -58,7 +67,8 @@ def _import_archive(
     try:
         with file.open_stream() as stream, zipfile.ZipFile(stream) as archive:
             manifest_name = backup_manifest(
-                archive, domain=backup.WHATSAPP_DOMAIN, relative_path=backup.CHAT_STORAGE_PATH,
+                archive, archive_entries(archive),
+                        domain=backup.WHATSAPP_DOMAIN, relative_path=backup.CHAT_STORAGE_PATH,
             )
             if manifest_name is None:
                 raise backup.BackupError("This archive contains no WhatsApp iPhone backup.")

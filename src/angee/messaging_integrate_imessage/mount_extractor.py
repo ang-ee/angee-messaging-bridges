@@ -19,7 +19,6 @@ from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging_integrate_imessage.backend import confirmed_imessage_channel
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import has_sms_store
-from angee.storage_integrate_iphone.mounts import backup_root
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -39,7 +38,8 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
     def recognizes(self, subject: Any) -> bool:
         """Return whether the Messages store resolves in the drive's backup."""
 
-        root = backup_root(subject)
+        manifest = subject.local_file_path("Manifest.db")
+        root = manifest.parent if manifest is not None else None
         if root is None:
             return False
         try:
@@ -62,7 +62,8 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
         """Import the drive's backup Messages store into the confirmed channel."""
 
         channel = confirmed_imessage_channel(target_pk)
-        root = backup_root(subject)
+        manifest = subject.local_file_path("Manifest.db")
+        root = manifest.parent if manifest is not None else None
         if root is None:
             raise BackupError("This drive does not expose an iPhone backup on disk.")
         total = import_backup(channel, root, resume=True, on_batch=lambda _total: reporter.heartbeat())

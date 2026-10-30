@@ -17,7 +17,6 @@ from typing import Any, ClassVar
 
 from angee.messaging_integrate_whatsapp import backup
 from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
-from angee.storage_integrate_iphone.mounts import backup_root
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -38,7 +37,8 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
     def recognizes(self, subject: Any) -> bool:
         """Return whether this domain's chat store resolves in the drive's backup."""
 
-        root = backup_root(subject)
+        manifest = subject.local_file_path("Manifest.db")
+        root = manifest.parent if manifest is not None else None
         if root is None:
             return False
         try:
@@ -61,7 +61,8 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
         """Import this domain's chats from the drive's backup into the confirmed channel."""
 
         channel = confirmed_whatsapp_channel(target_pk)
-        root = backup_root(subject)
+        manifest = subject.local_file_path("Manifest.db")
+        root = manifest.parent if manifest is not None else None
         if root is None:
             raise backup.BackupError("This drive does not expose an iPhone backup on disk.")
         total = backup.import_backup(

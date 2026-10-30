@@ -5,7 +5,7 @@ name = "angee-messaging-integrate-whatsapp"
 version = "1.0.0"
 description = "WhatsApp sync — pairs a linked device by QR code and pulls chats into messaging threads and messages"
 keywords = ["whatsapp", "chat", "sync"]
-dependencies = ["angee-messaging>=3,<4", "angee-integrate>=3,<4", "angee-integrate-iphone>=3,<4", "angee-parties>=3,<4", "angee-storage>=3,<4", "angee-storage-integrate-iphone>=3,<4", "angee-workflows-integrate>=3,<4", "angee-web>=3,<4", "neonize>=0.4.3.post0"]
+dependencies = ["angee-messaging>=3,<4", "angee-integrate>=3,<4", "angee-integrate-iphone>=3,<4", "angee-parties>=3,<4", "angee-storage>=3,<4", "angee-workflows-integrate>=3,<4", "angee-web>=3,<4", "neonize>=0.4.3.post0"]
 dynamic = ["entry-points"]
 
 [tool.angee]

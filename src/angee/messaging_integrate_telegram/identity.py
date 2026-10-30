@@ -163,10 +163,12 @@ def parsed_message(
                 is_group=is_group,
                 is_channel=is_channel,
             ),
-            # A live channel's public username is an audience fact; channel peer
-            # transport alone also includes private channels and megagroups.
+            # Active primary or alternate public usernames establish audience;
+            # channel transport also includes private channels and megagroups.
             visibility="public" if (is_public if is_public is not None else bool(
-                is_channel and getattr(chat, "username", None)
+                is_channel and (getattr(chat, "username", None) or any(
+                    username.active and username.username for username in (getattr(chat, "usernames", None) or ())
+                ))
             )) else "",
             title=_display_name(chat),
         ),

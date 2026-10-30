@@ -1196,8 +1196,7 @@ def test_mount_backup_extractor_reuses_importer_per_domain(
         # The extractor asks the File owner for its real path (File.local_path).
         local_path=lambda: manifest_path,
     )
-    monkeypatch.setattr(mount_extractor, "backup_root", lambda drive: fake_manifest.local_path().parent)
-    drive = object()  # the resolved manifest row stands in for a real drive lookup
+    drive = SimpleNamespace(local_file_path=lambda filename: fake_manifest.local_path())
 
     channel = make_integration("whatsapp", model=Channel, backend_class="whatsapp")
     with system_context(reason="test whatsapp mount media drive"):
@@ -1830,25 +1829,36 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
         ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
     )
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    system_queryset = Handle.system_queryset
-    created: list[Any] = []
+    from django.db import IntegrityError
 
-    def sync_creates_the_phone_handle(cls: Any, *, lock: tuple[str, ...] | None = None) -> Any:
-        del cls
-        # Sync lands the phone JID after the command looked up the value's owner.
-        if not created:
-            created.append(
-                Handle._base_manager.create(
-                    platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net"
-                )
-            )
-        return system_queryset(lock=lock)
+    with system_context(reason="phone identity committed by a concurrent sync"):
+        phone_handle = Handle._base_manager.create(
+            platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net",
+        )
+    manager = Handle.objects
+    find_identity = manager.find_identity
+    save = Handle.save
+    collisions = []
 
-    monkeypatch.setattr(Handle, "system_queryset", classmethod(sync_creates_the_phone_handle))
+    def stale_preflight(**identity):
+        # Model the stale preflight immediately before another writer commits.
+        # The committed row exists outside the failing rewrite's savepoint.
+        return find_identity(**identity) if collisions else None
+
+    def observe_unique_collision(handle, *args, **kwargs):
+        try:
+            return save(handle, *args, **kwargs)
+        except IntegrityError:
+            assert handle.pk == lid_handle.pk and handle.value == phone_handle.value
+            collisions.append(handle.pk)
+            raise
+
+    monkeypatch.setattr(manager, "find_identity", stale_preflight)
+    monkeypatch.setattr(Handle, "save", observe_unique_collision)
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
+    assert collisions == [lid_handle.pk]
     assert (stats.resolved, stats.merged) == (1, 1)
-    phone_handle = created[0]
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata == {}
@@ -1895,3 +1905,28 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     _assert_handle_redirect(lid_handle, phone_handle)
     # Both the direct and the group message now name the phone handle.
     assert Message._base_manager.filter(sender=phone_handle).count() == 2
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("source_name,target_name", [("", ""), ("Alias", ""), ("", "Kept"), ("Alias", "Kept")])
+def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_tables, source_name, target_name):
+    from django.apps import apps
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    channel = _whatsapp_channel("whatsapp-lid-dry-run")
+    _ingest_whatsapp(channel, ChatMessage(chat_jid="111-222@g.us", stanza_id="G1",
+                                       sender_jid="113352894324870@lid", sender_name=source_name, text="group"))
+    with system_context(reason="WhatsApp dry-run target fixture"):
+        Handle.objects.create(platform="whatsapp", value="+18583421935", display_name=target_name)
+    resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": "Resolved"})
+    with CaptureQueriesContext(connection) as queries:
+        preview = resolve_channel_lids(channel, resolver, dry_run=True)
+    # Native elevated-read audit records remain; identity/provenance rows do not change.
+    audit = connection.ops.quote_name(apps.get_model("rebac", "PermissionAuditEvent")._meta.db_table)
+    writes = [query["sql"] for query in queries
+              if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))]
+    assert writes and all(sql.startswith(f"INSERT INTO {audit}") for sql in writes)
+    result = resolve_channel_lids(channel, resolver)
+    assert preview == result
+    assert (result.resolved, result.merged, result.named) == (1, 1, not bool(source_name or target_name))

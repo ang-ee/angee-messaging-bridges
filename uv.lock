@@ -1085,7 +1085,6 @@ dependencies = [
     { name = "angee-messaging" },
     { name = "angee-parties" },
     { name = "angee-storage" },
-    { name = "angee-storage-integrate-iphone" },
     { name = "angee-workflows-integrate" },
 ]
 
@@ -1096,7 +1095,6 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
     { name = "angee-storage", editable = "../angee/src/angee/storage" },
-    { name = "angee-storage-integrate-iphone", editable = "../angee/src/angee/storage_integrate_iphone" },
     { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
 ]
 
@@ -1211,7 +1209,6 @@ dependencies = [
     { name = "angee-messaging" },
     { name = "angee-parties" },
     { name = "angee-storage" },
-    { name = "angee-storage-integrate-iphone" },
     { name = "angee-web" },
     { name = "angee-workflows-integrate" },
     { name = "neonize" },
@@ -1224,7 +1221,6 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
     { name = "angee-storage", editable = "../angee/src/angee/storage" },
-    { name = "angee-storage-integrate-iphone", editable = "../angee/src/angee/storage_integrate_iphone" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
     { name = "neonize", specifier = ">=0.4.3.post0" },

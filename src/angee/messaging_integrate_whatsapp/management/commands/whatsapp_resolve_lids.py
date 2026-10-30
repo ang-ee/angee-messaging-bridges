@@ -25,7 +25,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         """Declare the channel and dry-run options."""
         parser.add_argument("--channel", required=True, help="Target WhatsApp channel (sqid).")
-        parser.add_argument("--dry-run", action="store_true", help="Report changes without writing them.")
+        parser.add_argument(
+            "--dry-run", action="store_true",
+            help="Preview identity changes; permission-read audit records remain.",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         """Read the store, resolve the channel's LIDs and print the summary."""
