@@ -6,13 +6,14 @@ import hashlib
 import sqlite3
 import zipfile
 from contextlib import nullcontext
+from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
+from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.messaging import backup_ingest
@@ -22,6 +23,7 @@ from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_S
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
 from angee.resources.testing.models import Resource
+from angee.storage import archives
 
 
 class _BackupArchiveFile:
@@ -44,13 +46,13 @@ def test_whatsapp_iphone_backup_recognizes_manifest_resolved_chat_store(
 
     consumed: list[int] = []
 
-    class RecordingReader(extractor_module.BoundedReader):
+    class RecordingReader(archives.BoundedReader):
         def read(self, size: int = -1) -> bytes:
             value = super().read(size)
             consumed.append(len(value))
             return value
 
-    monkeypatch.setattr(extractor_module, "BoundedReader", RecordingReader)
+    monkeypatch.setattr(archives, "BoundedReader", RecordingReader)
     store_padding = 1024 * 1024
     archive = _minimal_backup_archive(tmp_path, store_padding=store_padding)
 
@@ -135,10 +137,14 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
     """WhatsApp contributes its vendor extractor through the bridge's settings seam."""
 
     config = apps.get_app_config("messaging_integrate_whatsapp")
-    contract = addon_manifest(config)
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = next(iter(providers)).dist
 
     assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
+    dependencies = {Requirement(raw).name for raw in contract.requires or ()}
+    assert "angee-workflows-integrate" in dependencies
+    assert "angee-storage-integrate-iphone" not in dependencies
     assert WHATSAPP_SETTINGS[
         "ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.whatsapp_iphone_backup"
     ] == "angee.messaging_integrate_whatsapp.extractor.WhatsAppIphoneBackupExtractor"

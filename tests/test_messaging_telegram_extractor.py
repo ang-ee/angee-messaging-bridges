@@ -210,8 +210,8 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
 def test_telegram_takeout_broadcast_channel_uses_public_thread_modality() -> None:
     """The export adapter delegates broadcast shape to the live identity owner.
 
-    A broadcast channel is a public feed: modality ``public_thread`` and the
-    ``public`` visibility hint; a plain chat keeps the private default.
+    Broadcast modality does not make a private channel public; audience follows
+    the export token independently.
     """
 
     parsed = identity.parsed_export_message(
@@ -222,7 +222,7 @@ def test_telegram_takeout_broadcast_channel_uses_public_thread_modality() -> Non
 
     assert parsed.thread is not None
     assert parsed.thread.modality == "public_thread"
-    assert parsed.thread.visibility == "public"
+    assert parsed.thread.visibility == ""
 
     group = identity.parsed_export_message(
         _chat(chat_type="private_group"),

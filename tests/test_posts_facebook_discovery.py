@@ -35,7 +35,7 @@ def oauth_feed(composed_tables):
         feed = make_integration(
             "facebook-oauth", model=apps.get_model("posts", "Feed"), backend_class="feed",
             feed_backend_class="facebook", kind=CredentialKind.OAUTH,
-            material={"access_token": "synthetic-long-user-token"}, external_id="", config={}, cursor={},
+            material={"access_token": "synthetic-long-user-token"}, external_id="", config={},
         )
         account = ExternalAccount.objects.link(
             feed.credential.oauth_client, "synthetic-user-identity", owner=feed.owner, display_name="Example Operator",

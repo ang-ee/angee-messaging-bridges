@@ -397,8 +397,7 @@ def test_mount_backup_extractor_resolves_and_imports(
         # The extractor asks the File owner for its real path (File.local_path).
         local_path=lambda: manifest_path,
     )
-    monkeypatch.setattr(mount_extractor, "_manifest_file", lambda drive: fake_manifest)
-    drive = object()
+    drive = SimpleNamespace(local_file_path=lambda filename: fake_manifest.local_path())
 
     channel = make_integration("imessage", model=Channel, backend_class="imessage")
     with system_context(reason="test imessage mount media drive"):
@@ -420,8 +419,11 @@ def test_mount_backup_extractor_resolves_and_imports(
 def test_mount_extractor_rejects_a_storeless_drive(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Recognition returns False when the drive exposes no on-disk backup."""
 
-    monkeypatch.setattr(mount_extractor, "_manifest_file", lambda drive: None)
-    assert mount_extractor.ImessageMountBackupExtractor().recognizes(object()) is False
+    from types import SimpleNamespace
+
+    assert mount_extractor.ImessageMountBackupExtractor().recognizes(
+        SimpleNamespace(local_file_path=lambda filename: None),
+    ) is False
 
 
 def test_imessage_import_command_dry_run_counts(imessage_tables: Any, tmp_path: Any) -> None:
@@ -590,3 +592,13 @@ def _build_backup(tmp_path: Path, *, encrypted: bool = False) -> Path:
     manifest.commit()
     manifest.close()
     return backup
+
+
+def test_per_line_dry_run_does_not_provision_channels(imessage_tables, tmp_path):
+    owner = _per_line_owner(tmp_path)
+    backup = _build_backup(tmp_path)
+    before = Channel._base_manager.count()
+    counts = import_backup_per_line(owner, backup, dry_run=True)
+    assert sum(counts.values()) == 7
+    assert Channel._base_manager.count() == before
+    assert Message._base_manager.count() == 0

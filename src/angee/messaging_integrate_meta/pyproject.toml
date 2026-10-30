@@ -1,0 +1,18 @@
+build-system = { requires = ["hatch-angee>=1.1,<2"], build-backend = "hatch_angee" }
+
+[project]
+name = "angee-messaging-integrate-meta"
+version = "1.0.0"
+description = "Meta vendor catalogue and reader for Facebook and Instagram Download Your Information exports"
+keywords = ["meta", "facebook", "instagram", "takeout", "import"]
+dependencies = ["angee-messaging>=3,<4"]
+dynamic = ["entry-points"]
+
+[tool.angee]
+
+[[tool.angee.resources.master]]
+path = "master/010_integrate.vendor.yaml"
+adopt = "slug"
+
+[tool.angee.platform]
+category = "Integration"
