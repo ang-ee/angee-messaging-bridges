@@ -18,6 +18,7 @@ from angee.messaging_integrate_imessage import extractor as extractor_module
 from angee.messaging_integrate_imessage.autoconfig import SETTINGS as IMESSAGE_SETTINGS
 from angee.messaging_integrate_imessage.extractor import ImessageIphoneBackupExtractor
 from angee.messaging_integrate_imessage.store import SMS_DOMAIN, SMS_PATH
+from angee.storage import archives
 
 
 class _BackupArchiveFile:
@@ -40,13 +41,13 @@ def test_imessage_iphone_backup_recognizes_manifest_resolved_store(
 
     consumed: list[int] = []
 
-    class RecordingReader(extractor_module.BoundedReader):
+    class RecordingReader(archives.BoundedReader):
         def read(self, size: int = -1) -> bytes:
             value = super().read(size)
             consumed.append(len(value))
             return value
 
-    monkeypatch.setattr(extractor_module, "BoundedReader", RecordingReader)
+    monkeypatch.setattr(archives, "BoundedReader", RecordingReader)
     store_padding = 1024 * 1024
     archive = _minimal_backup_archive(tmp_path, store_padding=store_padding)
 

@@ -5,10 +5,9 @@ from __future__ import annotations
 import sqlite3
 import zipfile
 from pathlib import PurePosixPath
-from typing import Any, BinaryIO, cast
+from typing import Any
 
 from angee.integrate_iphone.archives import backup_manifest
-
 from angee.integrate_iphone.backup import (
     BackupError,
 )
@@ -16,10 +15,9 @@ from angee.messaging_integrate_imessage.backend import confirmed_imessage_channe
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import SMS_DOMAIN, SMS_PATH
 from angee.storage.archives import (
-    RECOGNITION_READ_LIMIT,
     ArchiveError,
-    BoundedReader,
     archive_entries,
+    probe_archive,
     stage_subtree,
 )
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
@@ -41,17 +39,12 @@ class ImessageIphoneBackupExtractor(ArchiveExtractor):
         """Spot-check the manifest-resolved Messages store without parsing messages."""
 
         try:
-            with file.open_stream() as stream:
-                bounded = BoundedReader(stream, limit=RECOGNITION_READ_LIMIT)
-                with zipfile.ZipFile(cast(BinaryIO, bounded)) as archive:
-                    def reset_budget():
-                        bounded.remaining = RECOGNITION_READ_LIMIT
-                    return backup_manifest(
-                        archive, archive_entries(archive), domain=SMS_DOMAIN, relative_path=SMS_PATH,
-                        before_candidate=reset_budget,
-                    ) is not None
-        except (ArchiveError, BackupError, NotImplementedError, OSError, sqlite3.DatabaseError,
-                zipfile.BadZipFile, zipfile.LargeZipFile):
+            with probe_archive(file) as (archive, entries, bounded):
+                return backup_manifest(
+                    archive, entries, domain=SMS_DOMAIN, relative_path=SMS_PATH,
+                    before_candidate=bounded.reset_budget,
+                ) is not None
+        except (ArchiveError, BackupError, sqlite3.DatabaseError):
             return False
 
     def execute(
