@@ -108,9 +108,6 @@ REBAC_ALLOW_SUDO = True
 REBAC_SUPERUSER_BYPASS = False
 REBAC_LINT_BARE_PREFETCH = False
 
-# Native settings populate this registry; the fixture contributes only its stub.
-ANGEE_VCS_BACKEND_CLASSES: dict[str, str]
-
 # Apply source app declarations without emitting models or replacing this registry.
 apply_app_settings(globals(), enabled_apps(INSTALLED_APPS, group="angee.addons"))
-ANGEE_VCS_BACKEND_CLASSES["stub"] = "tests.conftest.StubVCSBackend"
+globals()["ANGEE_VCS_BACKEND_CLASSES"]["stub"] = "tests.conftest.StubVCSBackend"
