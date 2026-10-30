@@ -134,7 +134,6 @@ phrogg-ap = {path = "../angee-phrogg/addons/phrogg/ap", editable = true}
 phrogg-painkiller = {path = "../angee-phrogg/addons/phrogg/painkiller", editable = true}
 phrogg-theme-phrogg = {path = "../angee-phrogg/addons/phrogg/theme_phrogg", editable = true}
 tests-blankchoices = {path = "../angee/tests/blankchoices", editable = true}
-django-compose = {path = "../django-compose", editable = true}
 
 [tool.uv.workspace]
 members = ["addons/angee/messaging_integrate_discord", "addons/angee/messaging_integrate_facebook", "addons/angee/messaging_integrate_imessage", "addons/angee/messaging_integrate_matrix", "addons/angee/messaging_integrate_meta", "addons/angee/messaging_integrate_signal", "addons/angee/messaging_integrate_telegram", "addons/angee/messaging_integrate_whatsapp", "addons/angee/posts_integrate_facebook", "addons/angee/posts_integrate_youtube"]
