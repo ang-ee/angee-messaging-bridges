@@ -127,8 +127,8 @@ arp-products = {path = "../angee-arp/src/arp/products", editable = true}
 arp-purchase = {path = "../angee-arp/src/arp/purchase", editable = true}
 arp-rating = {path = "../angee-arp/src/arp/rating", editable = true}
 arp-sales = {path = "../angee-arp/src/arp/sales", editable = true}
-example-notes = {path = "../angee/examples/addons/example/notes", editable = true}
-example-theme = {path = "../angee/examples/addons/example/theme", editable = true}
+example-notes = {path = "../angee/examples/src/example/notes", editable = true}
+example-theme = {path = "../angee/examples/src/example/theme", editable = true}
 phrogg-ap = {path = "../angee-phrogg/src/phrogg/ap", editable = true}
 phrogg-painkiller = {path = "../angee-phrogg/src/phrogg/painkiller", editable = true}
 phrogg-theme-phrogg = {path = "../angee-phrogg/src/phrogg/theme_phrogg", editable = true}
