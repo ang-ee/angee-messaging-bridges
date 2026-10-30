@@ -8,14 +8,15 @@ import queue
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
+from importlib import metadata
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
 from django.core.exceptions import ValidationError
+from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
@@ -349,9 +350,12 @@ def test_create_telegram_channel_rejects_a_credential_of_another_kind(
 def test_telegram_backend_registration_and_pairing_projection(telegram_tables: Any) -> None:
     """Autoconfig registers a live backend whose projection prefers saved profile labels."""
 
-    contract = addon_manifest(apps.get_app_config("messaging_integrate_telegram"))
+    config = apps.get_app_config("messaging_integrate_telegram")
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = next(iter(providers)).dist
     assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
+    assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
     autoconfig = _telegram_module("autoconfig")
     backend_module = _telegram_module("backend")
     assert autoconfig.SETTINGS == {
@@ -1123,3 +1127,20 @@ def test_telegram_client_session_path_derives_from_the_passed_store(
     client = session._build_client(store)
 
     assert client.session == str(store.with_suffix(""))
+
+
+def test_live_channel_resolves_uncached_entity_before_mapping_audience(telegram_session_module):
+    from unittest.mock import AsyncMock
+
+    session = telegram_session_module.TelegramSession.__new__(telegram_session_module.TelegramSession)
+    session.events = queue.Queue()
+    entity = SimpleNamespace(id=42, title="Public channel", username="public_chat")
+    event = SimpleNamespace(
+        message=_message(id=19), chat_id=-10042, chat=None,
+        is_private=False, is_group=False, is_channel=True, get_chat=AsyncMock(return_value=entity),
+    )
+    asyncio.run(session._on_new_message(event))
+    event.get_chat.assert_awaited_once()
+    kind, batch = session.events.get_nowait()
+    assert kind == "messages"
+    assert batch[0][0].thread.visibility == "public"

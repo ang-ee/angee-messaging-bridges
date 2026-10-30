@@ -1,33 +1,12 @@
-"""Minimal Django settings for backend unit tests."""
+"""Bare Django source-model host with native addon settings contributions."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from angee.conf import prepend_import_paths
-from angee.utils.autoconfig import AutoConfig
 from django.apps import AppConfig
-
-from angee import integrate
-
-ANGEE_ADDON_DIRS = (
-    Path(__file__).resolve().parent.parent / "addons",
-    Path(integrate.__file__).resolve().parents[2],
-)
-prepend_import_paths(ANGEE_ADDON_DIRS)
-
-
-class BareAngeeConfig(AppConfig):
-    """Register source-only tests without building the stack runtime."""
-
-    name = "angee"
-
-
-class BareComposeConfig(AppConfig):
-    """Register the core composer without emitting a generated runtime."""
-
-    name = "angee.compose"
-    label = "compose"
+from django_compose.components import enabled_apps
+from django_compose.conf import apply_app_settings
 
 
 class BareGraphQLConfig(AppConfig):
@@ -43,10 +22,10 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.postgres",
+    "axes",
+    "django_celery_beat",
     "rebac",
     "simple_history",
-    "tests.settings.BareComposeConfig",
-    "tests.settings.BareAngeeConfig",
     "angee.base",
     "angee.provenance",
     "tests.settings.BareGraphQLConfig",
@@ -56,7 +35,6 @@ INSTALLED_APPS = [
     "tests.iam_app.TestIAMConfig",
     "angee.integrate",
     "angee.integrate_vcs",
-    "angee.integrate_iphone",
     "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",
@@ -91,7 +69,6 @@ INSTALLED_APPS = [
     "angee.integrate.testing",
     "angee.workflows.testing",
 ]
-AutoConfig.apply_installed(globals(), environment=False)
 CELERY_BROKER_URL = "memory://"
 
 # Checkout-local so parallel git worktrees do not share one SQLite file.
@@ -114,21 +91,23 @@ DATABASES = {
         "TEST": {"NAME": _TEST_DB_FILE},
     }
 }
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
-USE_TZ = True
-COMPOSE_RUNTIME_MODULE = "tests.runtime"
-ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
-ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
-ANGEE_STORAGE_DRAFT_TTL_HOURS = 24
-ANGEE_STORAGE_TRASH_TTL_DAYS = 30
 # Bare tests run Django's per-process LocMem cache. Production OAuth redirects
 # must use a shared cache; tests opt in explicitly so the state guard remains loud.
 ANGEE_INTEGRATE_ALLOW_LOCAL_OAUTH_STATE_CACHE = True
 ANGEE_GRAPHQL_ALLOW_INMEMORY_CHANNEL_LAYER = True
-STRAWBERRY_DJANGO = {
-    # Mirror the composer-owned public ID contract for source-addon tests that
-    # bypass compose settings.
-    "DEFAULT_PK_FIELD_NAME": "sqid",
-    "MAP_AUTO_ID_AS_GLOBAL_ID": False,
-}
+
+# Ordinary Django inputs for this bare source-model host. Production activation
+# and composed-host tests use native configuration/receipts in another process.
+BASE_DIR = Path(__file__).resolve().parent.parent
+REBAC_BACKEND = "local"
+REBAC_LOCAL_BACKEND_STORAGE = "registry"
+REBAC_STRICT_MODE = True
+REBAC_FIELD_READ_MODE = "redact"
+REBAC_ALLOW_SUDO = True
+REBAC_SUPERUSER_BYPASS = False
+REBAC_LINT_BARE_PREFETCH = False
+
+# Apply source app declarations without emitting models or replacing this registry.
+apply_app_settings(globals(), enabled_apps(INSTALLED_APPS, group="angee.addons"))
+globals()["ANGEE_VCS_BACKEND_CLASSES"]["stub"] = "tests.conftest.StubVCSBackend"

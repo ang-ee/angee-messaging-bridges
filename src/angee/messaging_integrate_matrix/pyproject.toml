@@ -1,0 +1,18 @@
+build-system = { requires = ["hatch-angee>=1.1,<2"], build-backend = "hatch_angee" }
+
+[project]
+name = "angee-messaging-integrate-matrix"
+version = "1.0.0"
+description = "Matrix sync — signs in a user's account and pulls rooms into messaging"
+keywords = ["matrix", "chat", "sync", "e2ee"]
+dependencies = ["angee-messaging>=3,<4", "angee-integrate>=3,<4", "angee-parties>=3,<4", "angee-web>=3,<4", "matrix-nio[e2e]>=0.26", "pycryptodome>=3.18", "unpaddedbase64>=2.1"]
+dynamic = ["entry-points"]
+
+[tool.angee]
+
+[[tool.angee.resources.master]]
+path = "master/010_integrate.vendor.yaml"
+adopt = "slug"
+
+[tool.angee.platform]
+category = "Integration"

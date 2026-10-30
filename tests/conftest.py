@@ -6,14 +6,15 @@ import itertools
 import sys
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import ExitStack
+from importlib.util import spec_from_file_location
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
-from angee.posts_integrate_youtube.models import YouTubeFeedState
 from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -21,6 +22,7 @@ from django.test import RequestFactory
 from django.utils import timezone
 from rebac import actor_context, system_context
 
+from angee.base.testing.packages import write_addon_distribution
 from angee.decisions.testing import models as decisions_models  # noqa: F401 -- register shared FK targets
 from angee.graphql.actions import ActionSelectionInput
 from angee.graphql.ids import PublicID
@@ -45,6 +47,7 @@ from angee.portfolio.testing import (
 from angee.posts.models import Feed as AbstractFeed
 from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
+from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
 from angee.provenance.testing import load_statement_sources
 from angee.storage.models import Backend as AbstractStorageBackend
@@ -477,6 +480,16 @@ def wait_until(predicate: Callable[[], object]) -> None:
 
 
 _TEST_ADDON_SEQ = itertools.count()
+_TEST_ADDON_CONTEXTS = ExitStack()
+
+
+@pytest.fixture(autouse=True)
+def addon_fixture_resources(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Scope actual fixture packages and native editable metadata to one test."""
+
+    del monkeypatch
+    with _TEST_ADDON_CONTEXTS:
+        yield
 
 
 def make_addon(
@@ -485,37 +498,32 @@ def make_addon(
     depends_on: tuple[str, ...] = (),
     name: str | None = None,
 ) -> AppConfig:
-    """Return a fake AppConfig backed by a real tmp ``addon.toml`` (+ schema module).
-
-    Bridges the old in-memory test idiom to the addon.toml contract: ``schemas`` is
-    exposed through a registered ``<name>.schema`` module that the manifest's
-    ``schemas = "schema.schemas"`` reference resolves to, and ``depends_on`` is written
-    straight into the manifest. So the readers (the manifest is their sole source)
-    see exactly what the test declares.
-    """
+    """Create a source package and native dist-info for capability reader tests."""
 
     name = name or f"tests._addon_{next(_TEST_ADDON_SEQ)}"
-    tmp = Path(tempfile.mkdtemp())
+    path = Path(_TEST_ADDON_CONTEXTS.enter_context(tempfile.TemporaryDirectory()))
+    (path / "__init__.py").touch()
+    monkeypatch = _TEST_ADDON_CONTEXTS.enter_context(pytest.MonkeyPatch.context())
     module = ModuleType(name)
-    module.__file__ = str(tmp / "apps.py")
-    setattr(module, "__path__", [str(tmp)])
-    sys.modules[name] = module
-
-    body = ["[addon]", f'name = "{name}"']
-    if depends_on:
-        body.append("depends_on = [" + ", ".join(f'"{dep}"' for dep in depends_on) + "]")
+    module.__file__ = str(path / "__init__.py")
+    module.__path__ = [str(path)]
+    module.__spec__ = spec_from_file_location(name, module.__file__, submodule_search_locations=[str(path)])
+    monkeypatch.setitem(sys.modules, name, module)
+    capabilities: dict[str, Any] = {}
     if schemas is not None:
         schema_module = ModuleType(f"{name}.schema")
-        setattr(schema_module, "schemas", schemas)
-        sys.modules[f"{name}.schema"] = schema_module
-        body.append('schemas = "schema.schemas"')
-    (tmp / "addon.toml").write_text("\n".join(body) + "\n")
-
-    return AppConfig(name, module)
+        schema_module.schemas = schemas
+        monkeypatch.setitem(sys.modules, f"{name}.schema", schema_module)
+        capabilities["graphql"] = {"schema": "schema.schemas"}
+    write_addon_distribution(
+        path, name, depends_on=depends_on, capabilities=capabilities, metadata_root=path,
+    )
+    monkeypatch.syspath_prepend(str(path))
+    return AppConfig.create(name)
 
 
 def SchemaAddon(schemas: dict[str, dict[str, tuple[object, ...]]]) -> AppConfig:  # noqa: N802 - kept for call sites
-    """Build an addon stand-in whose manifest exposes the given GraphQL schemas."""
+    """Build a native fixture addon declaring the given GraphQL schemas."""
 
     return make_addon(schemas=schemas)
 

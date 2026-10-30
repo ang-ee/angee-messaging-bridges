@@ -18,6 +18,9 @@ from django.db.migrations.state import ProjectState
 
 from angee.base.fields.state import StateField
 from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
+from angee.messaging_integrate_whatsapp.compose_migrations.messaging.classify_status_feeds import (
+    Migration as StatusMigration,
+)
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
@@ -27,7 +30,6 @@ from angee.messaging_integrate_whatsapp.parser import (
     parsed_message,
     phone_for_jid,
 )
-from angee.messaging_integrate_whatsapp.runtime_migrations.classify_status_feeds import Migration as StatusMigration
 
 UTC = timezone.utc
 
@@ -1203,8 +1205,7 @@ def test_mount_backup_extractor_reuses_importer_per_domain(
         # The extractor asks the File owner for its real path (File.local_path).
         local_path=lambda: manifest_path,
     )
-    monkeypatch.setattr(mount_extractor, "_manifest_file", lambda drive: fake_manifest)
-    drive = object()  # the resolved manifest row stands in for a real drive lookup
+    drive = SimpleNamespace(local_file_path=lambda filename: fake_manifest.local_path())
 
     channel = make_integration("whatsapp", model=Channel, backend_class="whatsapp")
     with system_context(reason="test whatsapp mount media drive"):
@@ -1267,7 +1268,7 @@ def test_whatsapp_import_command_dry_run_counts(whatsapp_tables: Any, tmp_path: 
 
 # --- (d) @lid sender resolution: live session + the store-backed backfill ---
 
-from angee.messaging_integrate_whatsapp.management.commands.whatsapp_resolve_lids import (  # noqa: E402
+from angee.messaging_integrate_whatsapp.backend import (  # noqa: E402
     StoreResolver,
     StoreUnreadable,
     resolve_channel_lids,
@@ -1837,25 +1838,38 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
         ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="group"),
     )
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    system_queryset = Handle.system_queryset
-    created: list[Any] = []
+    from django.db import IntegrityError
 
-    def sync_creates_the_phone_handle(cls: Any, *, lock: tuple[str, ...] | None = None) -> Any:
-        del cls
-        # Sync lands the phone JID after the command looked up the value's owner.
-        if not created:
-            created.append(
-                Handle._base_manager.create(
-                    platform="whatsapp", value="+18583421935", external_id="18583421935@s.whatsapp.net"
-                )
-            )
-        return system_queryset(lock=lock)
+    with system_context(reason="phone identity committed by a concurrent sync"):
+        phone_handle = Handle._base_manager.create(
+            platform="whatsapp",
+            value="+18583421935",
+            external_id="18583421935@s.whatsapp.net",
+        )
+    manager = Handle.objects
+    find_identity = manager.find_identity
+    save = Handle.save
+    collisions = []
 
-    monkeypatch.setattr(Handle, "system_queryset", classmethod(sync_creates_the_phone_handle))
+    def stale_preflight(**identity):
+        # Model the stale preflight immediately before another writer commits.
+        # The committed row exists outside the failing rewrite's savepoint.
+        return find_identity(**identity) if collisions else None
+
+    def observe_unique_collision(handle, *args, **kwargs):
+        try:
+            return save(handle, *args, **kwargs)
+        except IntegrityError:
+            assert handle.pk == lid_handle.pk and handle.value == phone_handle.value
+            collisions.append(handle.pk)
+            raise
+
+    monkeypatch.setattr(manager, "find_identity", stale_preflight)
+    monkeypatch.setattr(Handle, "save", observe_unique_collision)
     stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
 
+    assert collisions == [lid_handle.pk]
     assert (stats.resolved, stats.merged) == (1, 1)
-    phone_handle = created[0]
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata == {}
@@ -1904,11 +1918,54 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     assert Message._base_manager.filter(sender=phone_handle).count() == 2
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("source_name,target_name", [("", ""), ("Alias", ""), ("", "Kept"), ("Alias", "Kept")])
+def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_tables, source_name, target_name):
+    from django.apps import apps
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    channel = _whatsapp_channel("whatsapp-lid-dry-run")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(
+            chat_jid="111-222@g.us",
+            stanza_id="G1",
+            sender_jid="113352894324870@lid",
+            sender_name=source_name,
+            text="group",
+        ),
+    )
+    with system_context(reason="WhatsApp dry-run target fixture"):
+        Handle.objects.create(platform="whatsapp", value="+18583421935", display_name=target_name)
+    resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": "Resolved"})
+    with CaptureQueriesContext(connection) as queries:
+        preview = resolve_channel_lids(channel, resolver, dry_run=True)
+    # Native elevated-read audit records remain; identity/provenance rows do not change.
+    audit = connection.ops.quote_name(apps.get_model("rebac", "PermissionAuditEvent")._meta.db_table)
+    writes = [
+        query["sql"] for query in queries if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
+    ]
+    assert writes and all(sql.startswith(f"INSERT INTO {audit}") for sql in writes)
+    result = resolve_channel_lids(channel, resolver)
+    assert preview == result
+    assert (result.resolved, result.merged, result.named) == (1, 1, not bool(source_name or target_name))
+
+
 @pytest.mark.parametrize("group", [None, False, True])
 def test_status_feed_is_not_a_group_even_when_vendor_flags_it_as_one(group):
-    parsed = parsed_message(ChatMessage(chat_jid="Status@Broadcast", stanza_id="STATUS1", group=group,
-        chat_name="An unrelated participant", sender_jid="4917000001@s.whatsapp.net",
-        sender_name="Ada", text="My update", quoted_stanza_id="PARENT"))
+    parsed = parsed_message(
+        ChatMessage(
+            chat_jid="Status@Broadcast",
+            stanza_id="STATUS1",
+            group=group,
+            chat_name="An unrelated participant",
+            sender_jid="4917000001@s.whatsapp.net",
+            sender_name="Ada",
+            text="My update",
+            quoted_stanza_id="PARENT",
+        )
+    )
     assert parsed.thread.modality == "status"
     assert parsed.thread.title == ""
     assert parsed.thread.external_id == "status@broadcast"
@@ -1929,11 +1986,18 @@ def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
     Thread = apps.get_model("messaging", "Thread")
     Message = apps.get_model("messaging", "Message")
     with system_context(reason="test.whatsapp.status_history"):
-        feeds = [Thread._base_manager.create(platform="whatsapp", external_id=key, modality="group")
-                 for key in ("status@broadcast", "chat:42:status@broadcast", "chat:43:Status@Broadcast")]
-        others = [Thread._base_manager.create(platform=platform, external_id=key, modality="group")
-                  for platform, key in [("whatsapp", "123@broadcast"), ("whatsapp", "prefix-status@broadcast"),
-                                        ("telegram", "status@broadcast")]]
+        feeds = [
+            Thread._base_manager.create(platform="whatsapp", external_id=key, modality="group")
+            for key in ("status@broadcast", "chat:42:status@broadcast", "chat:43:Status@Broadcast")
+        ]
+        others = [
+            Thread._base_manager.create(platform=platform, external_id=key, modality="group")
+            for platform, key in [
+                ("whatsapp", "123@broadcast"),
+                ("whatsapp", "prefix-status@broadcast"),
+                ("telegram", "status@broadcast"),
+            ]
+        ]
         update = Message._base_manager.create(thread=feeds[0], external_id="status@broadcast/one", platform="whatsapp")
         before = list(Message._base_manager.filter(pk=update.pk).values())
         historical = ProjectState.from_apps(apps)
@@ -1946,8 +2010,10 @@ def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
         with connection.schema_editor() as editor:
             repaired = migration.apply(historical, editor)
             migration.apply(repaired, editor)
-        assert set(Thread._base_manager.filter(pk__in=[row.pk for row in feeds])
-                   .values_list("modality", flat=True)) == {"status"}
-        assert set(Thread._base_manager.filter(pk__in=[row.pk for row in others])
-                   .values_list("modality", flat=True)) == {"group"}
+        assert set(
+            Thread._base_manager.filter(pk__in=[row.pk for row in feeds]).values_list("modality", flat=True)
+        ) == {"status"}
+        assert set(
+            Thread._base_manager.filter(pk__in=[row.pk for row in others]).values_list("modality", flat=True)
+        ) == {"group"}
         assert list(Message._base_manager.filter(pk=update.pk).values()) == before
