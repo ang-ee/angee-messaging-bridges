@@ -2,8 +2,25 @@ version = 1
 revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
-    "platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
-    "platform_python_implementation != 'PyPy' or sys_platform != 'win32'",
+    "python_full_version >= '3.15' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
+    "python_full_version < '3.15' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
+    "(python_full_version >= '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.15' and sys_platform != 'win32')",
+    "(python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version < '3.15' and sys_platform != 'win32')",
+]
+
+[manifest]
+members = [
+    "angee-messaging-bridges",
+    "angee-messaging-integrate-discord",
+    "angee-messaging-integrate-facebook",
+    "angee-messaging-integrate-imessage",
+    "angee-messaging-integrate-matrix",
+    "angee-messaging-integrate-meta",
+    "angee-messaging-integrate-signal",
+    "angee-messaging-integrate-telegram",
+    "angee-messaging-integrate-whatsapp",
+    "angee-posts-integrate-facebook",
+    "angee-posts-integrate-youtube",
 ]
 
 [[package]]
@@ -145,78 +162,810 @@ wheels = [
 ]
 
 [[package]]
-name = "angee-messaging-bridges"
-version = "0.0.0"
-source = { virtual = "." }
+name = "angee"
+version = "3.0.0"
+source = { directory = "../angee" }
 dependencies = [
-    { name = "django-angee", extra = ["postgres"] },
+    { name = "angee-agents" },
+    { name = "angee-agents-integrate-anthropic" },
+    { name = "angee-agents-integrate-ollama" },
+    { name = "angee-agents-integrate-openai" },
+    { name = "angee-agents-runtime-pydantic" },
+    { name = "angee-appearance" },
+    { name = "angee-appearance-integrate" },
+    { name = "angee-base" },
+    { name = "angee-dashboards" },
+    { name = "angee-decisions" },
+    { name = "angee-extraction" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-iam-integrate-oidc" },
+    { name = "angee-intake" },
+    { name = "angee-integrate" },
+    { name = "angee-integrate-github" },
+    { name = "angee-integrate-iphone" },
+    { name = "angee-integrate-vcs" },
+    { name = "angee-jobs" },
+    { name = "angee-knowledge" },
+    { name = "angee-knowledge-graph-pgvector" },
+    { name = "angee-knowledge-integrate-notion" },
+    { name = "angee-mcp" },
+    { name = "angee-messaging" },
+    { name = "angee-messaging-integrate-imap" },
+    { name = "angee-messaging-integrate-slack" },
+    { name = "angee-money" },
+    { name = "angee-nexus" },
+    { name = "angee-operator" },
+    { name = "angee-parties" },
+    { name = "angee-parties-integrate-carddav" },
+    { name = "angee-platform" },
+    { name = "angee-platform-integrate-operator" },
+    { name = "angee-platform-integrate-vcs" },
+    { name = "angee-pm" },
+    { name = "angee-portfolio" },
+    { name = "angee-posts" },
+    { name = "angee-projects" },
+    { name = "angee-proposals" },
+    { name = "angee-proposals-work" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-scheduling" },
+    { name = "angee-sequence" },
+    { name = "angee-server" },
+    { name = "angee-spaces" },
+    { name = "angee-storage" },
+    { name = "angee-storage-integrate" },
+    { name = "angee-storage-integrate-iphone" },
+    { name = "angee-tags" },
+    { name = "angee-theme-angee" },
+    { name = "angee-theme-aurora" },
+    { name = "angee-theme-carbon" },
+    { name = "angee-theme-fyltr" },
+    { name = "angee-theme-ledger" },
+    { name = "angee-theme-midnight" },
+    { name = "angee-theme-stock" },
+    { name = "angee-theme-warm-red" },
+    { name = "angee-timeline" },
+    { name = "angee-uom" },
+    { name = "angee-web" },
+    { name = "angee-work" },
+    { name = "angee-workflows" },
+    { name = "angee-workflows-agents" },
+    { name = "angee-workflows-extraction" },
+    { name = "angee-workflows-integrate" },
+    { name = "angee-workflows-messaging" },
+    { name = "angee-workflows-parties" },
+    { name = "angee-workflows-posts" },
 ]
 
-[package.dev-dependencies]
-addons = [
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-agents-integrate-anthropic", editable = "../angee/addons/angee/agents_integrate_anthropic" },
+    { name = "angee-agents-integrate-ollama", editable = "../angee/addons/angee/agents_integrate_ollama" },
+    { name = "angee-agents-integrate-openai", editable = "../angee/addons/angee/agents_integrate_openai" },
+    { name = "angee-agents-runtime-pydantic", editable = "../angee/addons/angee/agents_runtime_pydantic" },
+    { name = "angee-appearance", editable = "../angee/addons/angee/appearance" },
+    { name = "angee-appearance-integrate", editable = "../angee/addons/angee/appearance_integrate" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-dashboards", editable = "../angee/addons/angee/dashboards" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-extraction", editable = "../angee/addons/angee/extraction" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-iam-integrate-oidc", editable = "../angee/addons/angee/iam_integrate_oidc" },
+    { name = "angee-intake", editable = "../angee/addons/angee/intake" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-integrate-github", editable = "../angee/addons/angee/integrate_github" },
+    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
+    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
+    { name = "angee-knowledge-graph-pgvector", editable = "../angee/addons/angee/knowledge_graph_pgvector" },
+    { name = "angee-knowledge-integrate-notion", editable = "../angee/addons/angee/knowledge_integrate_notion" },
+    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-messaging-integrate-imap", editable = "../angee/addons/angee/messaging_integrate_imap" },
+    { name = "angee-messaging-integrate-slack", editable = "../angee/addons/angee/messaging_integrate_slack" },
+    { name = "angee-money", editable = "../angee/addons/angee/money" },
+    { name = "angee-nexus", editable = "../angee/addons/angee/nexus" },
+    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-parties-integrate-carddav", editable = "../angee/addons/angee/parties_integrate_carddav" },
+    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
+    { name = "angee-platform-integrate-operator", editable = "../angee/addons/angee/platform_integrate_operator" },
+    { name = "angee-platform-integrate-vcs", editable = "../angee/addons/angee/platform_integrate_vcs" },
+    { name = "angee-pm", editable = "../angee/addons/angee/pm" },
+    { name = "angee-portfolio", editable = "../angee/addons/angee/portfolio" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
+    { name = "angee-proposals-work", editable = "../angee/addons/angee/proposals_work" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-scheduling", editable = "../angee/addons/angee/scheduling" },
+    { name = "angee-sequence", editable = "../angee/addons/angee/sequence" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-storage-integrate", editable = "../angee/addons/angee/storage_integrate" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-theme-angee", editable = "../angee/addons/angee/theme_angee" },
+    { name = "angee-theme-aurora", editable = "../angee/addons/angee/theme_aurora" },
+    { name = "angee-theme-carbon", editable = "../angee/addons/angee/theme_carbon" },
+    { name = "angee-theme-fyltr", editable = "../angee/addons/angee/theme_fyltr" },
+    { name = "angee-theme-ledger", editable = "../angee/addons/angee/theme_ledger" },
+    { name = "angee-theme-midnight", editable = "../angee/addons/angee/theme_midnight" },
+    { name = "angee-theme-stock", editable = "../angee/addons/angee/theme_stock" },
+    { name = "angee-theme-warm-red", editable = "../angee/addons/angee/theme_warm_red" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-uom", editable = "../angee/addons/angee/uom" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "angee-workflows-agents", editable = "../angee/addons/angee/workflows_agents" },
+    { name = "angee-workflows-extraction", editable = "../angee/addons/angee/workflows_extraction" },
+    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "angee-workflows-messaging", editable = "../angee/addons/angee/workflows_messaging" },
+    { name = "angee-workflows-parties", editable = "../angee/addons/angee/workflows_parties" },
+    { name = "angee-workflows-posts", editable = "../angee/addons/angee/workflows_posts" },
+    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
+]
+provides-extras = ["postgres"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "angee-django-stubs", extras = ["compatible-mypy"], specifier = "==6.1.2.post1" },
+    { name = "angee-mypy", specifier = "==2.1.0" },
+    { name = "daphne", specifier = ">=4.0" },
+    { name = "django-zed-rebac", extras = ["caveats"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
+    { name = "example-notes", editable = "../angee/examples/addons/example/notes" },
+    { name = "example-theme", editable = "../angee/examples/addons/example/theme" },
+    { name = "faker", specifier = ">=30.0" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-django", specifier = ">=4.8" },
+    { name = "pytest-randomly", specifier = ">=3.16" },
+    { name = "pytest-split", specifier = ">=0.11" },
+    { name = "pytest-xdist", specifier = ">=3.6" },
+    { name = "ruff", specifier = ">=0.15.12" },
+    { name = "tests-blankchoices", editable = "../angee/tests/blankchoices" },
+    { name = "tomlkit", specifier = ">=0.13" },
+    { name = "vulture", specifier = ">=2.16" },
+]
+
+[[package]]
+name = "angee-agents"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/agents" }
+dependencies = [
     { name = "agent-client-protocol" },
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-integrate-vcs" },
+    { name = "angee-jobs" },
+    { name = "angee-mcp" },
+    { name = "angee-operator" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "httpx" },
+    { name = "pydantic-ai-slim" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "httpx", specifier = ">=0.28.1,<0.29" },
+    { name = "pydantic-ai-slim", specifier = ">=2.13" },
+]
+
+[[package]]
+name = "angee-agents-integrate-anthropic"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/agents_integrate_anthropic" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-integrate" },
     { name = "anthropic" },
-    { name = "authlib" },
-    { name = "billiard" },
-    { name = "celery", extra = ["redis"] },
+    { name = "pydantic-ai-slim", extra = ["anthropic"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "anthropic", specifier = ">=0.109.2" },
+    { name = "pydantic-ai-slim", extras = ["anthropic"], specifier = ">=2.13" },
+]
+
+[[package]]
+name = "angee-agents-integrate-ollama"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/agents_integrate_ollama" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-agents-integrate-openai" },
+    { name = "angee-integrate" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-agents-integrate-openai", editable = "../angee/addons/angee/agents_integrate_openai" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+]
+
+[[package]]
+name = "angee-agents-integrate-openai"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/agents_integrate_openai" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-integrate" },
+    { name = "openai" },
+    { name = "pydantic-ai-slim", extra = ["openai"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "openai", specifier = ">=2.43.0" },
+    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
+]
+
+[[package]]
+name = "angee-agents-runtime-pydantic"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/agents_runtime_pydantic" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-mcp" },
+    { name = "pydantic-ai-slim", extra = ["mcp"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+    { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
+]
+
+[[package]]
+name = "angee-appearance"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/appearance" }
+dependencies = [
+    { name = "angee-iam" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-appearance-integrate"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/appearance_integrate" }
+dependencies = [
+    { name = "angee-appearance" },
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-appearance", editable = "../angee/addons/angee/appearance" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-base"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/base" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "django" },
+    { name = "django-choices-field" },
+    { name = "django-compose" },
+    { name = "django-environ" },
+    { name = "django-sqids" },
+    { name = "django-yamlconf" },
+    { name = "django-zed-rebac" },
+    { name = "jsonschema", extra = ["format-nongpl"] },
+    { name = "psycopg", extra = ["binary", "pool"] },
+    { name = "pydantic" },
+    { name = "referencing" },
+    { name = "sentry-sdk" },
+    { name = "sqids" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "packaging" },
+    { name = "pytest" },
+    { name = "pytest-django" },
+    { name = "tomlkit" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=44" },
+    { name = "django", specifier = ">=6.1.2,<6.2" },
+    { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "django-environ", specifier = ">=0.12" },
+    { name = "django-sqids", specifier = ">=0.1" },
+    { name = "django-yamlconf", specifier = ">=1.5.0" },
+    { name = "django-zed-rebac", git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
+    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
+    { name = "packaging", marker = "extra == 'testing'", specifier = ">=24" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.13" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8" },
+    { name = "pytest-django", marker = "extra == 'testing'", specifier = ">=4.8" },
+    { name = "referencing", specifier = ">=0.37" },
+    { name = "sentry-sdk", specifier = ">=2.71.0" },
+    { name = "sqids", specifier = ">=0.4.1" },
+    { name = "tomlkit", marker = "extra == 'testing'", specifier = ">=0.13" },
+]
+provides-extras = ["testing"]
+
+[[package]]
+name = "angee-dashboards"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/dashboards" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-decisions"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/decisions" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-extraction"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/extraction" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-base" },
+    { name = "angee-decisions" },
+    { name = "angee-graphql" },
+    { name = "angee-messaging" },
+    { name = "angee-provenance" },
+    { name = "angee-storage" },
+    { name = "jsonpointer" },
+    { name = "pillow" },
+    { name = "pypdfium2" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "jsonpointer", specifier = ">=3.1" },
+    { name = "pillow", specifier = ">=11.0" },
+    { name = "pypdfium2", specifier = ">=4.30" },
+]
+
+[[package]]
+name = "angee-graphql"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/graphql" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-server" },
     { name = "channels" },
     { name = "channels-redis" },
-    { name = "cryptg" },
-    { name = "cryptography" },
-    { name = "deepdiff" },
-    { name = "discord-py" },
-    { name = "django-anymail" },
-    { name = "django-axes" },
-    { name = "django-celery-beat" },
-    { name = "django-choices-field" },
-    { name = "django-countries" },
-    { name = "django-import-export" },
-    { name = "django-simple-history" },
-    { name = "django-sqids" },
     { name = "django-zed-rebac", extra = ["strawberry-django"] },
-    { name = "fastmcp" },
     { name = "graphql-core" },
-    { name = "httpcore2" },
-    { name = "httpx" },
-    { name = "httpx2" },
-    { name = "imapclient" },
-    { name = "jsonpointer" },
-    { name = "jsonschema", extra = ["format-nongpl"] },
-    { name = "mail-parser-reply" },
-    { name = "markdown-it-py" },
-    { name = "matrix-nio", extra = ["e2e"] },
-    { name = "mcp" },
-    { name = "neonize" },
-    { name = "openai" },
-    { name = "phonenumbers" },
-    { name = "pillow" },
-    { name = "pycountry" },
-    { name = "pycryptodome" },
     { name = "pydantic" },
-    { name = "pydantic-ai-slim", extra = ["anthropic", "mcp", "openai"] },
-    { name = "pyjwt", extra = ["crypto"] },
-    { name = "pypdfium2" },
-    { name = "python-dateutil" },
-    { name = "python-magic" },
-    { name = "pyyaml" },
-    { name = "qrcode", extra = ["pil"] },
-    { name = "referencing" },
-    { name = "requests" },
-    { name = "ruamel-yaml" },
     { name = "sentry-sdk" },
-    { name = "slack-sdk" },
-    { name = "sqids" },
     { name = "strawberry-django-aggregates" },
     { name = "strawberry-django-hasura" },
     { name = "strawberry-graphql" },
     { name = "strawberry-graphql-django" },
-    { name = "tablib" },
-    { name = "telethon" },
-    { name = "unpaddedbase64" },
-    { name = "urllib3" },
-    { name = "vobject" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "channels", specifier = ">=4.0" },
+    { name = "channels-redis", specifier = ">=4.2" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" },
+    { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
+    { name = "pydantic", specifier = ">=2.13" },
+    { name = "sentry-sdk", specifier = ">=2.71.0" },
+    { name = "strawberry-django-aggregates", git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc" },
+    { name = "strawberry-django-hasura", git = "https://github.com/ang-ee/strawberry-django-hasura.git?rev=4e1c2da2bcbbc90cc586fef3db8d70f5cd6ccfc0" },
+    { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
+    { name = "strawberry-graphql-django", git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced" },
+]
+
+[[package]]
+name = "angee-iam"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/iam" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+    { name = "django-axes" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-axes", specifier = ">=8.0" },
+]
+
+[[package]]
+name = "angee-iam-integrate-oidc"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/iam_integrate_oidc" }
+dependencies = [
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "pyjwt", extra = ["crypto"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
+]
+
+[[package]]
+name = "angee-intake"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/intake" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-decisions" },
+    { name = "angee-iam" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-projects" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+    { name = "angee-work" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-integrate"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/integrate" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-jobs" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+    { name = "authlib" },
+    { name = "deepdiff" },
+    { name = "django-compose" },
+    { name = "httpcore2" },
+    { name = "httpx2" },
+    { name = "qrcode", extra = ["pil"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "authlib", specifier = ">=1.8.0" },
+    { name = "deepdiff", specifier = ">=9.1.0" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "httpcore2", specifier = ">=2.10,<3" },
+    { name = "httpx2", specifier = ">=2.10,<3" },
+    { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
+]
+
+[[package]]
+name = "angee-integrate-github"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/integrate_github" }
+dependencies = [
+    { name = "angee-integrate-vcs" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" }]
+
+[[package]]
+name = "angee-integrate-iphone"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/integrate_iphone" }
+
+[[package]]
+name = "angee-integrate-vcs"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/integrate_vcs" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-jobs"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/jobs" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "billiard" },
+    { name = "celery", extra = ["redis"] },
+    { name = "django-celery-beat" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "billiard", specifier = ">=4.2.1,<4.3" },
+    { name = "celery", extras = ["redis"], specifier = ">=5.5" },
+    { name = "django-celery-beat", git = "https://github.com/celery/django-celery-beat.git?rev=b5e3443d647baf910c0168f25b512dd388ba669e" },
+]
+
+[[package]]
+name = "angee-knowledge"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/knowledge" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-messaging" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-tags" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "markdown-it-py" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "markdown-it-py", specifier = ">=4.2" },
+]
+
+[[package]]
+name = "angee-knowledge-graph-pgvector"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/knowledge_graph_pgvector" }
+dependencies = [
+    { name = "angee-knowledge" },
+    { name = "angee-mcp" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
+    { name = "angee-mcp", editable = "../angee/addons/angee/mcp" },
+]
+
+[[package]]
+name = "angee-knowledge-integrate-notion"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/knowledge_integrate_notion" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-knowledge" },
+    { name = "angee-web" },
+    { name = "markdown-it-py" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "markdown-it-py", specifier = ">=4.2" },
+]
+
+[[package]]
+name = "angee-mcp"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/mcp" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-server" },
+    { name = "fastmcp" },
+    { name = "mcp" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
+    { name = "fastmcp", specifier = ">=3.4.7,<4" },
+    { name = "mcp", specifier = ">=1.2" },
+]
+
+[[package]]
+name = "angee-messaging"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/messaging" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-jobs" },
+    { name = "angee-parties" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-storage" },
+    { name = "angee-tags" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+    { name = "django-anymail" },
+    { name = "django-compose" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-anymail", specifier = ">=15.1" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "requests", specifier = ">=2.32" },
+    { name = "urllib3", specifier = ">=2.2" },
+]
+
+[[package]]
+name = "angee-messaging-bridges"
+version = "1.0.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "angee-messaging-integrate-discord" },
+    { name = "angee-messaging-integrate-facebook" },
+    { name = "angee-messaging-integrate-imessage" },
+    { name = "angee-messaging-integrate-matrix" },
+    { name = "angee-messaging-integrate-meta" },
+    { name = "angee-messaging-integrate-signal" },
+    { name = "angee-messaging-integrate-telegram" },
+    { name = "angee-messaging-integrate-whatsapp" },
+    { name = "angee-posts-integrate-facebook" },
+    { name = "angee-posts-integrate-youtube" },
+]
+
+[package.dev-dependencies]
 dev = [
+    { name = "angee" },
+    { name = "angee-base", extra = ["testing"] },
     { name = "daphne" },
     { name = "faker" },
     { name = "pytest" },
@@ -225,82 +974,1167 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "django-angee", extras = ["postgres"], editable = "../angee" }]
+requires-dist = [
+    { name = "angee-messaging-integrate-discord", editable = "addons/angee/messaging_integrate_discord" },
+    { name = "angee-messaging-integrate-facebook", editable = "addons/angee/messaging_integrate_facebook" },
+    { name = "angee-messaging-integrate-imessage", editable = "addons/angee/messaging_integrate_imessage" },
+    { name = "angee-messaging-integrate-matrix", editable = "addons/angee/messaging_integrate_matrix" },
+    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
+    { name = "angee-messaging-integrate-signal", editable = "addons/angee/messaging_integrate_signal" },
+    { name = "angee-messaging-integrate-telegram", editable = "addons/angee/messaging_integrate_telegram" },
+    { name = "angee-messaging-integrate-whatsapp", editable = "addons/angee/messaging_integrate_whatsapp" },
+    { name = "angee-posts-integrate-facebook", editable = "addons/angee/posts_integrate_facebook" },
+    { name = "angee-posts-integrate-youtube", editable = "addons/angee/posts_integrate_youtube" },
+]
 
 [package.metadata.requires-dev]
-addons = [
-    { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
-    { name = "anthropic", specifier = ">=0.109.2" },
-    { name = "authlib", specifier = ">=1.8.0" },
-    { name = "billiard", specifier = ">=4.2.1,<4.3" },
-    { name = "celery", extras = ["redis"], specifier = ">=5.5" },
-    { name = "channels", specifier = ">=4.0" },
-    { name = "channels-redis", specifier = ">=4.2" },
-    { name = "cryptg", specifier = ">=0.6.0" },
-    { name = "cryptography", specifier = ">=44" },
-    { name = "deepdiff", specifier = ">=9.1.0" },
-    { name = "discord-py", specifier = ">=2.7" },
-    { name = "django-anymail", specifier = ">=15.1" },
-    { name = "django-axes", specifier = ">=8.0" },
-    { name = "django-celery-beat", git = "https://github.com/celery/django-celery-beat.git?rev=b5e3443d647baf910c0168f25b512dd388ba669e" },
-    { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
-    { name = "django-countries", specifier = ">=9,<10" },
-    { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-simple-history", specifier = ">=3.13" },
-    { name = "django-sqids", specifier = ">=0.1" },
-    { name = "django-zed-rebac", specifier = ">=0.30.0" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.30.0" },
-    { name = "fastmcp", specifier = ">=3.4.7,<4" },
-    { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
-    { name = "httpcore2", specifier = ">=2.10,<3" },
-    { name = "httpx", specifier = ">=0.28.1,<0.29" },
-    { name = "httpx2", specifier = ">=2.10,<3" },
-    { name = "imapclient", specifier = ">=3.1.0" },
-    { name = "jsonpointer", specifier = ">=3.1" },
-    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
-    { name = "mail-parser-reply", specifier = ">=1.36" },
-    { name = "markdown-it-py", specifier = ">=4.2" },
-    { name = "matrix-nio", extras = ["e2e"], specifier = ">=0.26" },
-    { name = "mcp", specifier = ">=1.2" },
-    { name = "neonize", specifier = ">=0.4.3.post0" },
-    { name = "openai", specifier = ">=2.43.0" },
-    { name = "phonenumbers", specifier = ">=9.0" },
-    { name = "pillow", specifier = ">=11.0" },
-    { name = "pycountry", specifier = ">=26,<27" },
-    { name = "pycryptodome", specifier = ">=3.18" },
-    { name = "pydantic", specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["anthropic"], specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
-    { name = "pypdfium2", specifier = ">=4.30" },
-    { name = "python-dateutil", specifier = ">=2.9" },
-    { name = "python-magic", specifier = ">=0.4.27" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
-    { name = "referencing", specifier = ">=0.37" },
-    { name = "requests", specifier = ">=2.32" },
-    { name = "ruamel-yaml", specifier = ">=0.18" },
-    { name = "sentry-sdk", specifier = ">=2.71.0" },
-    { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "sqids", specifier = ">=0.4.1" },
-    { name = "strawberry-django-aggregates", git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc" },
-    { name = "strawberry-django-hasura", git = "https://github.com/ang-ee/strawberry-django-hasura.git?rev=4e1c2da2bcbbc90cc586fef3db8d70f5cd6ccfc0" },
-    { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
-    { name = "strawberry-graphql-django", git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced" },
-    { name = "tablib", specifier = ">=3" },
-    { name = "telethon", specifier = ">=1.44" },
-    { name = "unpaddedbase64", specifier = ">=2.1" },
-    { name = "urllib3", specifier = ">=2.2" },
-    { name = "vobject", specifier = ">=0.9.9" },
-]
 dev = [
+    { name = "angee", directory = "../angee" },
+    { name = "angee-base", extras = ["testing"], editable = "../angee/addons/angee/base" },
     { name = "daphne", specifier = ">=4.0" },
     { name = "faker", specifier = ">=30.0" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-django", specifier = ">=4.8" },
     { name = "ruff", specifier = ">=0.15.12" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-discord"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_discord" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "discord-py" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "discord-py", specifier = ">=2.7" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-facebook"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_facebook" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-messaging-integrate-meta" },
+    { name = "angee-parties" },
+    { name = "angee-posts" },
+    { name = "angee-provenance" },
+    { name = "angee-workflows-integrate" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-imap"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/messaging_integrate_imap" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "imapclient" },
+    { name = "mail-parser-reply" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "imapclient", specifier = ">=3.1.0" },
+    { name = "mail-parser-reply", specifier = ">=1.36" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-imessage"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_imessage" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-integrate-iphone" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-storage" },
+    { name = "angee-storage-integrate-iphone" },
+    { name = "angee-workflows-integrate" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
+    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-matrix"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_matrix" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "matrix-nio", extra = ["e2e"] },
+    { name = "pycryptodome" },
+    { name = "unpaddedbase64" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "matrix-nio", extras = ["e2e"], specifier = ">=0.26" },
+    { name = "pycryptodome", specifier = ">=3.18" },
+    { name = "unpaddedbase64", specifier = ">=2.1" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-meta"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_meta" }
+dependencies = [
+    { name = "angee-messaging" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-messaging", editable = "../angee/addons/angee/messaging" }]
+
+[[package]]
+name = "angee-messaging-integrate-signal"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_signal" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-slack"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/messaging_integrate_slack" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "slack-sdk" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "slack-sdk", specifier = ">=3.43.0" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-telegram"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_telegram" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "angee-workflows-integrate" },
+    { name = "cryptg" },
+    { name = "telethon" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "cryptg", specifier = ">=0.6.0" },
+    { name = "telethon", specifier = ">=1.44" },
+]
+
+[[package]]
+name = "angee-messaging-integrate-whatsapp"
+version = "1.0.0"
+source = { editable = "addons/angee/messaging_integrate_whatsapp" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-integrate-iphone" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-storage" },
+    { name = "angee-storage-integrate-iphone" },
+    { name = "angee-web" },
+    { name = "angee-workflows-integrate" },
+    { name = "neonize" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-storage-integrate-iphone", editable = "../angee/addons/angee/storage_integrate_iphone" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-workflows-integrate", editable = "../angee/addons/angee/workflows_integrate" },
+    { name = "neonize", specifier = ">=0.4.3.post0" },
+]
+
+[[package]]
+name = "angee-money"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/money" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-nexus"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/nexus" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-jobs" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-posts" },
+    { name = "angee-spaces" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-operator"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/operator" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-parties"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/parties" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-jobs" },
+    { name = "angee-provenance" },
+    { name = "angee-storage" },
+    { name = "angee-tags" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "django-countries" },
+    { name = "phonenumbers" },
+    { name = "pycountry" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "django-countries", specifier = ">=9,<10" },
+    { name = "phonenumbers", specifier = ">=9.0" },
+    { name = "pycountry", specifier = ">=26,<27" },
+]
+
+[[package]]
+name = "angee-parties-integrate-carddav"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/parties_integrate_carddav" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "vobject" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "vobject", specifier = ">=0.9.9" },
+]
+
+[[package]]
+name = "angee-platform"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/platform" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+    { name = "ruamel-yaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "ruamel-yaml", specifier = ">=0.18" },
+]
+
+[[package]]
+name = "angee-platform-integrate-operator"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/platform_integrate_operator" }
+dependencies = [
+    { name = "angee-operator" },
+    { name = "angee-platform" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-operator", editable = "../angee/addons/angee/operator" },
+    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-platform-integrate-vcs"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/platform_integrate_vcs" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-integrate-vcs" },
+    { name = "angee-platform" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate-vcs", editable = "../angee/addons/angee/integrate_vcs" },
+    { name = "angee-platform", editable = "../angee/addons/angee/platform" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-pm"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/pm" }
+dependencies = [
+    { name = "angee-intake" },
+    { name = "angee-portfolio" },
+    { name = "angee-projects" },
+    { name = "angee-proposals" },
+    { name = "angee-proposals-work" },
+    { name = "angee-web" },
+    { name = "angee-work" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-intake", editable = "../angee/addons/angee/intake" },
+    { name = "angee-portfolio", editable = "../angee/addons/angee/portfolio" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
+    { name = "angee-proposals-work", editable = "../angee/addons/angee/proposals_work" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-work", editable = "../angee/addons/angee/work" },
+]
+
+[[package]]
+name = "angee-portfolio"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/portfolio" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-projects" },
+    { name = "angee-provenance" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-posts"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/posts" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-integrate" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-provenance" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-posts-integrate-facebook"
+version = "1.0.0"
+source = { editable = "addons/angee/posts_integrate_facebook" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-messaging-integrate-meta" },
+    { name = "angee-parties" },
+    { name = "angee-posts" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-messaging-integrate-meta", editable = "addons/angee/messaging_integrate_meta" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+]
+
+[[package]]
+name = "angee-posts-integrate-youtube"
+version = "1.0.0"
+source = { editable = "addons/angee/posts_integrate_youtube" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-parties" },
+    { name = "angee-posts" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-projects"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/projects" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-integrate" },
+    { name = "angee-knowledge" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-provenance" },
+    { name = "angee-scheduling" },
+    { name = "angee-storage" },
+    { name = "angee-tags" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-scheduling", editable = "../angee/addons/angee/scheduling" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-proposals"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/proposals" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-messaging" },
+    { name = "angee-money" },
+    { name = "angee-parties" },
+    { name = "angee-projects" },
+    { name = "angee-provenance" },
+    { name = "angee-spaces" },
+    { name = "angee-storage" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-money", editable = "../angee/addons/angee/money" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-proposals-work"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/proposals_work" }
+dependencies = [
+    { name = "angee-proposals" },
+    { name = "angee-web" },
+    { name = "angee-work" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-proposals", editable = "../angee/addons/angee/proposals" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-work", editable = "../angee/addons/angee/work" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-provenance"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/provenance" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+    { name = "django-simple-history" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "django-simple-history", git = "https://github.com/ang-ee/django-simple-history.git?rev=014c0a56b6e80080b56483120172d417d5c7920b" },
+]
+
+[[package]]
+name = "angee-resources"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/resources" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "django-import-export" },
+    { name = "pyyaml" },
+    { name = "tablib" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "django-import-export", specifier = ">=4.4" },
+    { name = "pyyaml", specifier = ">=6" },
+    { name = "tablib", specifier = ">=3" },
+]
+
+[[package]]
+name = "angee-scheduling"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/scheduling" }
+dependencies = [
+    { name = "angee-graphql" },
+    { name = "python-dateutil" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "python-dateutil", specifier = ">=2.9" },
+]
+
+[[package]]
+name = "angee-sequence"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/sequence" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+]
+
+[[package]]
+name = "angee-server"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/server" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "django-compose" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+]
+
+[[package]]
+name = "angee-spaces"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/spaces" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-knowledge" },
+    { name = "angee-messaging" },
+    { name = "angee-parties" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-knowledge", editable = "../angee/addons/angee/knowledge" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-storage"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/storage" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-tags" },
+    { name = "angee-web" },
+    { name = "python-magic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-tags", editable = "../angee/addons/angee/tags" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "python-magic", specifier = ">=0.4.27" },
+]
+
+[[package]]
+name = "angee-storage-integrate"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/storage_integrate" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-integrate" },
+    { name = "angee-storage" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-storage-integrate-iphone"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/storage_integrate_iphone" }
+dependencies = [
+    { name = "angee-integrate" },
+    { name = "angee-integrate-iphone" },
+    { name = "angee-storage" },
+    { name = "angee-storage-integrate" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-integrate-iphone", editable = "../angee/addons/angee/integrate_iphone" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-storage-integrate", editable = "../angee/addons/angee/storage_integrate" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-tags"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/tags" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-theme-angee"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_angee" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-aurora"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_aurora" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-carbon"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_carbon" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-fyltr"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_fyltr" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-ledger"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_ledger" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-midnight"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_midnight" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-stock"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_stock" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-theme-warm-red"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/theme_warm_red" }
+dependencies = [
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-web", editable = "../angee/addons/angee/web" }]
+
+[[package]]
+name = "angee-timeline"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/timeline" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-web" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+]
+
+[[package]]
+name = "angee-uom"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/uom" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-resources" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+]
+
+[[package]]
+name = "angee-web"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/web" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-server" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-server", editable = "../angee/addons/angee/server" },
+]
+
+[[package]]
+name = "angee-work"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/work" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-iam" },
+    { name = "angee-jobs" },
+    { name = "angee-messaging" },
+    { name = "angee-projects" },
+    { name = "angee-sequence" },
+    { name = "angee-spaces" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-projects", editable = "../angee/addons/angee/projects" },
+    { name = "angee-sequence", editable = "../angee/addons/angee/sequence" },
+    { name = "angee-spaces", editable = "../angee/addons/angee/spaces" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-workflows"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-decisions" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-jobs" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+    { name = "angee-timeline" },
+    { name = "angee-web" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-graphql", editable = "../angee/addons/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/addons/angee/iam" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/addons/angee/resources" },
+    { name = "angee-timeline", editable = "../angee/addons/angee/timeline" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-workflows-agents"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_agents" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-base" },
+    { name = "angee-jobs" },
+    { name = "angee-workflows" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+]
+
+[[package]]
+name = "angee-workflows-extraction"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_extraction" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-extraction" },
+    { name = "angee-workflows" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-extraction", editable = "../angee/addons/angee/extraction" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+]
+
+[[package]]
+name = "angee-workflows-integrate"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_integrate" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-decisions" },
+    { name = "angee-integrate" },
+    { name = "angee-jobs" },
+    { name = "angee-provenance" },
+    { name = "angee-storage" },
+    { name = "angee-workflows" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-integrate", editable = "../angee/addons/angee/integrate" },
+    { name = "angee-jobs", editable = "../angee/addons/angee/jobs" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-storage", editable = "../angee/addons/angee/storage" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+]
+
+[[package]]
+name = "angee-workflows-messaging"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_messaging" }
+dependencies = [
+    { name = "angee-messaging" },
+    { name = "angee-web" },
+    { name = "angee-workflows" },
+    { name = "django-compose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-messaging", editable = "../angee/addons/angee/messaging" },
+    { name = "angee-web", editable = "../angee/addons/angee/web" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+    { name = "django-compose", specifier = "==0.1.0.dev1" },
+]
+
+[[package]]
+name = "angee-workflows-parties"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_parties" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-decisions" },
+    { name = "angee-parties" },
+    { name = "angee-provenance" },
+    { name = "angee-workflows" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-decisions", editable = "../angee/addons/angee/decisions" },
+    { name = "angee-parties", editable = "../angee/addons/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/addons/angee/provenance" },
+    { name = "angee-workflows", editable = "../angee/addons/angee/workflows" },
+]
+
+[[package]]
+name = "angee-workflows-posts"
+version = "3.0.0"
+source = { editable = "../angee/addons/angee/workflows_posts" }
+dependencies = [
+    { name = "angee-agents" },
+    { name = "angee-base" },
+    { name = "angee-posts" },
+    { name = "angee-workflows-agents" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-agents", editable = "../angee/addons/angee/agents" },
+    { name = "angee-base", editable = "../angee/addons/angee/base" },
+    { name = "angee-posts", editable = "../angee/addons/angee/posts" },
+    { name = "angee-workflows-agents", editable = "../angee/addons/angee/workflows_agents" },
 ]
 
 [[package]]
@@ -314,7 +2148,7 @@ wheels = [
 
 [[package]]
 name = "anthropic"
-version = "1.0.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -325,9 +2159,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/aa/4978e58035bd6c638c7b483450a68b7ef2d732ab78885e27bb9db0cff1a2/anthropic-1.0.0.tar.gz", hash = "sha256:42be3c97604af7252c5898413aee076ace6c46e9bca0d0d90ceb77c7d3719027", size = 1077769, upload-time = "2026-08-20T19:59:00.565Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/6d/793f5cfe2cd444c43b4eeb4cb7c3cc55ebcb38929fdfe81aa1f2fced7326/anthropic-1.4.0.tar.gz", hash = "sha256:f0d017e901e48b343520b5d458f8240c283c8d850bf6d119834c622207e0a74c", size = 1150831, upload-time = "2026-09-04T22:20:31.355Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/5b/db4a854aebf5d33a5ab714c46af6eb85ee44f390ed29b7b325c00b9f11ed/anthropic-1.0.0-py3-none-any.whl", hash = "sha256:32dd52e9e1d774393b27182f451398ba4262287a4d0eab30887f89f1481b3ae4", size = 1171725, upload-time = "2026-08-20T19:58:58.725Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/e3/34a88f0e1e854022a352d67f72ca9baa8b952d4541315088411ba2bfbc2a/anthropic-1.4.0-py3-none-any.whl", hash = "sha256:590e85bff75b713a123b03f586d68f02266b5fdc49f70dd75f721ced93a4716c", size = 1300390, upload-time = "2026-09-04T22:20:33.078Z" },
 ]
 
 [[package]]
@@ -467,11 +2301,11 @@ wheels = [
 
 [[package]]
 name = "beartype"
-version = "0.22.9"
+version = "0.23.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c7/94/1009e248bbfbab11397abca7193bea6626806be9a327d399810d523a07cb/beartype-0.22.9.tar.gz", hash = "sha256:8f82b54aa723a2848a56008d18875f91c1db02c32ef6a62319a002e3e25a975f", size = 1608866, upload-time = "2025-12-13T06:50:30.72Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/34/c0cfdaee9c796c8381439fed0fcab62810753b8b0adb1ec88fa7f41eaa5d/beartype-0.23.1.tar.gz", hash = "sha256:8b805f246b32931c74f2b321ea0939fe5bb2ff43c12a3eff19cc4c854b832e1d", size = 1993714, upload-time = "2026-10-11T05:36:55.251Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/cc/18245721fa7747065ab478316c7fea7c74777d07f37ae60db2e84f8172e8/beartype-0.22.9-py3-none-any.whl", hash = "sha256:d16c9bbc61ea14637596c5f6fbff2ee99cbe3573e46a716401734ef50c3060c2", size = 1333658, upload-time = "2025-12-13T06:50:28.266Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/cb/2f6aa982e2860c1156830db3da7f823b71784ed7d533ca289ea9b6c6347a/beartype-0.23.1-py3-none-any.whl", hash = "sha256:4461b4dc57e3fdd6c8a8464b22cf118002eea107c33e9fef651c69068ab3cce3", size = 1582101, upload-time = "2026-10-11T05:36:52.431Z" },
 ]
 
 [[package]]
@@ -543,21 +2377,31 @@ wheels = [
 
 [[package]]
 name = "caio"
-version = "0.12.2"
+version = "0.12.10"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/75/c8/82b3c760141a1076408164b03e8789b51809add6aecd48aa9d7651cf6b59/caio-0.12.2.tar.gz", hash = "sha256:87a67c0dccc60e432888bd532ec504b66e124a5d8b391aab894583b55abd39ea", size = 80927, upload-time = "2026-08-04T14:43:33.726Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/66/a36d1367bd5ef70b6b97b2fb502f682106555e9e49e229f35c0a49d154d5/caio-0.12.10.tar.gz", hash = "sha256:5cecc44c04d5c6291d98b61bdba999f49a7e58dff2d782b4bb0642dc6f7ecf58", size = 84118, upload-time = "2026-10-22T21:35:06.294Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/43/54d01cf9b643ffd6678aedee5ad5d6e7a1063bd169a203bfb6fb471e6887/caio-0.12.2-cp314-cp314-macosx_26_0_arm64.whl", hash = "sha256:5d658212d585b8814b9caf766d8090acac05f01abfa2875d57fdc4a7e2af032e", size = 77834, upload-time = "2026-08-04T14:43:18.492Z" },
-    { url = "https://files.pythonhosted.org/packages/90/00/a0ca7394a0c3a234811b0c38b39aa0db9373663981c1cf446e26e7a7c198/caio-0.12.2-cp314-cp314-manylinux_2_34_aarch64.whl", hash = "sha256:391a7cc1dbfc5885d7d54406c9a7a4ec19d514d526e67d240d32734eebde378e", size = 198993, upload-time = "2026-08-04T14:43:19.992Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/b2/f8f1a5e57c16c86825f1f0648e76f7760f84452a41efee0d04fa53ef3e2d/caio-0.12.2-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:121f4de82e2a875aff468ef2af7491fbecfffe9e71b507f5073fe2a156bb78df", size = 196408, upload-time = "2026-08-04T14:43:21.3Z" },
-    { url = "https://files.pythonhosted.org/packages/01/db/5d94d1d58ef6f0acb39ab1a802793413a8b1e17108c05cf98cb4dc9e4b22/caio-0.12.2-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:e0ba5f8c0dc7035c05817ca1399dd7d6121ea55c363a079c334a151a75094322", size = 196480, upload-time = "2026-08-04T14:43:22.812Z" },
-    { url = "https://files.pythonhosted.org/packages/8c/2a/366adf468d7654b895e232eeaa80d147df2ba293f708bd9cef78b95f92d0/caio-0.12.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:0ad8d8f9f5ea47aee81aead563fe3aca5bb54c3fc21b62bd830eaf369eb04060", size = 196071, upload-time = "2026-08-04T14:43:24.187Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/b1/4c0c989d2a24b8f3ba2e13b9115a107d9413b36aab8b299674b66da21c75/caio-0.12.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:0b85f94819058a8f21c3dca26c5f006a0f003b8700483a326ec86d569d2bd1a3", size = 78627, upload-time = "2026-08-04T14:43:25.522Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/da/107cfe84199b9fb5a7317e1230d808944205fd91c7869641ac4e2ef5d603/caio-0.12.2-cp314-cp314t-manylinux_2_34_aarch64.whl", hash = "sha256:a60459e42c680068a2a5286f15f54ccd887af34ad9ed1be1f0a7747ad6bd8820", size = 220217, upload-time = "2026-08-04T14:43:26.823Z" },
-    { url = "https://files.pythonhosted.org/packages/9f/1c/d6f03d3226519cd8f362081370326846348c442078e005753c57522a4190/caio-0.12.2-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:51bb86c0abce55d0b3467ba6671e95cd96356044e5abd58651ad0645cf37084b", size = 216293, upload-time = "2026-08-04T14:43:28.177Z" },
-    { url = "https://files.pythonhosted.org/packages/43/a4/d53ed7e639b778b6f41a5e7c664b37f75830e38afa62dad62ec913674548/caio-0.12.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:e33295963f5a4787355b8bfd754b4f0e7ac5d535138860748c1eb833ca10d620", size = 218220, upload-time = "2026-08-04T14:43:29.656Z" },
-    { url = "https://files.pythonhosted.org/packages/f8/d6/c353fd1dda371262995bba1b2f9aa42cc6cf7fc82c0853238510aa655bb9/caio-0.12.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:15af6eb10d7705a92ee8143d8a4d89c2886ecb6b65ce1161d3dad1adb9b3cbec", size = 216106, upload-time = "2026-08-04T14:43:31.011Z" },
-    { url = "https://files.pythonhosted.org/packages/61/8a/71b0144f783468ba9f1bbf8a2f8e45c7d85ae31ec192f10650aa46f31702/caio-0.12.2-py3-none-any.whl", hash = "sha256:5233e797c9fe2b541914b1bc2e2df82677e2206b537e44e252188f3c2cbb0ea9", size = 62548, upload-time = "2026-08-04T14:43:32.394Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/0a/5e404a09363c71dfb5f7c20234ee31dc9ad75c7072dc868b6cc5be6f9af3/caio-0.12.10-cp314-cp314-macosx_26_0_arm64.whl", hash = "sha256:3b9c6e6355267f2eccd23e1a17ec2f78dce02ab00b10276999ff7a4615512952", size = 42033, upload-time = "2026-10-22T21:34:40.448Z" },
+    { url = "https://files.pythonhosted.org/packages/06/94/41549be5a09a0441f1c1313d5eeb8b60b08034c89cd2c0b5cfeb6a9b9111/caio-0.12.10-cp314-cp314-manylinux_2_34_aarch64.whl", hash = "sha256:a2b897245d5e6593a39ea9a52c7b372efc41e5a746c46a2985bdf94622f273fe", size = 165369, upload-time = "2026-10-22T21:34:41.513Z" },
+    { url = "https://files.pythonhosted.org/packages/28/47/f272ce0eed9700749934823086434a94d9bea51555724188d8ee660a7fd4/caio-0.12.10-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:40e84b8679f44bee5c2b7cc7093719e15616b6752560809896dc15a8667cd69f", size = 162620, upload-time = "2026-10-22T21:34:42.671Z" },
+    { url = "https://files.pythonhosted.org/packages/65/ae/644e7e72a81c4d8ce31dac9865b2a6b38fdc4c56a1418cc2d4d55591be20/caio-0.12.10-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:ccd4efddafd48018d30cd560f7c393d177fe01365ee0dcf0bc88528f220732ed", size = 162986, upload-time = "2026-10-22T21:34:43.801Z" },
+    { url = "https://files.pythonhosted.org/packages/63/2a/557a90ae71f8411a2cfa0238ad70bddb60178133b7eb41e3fe8e8c854235/caio-0.12.10-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:2138670dd6cab64bd29cfcbd6a7259c0c21646c4dc86a4ec12de907210a2aba9", size = 162258, upload-time = "2026-10-22T21:34:45.271Z" },
+    { url = "https://files.pythonhosted.org/packages/78/1a/1ffea8df50383d5bc468e94d2b45d1c458f965b80bb12ad28891d0a55266/caio-0.12.10-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:79a4e0000dd92b1e4e7842fca99fdaa5fd0259dd33a9892741e7126e74656c49", size = 42801, upload-time = "2026-10-22T21:34:46.485Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/59/43da115afd82281312166711ceff5b7ca08d53f79a8955d2e22ac9968eca/caio-0.12.10-cp314-cp314t-manylinux_2_34_aarch64.whl", hash = "sha256:6fff1f609e54a2e007b6c5c0933f4782ecbf8b6f9144e0930e2dcd2e7440c637", size = 186884, upload-time = "2026-10-22T21:34:47.611Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/5d/708aed113a2ae829a265b5ce030bab52ff0e41339cc6047f29bb0b15dfdf/caio-0.12.10-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:925b938bcdf09d1c3df2b6ddd534004b616451ef1810e47f6a63257365376b25", size = 182799, upload-time = "2026-10-22T21:34:48.86Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/c3/8de2c1c89548902a389406560e67930333984194217d5bcef6129ff7f18a/caio-0.12.10-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:1ebcac2a14e045aa0a4f63824264a4a845c6b1ac9074d5d673c52ef564a1ada6", size = 185097, upload-time = "2026-10-22T21:34:50.035Z" },
+    { url = "https://files.pythonhosted.org/packages/94/43/98997e24fa52f1e6a2a808e446693702773830a863a036a5e727024e7aa0/caio-0.12.10-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:39e91aab7d0a5f0cac5930562d751e9938ceef1c7ae18477a5689a4e437eada1", size = 182593, upload-time = "2026-10-22T21:34:51.256Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/17/78046176bc3572430d03bab1b9e82966bc5b9a28d27c41e6764a20144044/caio-0.12.10-cp315-cp315-macosx_26_0_arm64.whl", hash = "sha256:c0b52bd6fd006d2d07713025f0e1cad61ebd12342f86bfa47e2eff239fbdd01f", size = 42039, upload-time = "2026-10-22T21:34:52.646Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/ed/14a90cfe02f14813674a1cc91ff2fad9b0d1bb98260be09b987f579baa28/caio-0.12.10-cp315-cp315-manylinux_2_34_aarch64.whl", hash = "sha256:b7a42ef7379e36e99cc6990aa62465919a3be3fb1f049a40e5aef29fbbd859e1", size = 166510, upload-time = "2026-10-22T21:34:53.703Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/b1/9fbeafd6aae00cc0dae96d190cc4fe6e23d20ecd4f26e970878611761fdb/caio-0.12.10-cp315-cp315-manylinux_2_34_x86_64.whl", hash = "sha256:89fe0e3c849a07aba1f76012a50eaf4fb2eaed0398c01bd43912a1bd0f4ab5eb", size = 163501, upload-time = "2026-10-22T21:34:54.988Z" },
+    { url = "https://files.pythonhosted.org/packages/34/81/2342f17ab96a7b5d3666cc7dccea59728c4d421e7c954e2937cd817c3be5/caio-0.12.10-cp315-cp315-musllinux_1_2_aarch64.whl", hash = "sha256:21b04f6722884e5fb19690743772875b34306e5ba68d9ecabf7454193bb5caab", size = 164139, upload-time = "2026-10-22T21:34:56.201Z" },
+    { url = "https://files.pythonhosted.org/packages/17/b3/e15cfdc902a13d885fa16481c7d01ad04de7b50e0195b9dd5e219ce07614/caio-0.12.10-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:a04ac9769fd8eddc1c0ca6308f0f6e668a86cf8d577770c11d85d0aeb584fcf4", size = 163137, upload-time = "2026-10-22T21:34:57.402Z" },
+    { url = "https://files.pythonhosted.org/packages/49/ad/7fda5be8557afa8833ea65ebb29feaeeb96cb2b3373fe3220fe1e6899260/caio-0.12.10-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:c8fc80a37f08bba4c2f108277b6eabba564f74963a1a6cab01e50f9ae4434681", size = 42800, upload-time = "2026-10-22T21:34:58.494Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/e0/e2692eeb6841614f60ec099eac3c9b10a00dac74adf7321f442a2291ef8d/caio-0.12.10-cp315-cp315t-manylinux_2_34_aarch64.whl", hash = "sha256:3e3799d09b08401e83c30c671f6fa1e1227f6346a3b1336f24cb94c5a8a82b64", size = 187471, upload-time = "2026-10-22T21:34:59.585Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/a8/2c3a0cd781732057ab6a8023ef0fe14017b29ef75259295df8f585e3dfba/caio-0.12.10-cp315-cp315t-manylinux_2_34_x86_64.whl", hash = "sha256:ea2e0ea832d36c1e50ab730ba304153f34eb7dc2300b1285fc7cdfae1f1f4075", size = 183526, upload-time = "2026-10-22T21:35:00.764Z" },
+    { url = "https://files.pythonhosted.org/packages/62/e2/9f32db16441875afaa2a8a27d9734c2c8421f259163d7d814528160fa6c8/caio-0.12.10-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:8d1071f8cb5d23c8aeccffe36c50a17d32257cddbf913b7e9b6fb524ba42d7a8", size = 185740, upload-time = "2026-10-22T21:35:02.059Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/7d/17836b477a1e57a648b90f16a27ebd367d686a02e5b2a4e72b53ae5ad7fe/caio-0.12.10-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:2a54ddadb7db4eab50bfc8b34f36fcf6763e9007f86b92f7cd03f07b542e891e", size = 183396, upload-time = "2026-10-22T21:35:03.492Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/c3/1c44005ec4d4c3f7c51b707308efe7836ee16c466f4ff2e2a6f2089eceee/caio-0.12.10-py3-none-any.whl", hash = "sha256:b34a5483b987d207348ebbf86921bc42f08abcde833b91e0caa8760c7daa2f03", size = 26166, upload-time = "2026-10-22T21:35:04.842Z" },
 ]
 
 [[package]]
@@ -603,11 +2447,11 @@ redis = [
 
 [[package]]
 name = "certifi"
-version = "2026.7.22"
+version = "2026.10.23"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a3/c2/24167ea9858356b47a87a50d39908bfdb72ceeefe0041586e704e5376b3a/certifi-2026.7.22.tar.gz", hash = "sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55", size = 138112, upload-time = "2026-07-22T03:35:12.644Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/11/b524cbd9bbdaca58608e4cf4053fd463417549e1959fa8d3aa18319f9555/certifi-2026.10.23.tar.gz", hash = "sha256:a9895e6e2758b371e0545e321a3a8fd1fcfd9829ada8824a936dfb16aaaf36cd", size = 136225, upload-time = "2026-10-23T11:36:16.478Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl", hash = "sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775", size = 136983, upload-time = "2026-07-22T03:35:11.276Z" },
+    { url = "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl", hash = "sha256:e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1", size = 135082, upload-time = "2026-10-23T11:36:14.763Z" },
 ]
 
 [[package]]
@@ -952,7 +2796,7 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "4.22.5"
+version = "5.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -960,9 +2804,9 @@ dependencies = [
     { name = "rich" },
     { name = "rich-rst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/be/05/689617b7e86503417c172f577d791524cb13b9697303d5d44409a971ba10/cyclopts-4.22.5.tar.gz", hash = "sha256:94044506317462cad90fb01a917dadce1f48a0915ba3605dc8d178dea1229e24", size = 195144, upload-time = "2026-08-04T13:53:00.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/43/65f29e6cd5356f4a7910a80fce5df317b3edf1a6594525ec4c3a388c22cd/cyclopts-5.3.2.tar.gz", hash = "sha256:0b5c0975361c5eb8a65a98de358b10349a88fab74f8bd9f0c966ae6cf41a8c82", size = 254163, upload-time = "2026-10-27T14:28:41.694Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/58/bcab9c33fb7a25a1f5970f357c5b19729bc81d50615d2f737b20c4255909/cyclopts-4.22.5-py3-none-any.whl", hash = "sha256:cf9ce285836053d156730ea4ea0ad0c75cf63beb3f3d8edf222a795bc57666ab", size = 234557, upload-time = "2026-08-04T13:52:58.509Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/82/fbb7d04cfd2afaf3e8eb9715f71b2899313cea9a205e5099959e8296ba43/cyclopts-5.3.2-py3-none-any.whl", hash = "sha256:0e1a1615b42da7af1c9cebd285578fa003f4d6bef8b65de9e77c2faf645c2df7", size = 297090, upload-time = "2026-10-27T14:28:39.858Z" },
 ]
 
 [[package]]
@@ -1029,115 +2873,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-angee"
-version = "0.3.0"
-source = { editable = "../angee" }
-dependencies = [
-    { name = "channels" },
-    { name = "django" },
-    { name = "django-environ" },
-    { name = "django-yamlconf" },
-    { name = "hatch-angee" },
-    { name = "sentry-sdk" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-postgres = [
-    { name = "psycopg", extra = ["binary", "pool"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "channels", specifier = ">=4.0" },
-    { name = "django", specifier = ">=6.1.2,<6.2" },
-    { name = "django-environ", specifier = ">=0.12" },
-    { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "hatch-angee", specifier = ">=0.2.6" },
-    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2" },
-    { name = "sentry-sdk", specifier = ">=2.71.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-]
-provides-extras = ["postgres"]
-
-[package.metadata.requires-dev]
-addons = [
-    { name = "agent-client-protocol", specifier = "==1.0.0rc2" },
-    { name = "anthropic", specifier = ">=0.109.2" },
-    { name = "authlib", specifier = ">=1.8.0" },
-    { name = "billiard", specifier = ">=4.2.1,<4.3" },
-    { name = "celery", extras = ["redis"], specifier = ">=5.5" },
-    { name = "channels", specifier = ">=4.0" },
-    { name = "channels-redis", specifier = ">=4.2" },
-    { name = "cryptography", specifier = ">=44" },
-    { name = "deepdiff", specifier = ">=9.1.0" },
-    { name = "django-anymail", specifier = ">=15.1" },
-    { name = "django-axes", specifier = ">=8.0" },
-    { name = "django-celery-beat", git = "https://github.com/celery/django-celery-beat.git?rev=b5e3443d647baf910c0168f25b512dd388ba669e" },
-    { name = "django-choices-field", git = "https://github.com/ang-ee/django-choices-field.git?rev=b02c1488660d0bf1f4483d2e73bc842b41b70632" },
-    { name = "django-countries", specifier = ">=9,<10" },
-    { name = "django-import-export", specifier = ">=4.4" },
-    { name = "django-simple-history", specifier = ">=3.13" },
-    { name = "django-sqids", specifier = ">=0.1" },
-    { name = "django-zed-rebac", specifier = ">=0.30.0" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.30.0" },
-    { name = "fastmcp", specifier = ">=3.4.7,<4" },
-    { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
-    { name = "httpcore2", specifier = ">=2.10,<3" },
-    { name = "httpx", specifier = ">=0.28.1,<0.29" },
-    { name = "httpx2", specifier = ">=2.10,<3" },
-    { name = "imapclient", specifier = ">=3.1.0" },
-    { name = "jsonpointer", specifier = ">=3.1" },
-    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
-    { name = "mail-parser-reply", specifier = ">=1.36" },
-    { name = "markdown-it-py", specifier = ">=4.2" },
-    { name = "mcp", specifier = ">=1.2" },
-    { name = "openai", specifier = ">=2.43.0" },
-    { name = "phonenumbers", specifier = ">=9.0" },
-    { name = "pillow", specifier = ">=11.0" },
-    { name = "pycountry", specifier = ">=26,<27" },
-    { name = "pydantic", specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["anthropic"], specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["mcp"], specifier = ">=2.13" },
-    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.13" },
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12" },
-    { name = "pypdfium2", specifier = ">=4.30" },
-    { name = "python-dateutil", specifier = ">=2.9" },
-    { name = "python-magic", specifier = ">=0.4.27" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
-    { name = "referencing", specifier = ">=0.37" },
-    { name = "requests", specifier = ">=2.32" },
-    { name = "ruamel-yaml", specifier = ">=0.18" },
-    { name = "sentry-sdk", specifier = ">=2.71.0" },
-    { name = "slack-sdk", specifier = ">=3.43.0" },
-    { name = "sqids", specifier = ">=0.4.1" },
-    { name = "strawberry-django-aggregates", git = "https://github.com/ang-ee/strawberry-django-aggregates.git?rev=0f374854d19b2709b6d77ae872090ab2a751f1dc" },
-    { name = "strawberry-django-hasura", git = "https://github.com/ang-ee/strawberry-django-hasura.git?rev=4e1c2da2bcbbc90cc586fef3db8d70f5cd6ccfc0" },
-    { name = "strawberry-graphql", git = "https://github.com/ang-ee/strawberry.git?rev=273bf0456d914d4df535222c4cbae73dff46a376" },
-    { name = "strawberry-graphql-django", git = "https://github.com/ang-ee/strawberry-django.git?rev=091238ecd4ae07798ef12e9eb24281540da41ced" },
-    { name = "tablib", specifier = ">=3" },
-    { name = "urllib3", specifier = ">=2.2" },
-    { name = "vobject", specifier = ">=0.9.9" },
-]
-dev = [
-    { name = "daphne", specifier = ">=4.0" },
-    { name = "django-stubs", extras = ["compatible-mypy"], git = "https://github.com/ang-ee/django-stubs.git?rev=423ed850e5f2d7ea9e67f3e0f9e8bee4be215988" },
-    { name = "django-zed-rebac", extras = ["caveats"], specifier = ">=0.30.0" },
-    { name = "faker", specifier = ">=30.0" },
-    { name = "mypy", git = "https://github.com/ang-ee/mypy.git?rev=ac3de6e4c34b04728e768e07d4842f4309ff6c45" },
-    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-django", specifier = ">=4.8" },
-    { name = "pytest-randomly", specifier = ">=3.16" },
-    { name = "pytest-split", specifier = ">=0.11" },
-    { name = "pytest-xdist", specifier = ">=3.6" },
-    { name = "ruff", specifier = ">=0.15.12" },
-    { name = "vulture", specifier = ">=2.16" },
-]
-
-[[package]]
 name = "django-anymail"
 version = "15.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1188,6 +2923,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "django-compose"
+version = "0.1.0.dev1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-yamlconf" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/59/d60d05f122069e3b2424259d00f8154d4898b02ecb1f103d476372a461c4/django_compose-0.1.0.dev1.tar.gz", hash = "sha256:75cd4b1fd437992b8f77de28f38c00e0268835536aaae75709c8c85826765a10", size = 227556, upload-time = "2026-10-30T01:23:55.383Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/74/dd/e89104ce72d5c9f8dc8a933a5475529360ed437ab3c10b28563ec30ea42c/django_compose-0.1.0.dev1-py3-none-any.whl", hash = "sha256:0c6d108ee25ff6948a2a2cf030a164cf388725fa7866e567b5163f002b1622e4", size = 92660, upload-time = "2026-10-30T01:23:54.257Z" },
+]
+
+[[package]]
 name = "django-countries"
 version = "9.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1225,14 +2974,10 @@ wheels = [
 
 [[package]]
 name = "django-simple-history"
-version = "3.13.0"
-source = { registry = "https://pypi.org/simple" }
+version = "3.13.0.post1.dev3+g014c0a56b"
+source = { git = "https://github.com/ang-ee/django-simple-history.git?rev=014c0a56b6e80080b56483120172d417d5c7920b#014c0a56b6e80080b56483120172d417d5c7920b" }
 dependencies = [
     { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/1c/0689c13c0aa36df828947692f4e309f93c58e075219735c423edbbf6227d/django_simple_history-3.13.0.tar.gz", hash = "sha256:ca3c1e4ccd5f16f45fbbef6015ee2a246465fd9bd924100df8e9dfb368c4f26c", size = 236759, upload-time = "2026-07-22T13:41:29.588Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/65/60/41b2055db523b18a7ef67d0ce7c7c3204bf1b01e388628c8ce578daca7ec/django_simple_history-3.13.0-py3-none-any.whl", hash = "sha256:1cf1d83054479f64aee022023afc1671843aa0a99888799c5c4c3966b0252521", size = 82040, upload-time = "2026-07-22T13:41:28.083Z" },
 ]
 
 [[package]]
@@ -1273,13 +3018,9 @@ wheels = [
 [[package]]
 name = "django-zed-rebac"
 version = "0.30.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ang-ee/django-zed-rebac.git?rev=f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13#f43f0773f2c2a86a6882aeb1b46b34b8c19a0d13" }
 dependencies = [
     { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/49/f1673ceb1a7005f227e15898c19b697f809776e7145241e501903c372054/django_zed_rebac-0.30.0.tar.gz", hash = "sha256:1076fef6672240dd5112155c44fcb4e40b6fbf10fb1e1061e116a48ef49546ea", size = 626414, upload-time = "2026-10-28T18:29:31.1Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/af/d6f5d998ce4bf6c4b3e4c057c6ffcd903af97cf0cb9f98337731be94a960/django_zed_rebac-0.30.0-py3-none-any.whl", hash = "sha256:beecdc57722be095b69ad71178dc3d67b06339b05cbfc77030ad11286e37fdf5", size = 324991, upload-time = "2026-10-28T18:29:29.685Z" },
 ]
 
 [package.optional-dependencies]
@@ -1289,11 +3030,11 @@ strawberry-django = [
 
 [[package]]
 name = "dnspython"
-version = "2.8.0"
+version = "2.9.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/21/7fcd6780f61e9756aafaea760560509bb4111375daa2e23c1be7a89f33f1/dnspython-2.9.1.tar.gz", hash = "sha256:9a6d30e55f8dc63e6052597666112bff0586b95a2474a9deda03afbbf820d37a", size = 455302, upload-time = "2026-10-29T18:05:12.156Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+    { url = "https://files.pythonhosted.org/packages/61/55/f90405bbbbd3dd8f788e92cec2d39964f5c09783f0570fc35f3bb3381485/dnspython-2.9.1-py3-none-any.whl", hash = "sha256:7c81caf8de1ed57b8cfc7e0ad4f528a0b8ceace473c7eb946df195dc9def751f", size = 360364, upload-time = "2026-10-29T18:05:10.206Z" },
 ]
 
 [[package]]
@@ -1341,19 +3082,19 @@ wheels = [
 
 [[package]]
 name = "fastmcp"
-version = "3.4.7"
+version = "3.4.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp-slim", extra = ["client", "server"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/dd/fd444d94ae7afdaf5b6dd168799d34023f576b405872d6a27d5686a9d1f4/fastmcp-3.4.7.tar.gz", hash = "sha256:43117aca886f5ee2f6a569bba91cef02b59c339aad04ba29950ff18d251c822a", size = 28808982, upload-time = "2026-08-10T21:17:55.045Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/77/b5ef8688b0dd3e403b7671106533d62e93252d7d8f3c75f547e4686bba1e/fastmcp-3.4.11.tar.gz", hash = "sha256:36273b04eff98021da4601d4f86c64dfa10e61119e9ddd17ad80650465c65355", size = 28868316, upload-time = "2026-10-20T22:44:36.64Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/14/6d950459cc831fa17fe2d1797926b6eb2d2f2af50f830e62d0c098cc1ec8/fastmcp-3.4.7-py3-none-any.whl", hash = "sha256:e4e7698cb4af5bc667b1901685261fa2f3526dc73d243a461fca42500c8dbe56", size = 8016, upload-time = "2026-08-10T21:17:51.391Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/fb/e6b04a2f4dbce64994f3239267b6899411e8fd9693238c39ee99fe6f2b35/fastmcp-3.4.11-py3-none-any.whl", hash = "sha256:f50a7aa4cc2a5954d02fcc9672ff1d69daff73a02387f959c2647523cd6d5606", size = 8028, upload-time = "2026-10-20T22:44:33.334Z" },
 ]
 
 [[package]]
 name = "fastmcp-slim"
-version = "3.4.7"
+version = "3.4.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "platformdirs" },
@@ -1363,14 +3104,15 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/12/ac/7924e803368d0758ee4d6b1259066550df78f58f0f9f8bfebd5a123e957d/fastmcp_slim-3.4.7.tar.gz", hash = "sha256:06b32a358320a7dc2b2ee040ba89ea55ddc20763dff2949f384f7974b13b5d8f", size = 594357, upload-time = "2026-08-10T21:17:28.723Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/35/5f61dc70141df213eddff40bb2b8ccf68b02ecd666da6a1efab7c55b5694/fastmcp_slim-3.4.11.tar.gz", hash = "sha256:50e29b0830fb216aba437f35cfc7dd4bce7451f2f85f8786d6fff3da78d79386", size = 610380, upload-time = "2026-10-20T22:44:12.833Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/97/e0e53642cd029a9a7635ae9c548f9f2cc995af5914e487b3df795664e4be/fastmcp_slim-3.4.7-py3-none-any.whl", hash = "sha256:6c931a0089705f3f2935428ef9b2bc74ad94140adc64aab84d116d103e694b3a", size = 769370, upload-time = "2026-08-10T21:17:27.227Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/71/614669d0a0d8dea87dc0dc684650bb36793027fc409197526532f587fcab/fastmcp_slim-3.4.11-py3-none-any.whl", hash = "sha256:24535dd843b3dcb3272b86c88fdf6ada5026c39ec5b56e2426557223c4d2c8bf", size = 785938, upload-time = "2026-10-20T22:44:10.921Z" },
 ]
 
 [package.optional-dependencies]
 client = [
     { name = "authlib" },
+    { name = "certifi" },
     { name = "exceptiongroup" },
     { name = "httpx" },
     { name = "mcp" },
@@ -1380,6 +3122,7 @@ client = [
 ]
 server = [
     { name = "authlib" },
+    { name = "certifi" },
     { name = "cyclopts" },
     { name = "exceptiongroup" },
     { name = "griffelib" },
@@ -1454,15 +3197,36 @@ wheels = [
 
 [[package]]
 name = "genai-prices"
-version = "0.1.4"
+version = "0.1.13"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.15' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
+    "(python_full_version >= '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.15' and sys_platform != 'win32')",
+]
 dependencies = [
     { name = "httpx2" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/e3/23f4be7d5626878a6297c728f5f8db83bd9b135da481935d4c1bb82efc21/genai_prices-0.1.4.tar.gz", hash = "sha256:f3b8a0bf0c21b01f5af3ca42babcab2f17728bf3c602f87f42b72d1d2bf61d98", size = 94678, upload-time = "2026-08-19T23:53:25.527Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/de/119c7ba00b9ddbf629de34cf390ab472da6d7bc5df0c51cdbec900280a74/genai_prices-0.1.13.tar.gz", hash = "sha256:76c9e2dd3917fdacdf3bc562297c4591384142ea2283c477e1512fafa4e3a384", size = 134622, upload-time = "2026-10-15T09:47:04.739Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/54/911961e926a4c4ea30bf1fa0bf9d8ffc5c9ac5ed6a3f77b3d9e0ab5bb9a5/genai_prices-0.1.4-py3-none-any.whl", hash = "sha256:1d1b01cc7ab1adfa17c3a1121f4c13990bd0a4377640ecd37ebfde5836768240", size = 99160, upload-time = "2026-08-19T23:53:24.52Z" },
+    { url = "https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl", hash = "sha256:6d2b40760a2f7f5e207bac9b98de0af80e60c58ead497872a5331a7cee610477", size = 142541, upload-time = "2026-10-15T09:47:03.424Z" },
+]
+
+[[package]]
+name = "genai-prices"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.15' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
+    "(python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version < '3.15' and sys_platform != 'win32')",
+]
+dependencies = [
+    { name = "httpx2" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/db/93/95297c8b37f0deec1780d7579e85915fd7fe4dbe0da38cb79bc0fcc16a2a/genai_prices-0.2.0.tar.gz", hash = "sha256:a0e92059e96492f2ffe55fa708908fe2fc0afe11d111f8051106d52ae8fd9c12", size = 159032, upload-time = "2026-10-29T14:41:09.524Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/2a/c2369565aa7dde5ea33de724acae7cc753f9d19239daea0000779102f4b5/genai_prices-0.2.0-py3-none-any.whl", hash = "sha256:21ede75742043b3489a6cec3ad5722782640b34676563c6c755b52061812e6a3", size = 168199, upload-time = "2026-10-29T14:41:08.104Z" },
 ]
 
 [[package]]
@@ -1476,11 +3240,11 @@ wheels = [
 
 [[package]]
 name = "griffelib"
-version = "2.1.0"
+version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/33/e4/8d187ea29c2e30b3a09505c567513077d6117861bde1fbd997a167f262ec/griffelib-2.1.0.tar.gz", hash = "sha256:762a186d2c6fd6794d4ea20d428d597ffb857cb56b66421651cbba15bdd5e813", size = 216234, upload-time = "2026-06-19T12:05:42.278Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/e2/0f5d8ed08766bc6dcd3eebf5a6623d83cbca33a6e4c90aef57156ce745ad/griffelib-2.4.1.tar.gz", hash = "sha256:40c028dd2e623f464423f0e11e3c553158f1cf4f1368239a370534d73e1407ff", size = 245153, upload-time = "2026-10-22T11:20:03.705Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/d3/5268aeabf2ad82658c4e2ff3a060648d0f02f3926cb53247c0e4d0dab49e/griffelib-2.1.0-py3-none-any.whl", hash = "sha256:cc7b3d2d2865ad0b909fcc38086e3f554b5ea7acbaa7bbb7ecaa3f5dfb7d9f00", size = 142560, upload-time = "2026-06-19T12:05:38.742Z" },
+    { url = "https://files.pythonhosted.org/packages/de/02/1156d5f5307f573b901b14373848b84e69ca6cab09169b8cc97d16a181f9/griffelib-2.4.1-py3-none-any.whl", hash = "sha256:76bc562f936ad1ce198d2cf6d0731bd5c92a7d934b69ef828ef22ee0ffdb62ce", size = 172983, upload-time = "2026-10-22T11:19:59.843Z" },
 ]
 
 [[package]]
@@ -1503,36 +3267,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e7/85/7c366e69d84c17bb778fe41419e1fbcce3033d5b7ce29bbffff0a98b859f/h2-4.4.1.tar.gz", hash = "sha256:4e866ffb1a869ae14dd9b5e6beb5c24a13da0495ad72b65925ded182521c1516", size = 2157281, upload-time = "2026-08-03T11:45:09.509Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/22/e85faf23bd72a92d1921e37d674ca56eb298a3c8be31fdecef0ff2b3aaac/h2-4.4.1-py3-none-any.whl", hash = "sha256:0e25f1462b23c9cb82d9eb02e28bc706dac2a68cb457c6a0d74d63c8a2a5d0e6", size = 62636, upload-time = "2026-08-03T11:44:59.164Z" },
-]
-
-[[package]]
-name = "hatch-angee"
-version = "0.2.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "hatchling" },
-    { name = "packaging" },
-    { name = "tomlkit" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/65/15b6edc69fc1024f1e0fc56c0b2e5fa84526d06bb302f771aa3f41842689/hatch_angee-0.2.6.tar.gz", hash = "sha256:c1f68cac1b322999f01ead2e320345048bfb58c287bbdb40d959f431cd3cb899", size = 56466, upload-time = "2026-10-28T11:16:27.223Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/27/ed1077e4225c961abe90b4589b5e13920cf6ffbc824d18cff46a3fb50014/hatch_angee-0.2.6-py3-none-any.whl", hash = "sha256:5daf9a12b8579509f7fbefbab92e01d37e4082ad90b695fb6b225a902be5e4c1", size = 28135, upload-time = "2026-10-28T11:16:26.215Z" },
-]
-
-[[package]]
-name = "hatchling"
-version = "1.32.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-    { name = "pathspec" },
-    { name = "pluggy" },
-    { name = "tomlkit" },
-    { name = "trove-classifiers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/69/08/33331757185504aae48b8d9bd78cec03a76e3aecfb52e549d05a2347c0dd/hatchling-1.32.0.tar.gz", hash = "sha256:0bdbde4a52b06c37e3eca395f85a762bf0ef06fe374fd8ae429dc6be10230f5f", size = 57783, upload-time = "2026-08-11T05:03:44.114Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/84/1798b6d85ecde0e31546004efd25c5de1b1f49250644a60cce460e12593a/hatchling-1.32.0-py3-none-any.whl", hash = "sha256:0e17c9c3b9aa7c625acc8d0f5b622f107d5049af9ecf5ada4de1aada5be7cdbc", size = 78435, upload-time = "2026-08-11T05:03:42.644Z" },
 ]
 
 [[package]]
@@ -1937,11 +3671,11 @@ wheels = [
 
 [[package]]
 name = "logfire-api"
-version = "4.41.0"
+version = "5.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/41/83/a2e7de43bb092ffaad904b5756cfc1e0ea4a8d79fdacd24cd55e60790585/logfire_api-4.41.0.tar.gz", hash = "sha256:ec39252acac38b5b50d60cfb9cc62f0ea10c841345fc59692af32dbe3de4a140", size = 92818, upload-time = "2026-08-20T17:42:24.302Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/3e/065cbc78fbfdbf96194833522c6a9a3677c67c6e66987b226eccbf0e0d0b/logfire_api-5.4.0.tar.gz", hash = "sha256:328b3fae6eaced55875339cf58521ebf13a9117bdb8be40f717f056aa62c43d3", size = 101625, upload-time = "2026-10-26T15:17:54.196Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/96/97552d0d742866719b3a6e8fd7e68dd2877804f4c3b10c44a19a1f99b0d6/logfire_api-4.41.0-py3-none-any.whl", hash = "sha256:c71010d086c0211b04b4640181e836e8a75cc635fcfa7f712557f7b0676c1413", size = 143003, upload-time = "2026-08-20T17:42:21.764Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/03/1e412a0bbae5d7cab75cf2645aa6e330835db95d76c20b9912af495dcd6a/logfire_api-5.4.0-py3-none-any.whl", hash = "sha256:00297901da03e350bcf4ebe3d829f3617ebbe62b000e5d53d3c485223c258204", size = 154066, upload-time = "2026-10-26T15:17:49.827Z" },
 ]
 
 [[package]]
@@ -1994,7 +3728,7 @@ e2e = [
 
 [[package]]
 name = "mcp"
-version = "1.29.0"
+version = "1.30.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2012,9 +3746,9 @@ dependencies = [
     { name = "typing-inspection" },
     { name = "uvicorn", marker = "sys_platform != 'emscripten'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/30/d3/f9acc21dfc886e4f78e2add1a47db46ce16884346afde53f8a064c02c891/mcp-1.29.0.tar.gz", hash = "sha256:52d01f334de1868cc3bb2d6604931126a67631f99a6c5d3b82ba47290315ec36", size = 643148, upload-time = "2026-07-28T13:41:41.939Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/93/0142dc84a666daf8ad51a34268f34c12fd6fda4f3810c4be2504eecc8212/mcp-1.30.0.tar.gz", hash = "sha256:445414625fce5c295faa505bb11bacece661ab6f4028d57c935db57820b7a3e4", size = 680511, upload-time = "2026-09-07T14:34:15.845Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/c8/248b201f6d753d69fd5d6506011abbb35a946d9142b2ae311a948fd0be3d/mcp-1.29.0-py3-none-any.whl", hash = "sha256:f5a075bb611f23d6f4d080c6a1699fa62772eebc562ba9e66b306ddde1c755f7", size = 223436, upload-time = "2026-07-28T13:41:40.337Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/f4/e58bc33317c92a0203664daaf00bf6f41166cc0149e5d6870a03f7cd004a/mcp-1.30.0-py3-none-any.whl", hash = "sha256:666edb5009503e1047c9d60346a756f94b261f05cc2625f23d41c728ffc484d0", size = 234581, upload-time = "2026-09-07T14:34:14.266Z" },
 ]
 
 [[package]]
@@ -2028,11 +3762,11 @@ wheels = [
 
 [[package]]
 name = "more-itertools"
-version = "11.1.0"
+version = "11.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/de/1d/f4da6f02cdffe04d6362210b807146a26044c88d839208aec273bb0d9184/more_itertools-11.1.0.tar.gz", hash = "sha256:48e8f4d9e7e5878571ecf6f2b4e57634f93cd474cc8cfbd2376f2d11b396e30d", size = 145772, upload-time = "2026-05-22T14:14:29.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/b8/c63995bebbb9ac9c059350e0fb8c82c2420c85aeca7d34e40aecf3df9281/more_itertools-11.2.1.tar.gz", hash = "sha256:cbf08fd0af284dc69718b9b76a8e6203df624d70209ea511e4219d350c856f63", size = 154133, upload-time = "2026-10-14T18:50:30.407Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/3d/1087453384dbde46a8c7f9356eead2c58be8a7bf156bca40243377c85715/more_itertools-11.1.0-py3-none-any.whl", hash = "sha256:4b65538ae22f6fed0ce4874efd317463a7489796a0939fa66824dd542125a192", size = 72226, upload-time = "2026-05-22T14:14:28.824Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/57/3c4b1c6f2e0cc29ba023802458ea3d2a996f87085559e4a5f2192d549532/more_itertools-11.2.1-py3-none-any.whl", hash = "sha256:35a7377edd1dd6608dcb2cdf534ded55ea32d49448875ad042cd3f879fb1ded0", size = 74405, upload-time = "2026-10-14T18:50:29.116Z" },
 ]
 
 [[package]]
@@ -2142,7 +3876,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "3.3.1"
+version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2152,33 +3886,33 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/9c/ba0c292b4032ede74c249ca314ad64eb1bb5a03a843f6e01facb02f80cd8/openai-3.3.1.tar.gz", hash = "sha256:6f22807de1a976c932cecda620e8172a8c3fdbaeed29c7f21564e0c2410edf56", size = 1282113, upload-time = "2026-08-19T16:31:35.006Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/b0/1100c93f93e1c174205ce8d15a049a446f0dc88e9262c1f1f223fe6b9493/openai-3.8.0.tar.gz", hash = "sha256:6138a5a1333a1be9e4d1edea2d160b311542787b029543f87de4961c66358d16", size = 1473819, upload-time = "2026-09-03T19:51:10.495Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/db/2b7a1b3de659bb82aef979116c74e809982b13e42c057759767552b5155f/openai-3.3.1-py3-none-any.whl", hash = "sha256:9652df7fdf8ee6f5bd58e0a12f2b1d414a18e0f06bb7a9a57c8643a5f5469bd3", size = 1690337, upload-time = "2026-08-19T16:31:32.812Z" },
+    { url = "https://files.pythonhosted.org/packages/24/a4/c7e89d3bfb8b7c7ffa38ec9fe527bccf4df723f752fb11bdb3da6c750b76/openai-3.8.0-py3-none-any.whl", hash = "sha256:514736aa1e4ef1033c1209ad53897392845ccd4f2c4fae6413b2cf5f91c2c926", size = 1740349, upload-time = "2026-09-03T19:51:08.596Z" },
 ]
 
 [[package]]
 name = "openapi-pydantic"
-version = "0.5.1"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/2e/58d83848dd1a79cb92ed8e63f6ba901ca282c5f09d04af9423ec26c56fd7/openapi_pydantic-0.5.1.tar.gz", hash = "sha256:ff6835af6bde7a459fb93eb93bb92b8749b754fc6e51b2f1590a19dc3005ee0d", size = 60892, upload-time = "2025-01-08T19:29:27.083Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/32/0c9bd3e4e847cd6117b64dbef4cf810faa9cdbd6689323b811569cc8a1b8/openapi_pydantic-0.6.0.tar.gz", hash = "sha256:11f3ac6ad41521fc156381ec587246b0c0ecea523bd9565ed74d3e7fac9d91cd", size = 1667049, upload-time = "2026-10-02T12:20:00.508Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/cf/03675d8bd8ecbf4445504d8071adab19f5f993676795708e36402ab38263/openapi_pydantic-0.5.1-py3-none-any.whl", hash = "sha256:a3a09ef4586f5bd760a8df7f43028b60cafb6d9f61de2acba9574766255ab146", size = 96381, upload-time = "2025-01-08T19:29:25.275Z" },
+    { url = "https://files.pythonhosted.org/packages/31/57/9d3eb823a03c33e9d4c810e6a3276e3a6dc820a7fdc0961db2c04e613817/openapi_pydantic-0.6.0-py3-none-any.whl", hash = "sha256:8bd6d548a250da37db96f461bcd52b3468e8834ad7d6db14b00a6b2ebbd163a3", size = 96931, upload-time = "2026-10-02T12:19:58.917Z" },
 ]
 
 [[package]]
 name = "opentelemetry-api"
-version = "1.44.0"
+version = "1.45.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/8b/aa9e2d8b8dfa7c946f7dec5d1f8f6ba8eca062f43509a06bdb5ce93d26c0/opentelemetry_api-1.44.0.tar.gz", hash = "sha256:67647e5e9566edcf421166fdf022b3537f818635daa852b289e34604dc6fb33a", size = 72406, upload-time = "2026-07-16T15:25:32.678Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/14/cf3a6b6448849656e1e5f4e2101f3988dc6789724050096aba1bc5ccf592/opentelemetry_api-1.45.2.tar.gz", hash = "sha256:d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4", size = 73277, upload-time = "2026-10-29T17:29:37.888Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/6f/a04e900f465ff3221ccc395522503e2d10e79fa21f2723c8e177aae1e0d1/opentelemetry_api-1.44.0-py3-none-any.whl", hash = "sha256:94b98c893a91b88657eaac1e3ba89618cdb85be6918196705354f34728b2cdef", size = 60018, upload-time = "2026-07-16T15:25:11.657Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/2d/610db864d7513158cebb8f36cc88e67e73bd6c7aa1905ef18d89e1281c81/opentelemetry_api-1.45.2-py3-none-any.whl", hash = "sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34", size = 60335, upload-time = "2026-10-29T17:29:06.955Z" },
 ]
 
 [[package]]
@@ -2206,15 +3940,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/66/f3/5a20387de9bcd0607871bfc2198ee0e15836da7baa4592ccd7f24c27c986/pathable-0.6.0.tar.gz", hash = "sha256:6404b8b82aef5ff0fd478934137128b99b12212ba35afdde5525ca4f8388ea58", size = 18970, upload-time = "2026-05-19T18:15:11.911Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/e8/6d75ffd9784bce2e93d1ae4415649427e39a53bb172d4672b2b59c6f0a7b/pathable-0.6.0-py3-none-any.whl", hash = "sha256:82c4ca6c98c502ad12e0d4e9779b6210afee93c38990988c8c5d1b49bdcdf566", size = 18983, upload-time = "2026-05-19T18:15:10.728Z" },
-]
-
-[[package]]
-name = "pathspec"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5a/82/42f767fc1c1143d6fd36efb827202a2d997a375e160a71eb2888a925aac1/pathspec-1.1.1.tar.gz", hash = "sha256:17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a", size = 135180, upload-time = "2026-04-27T01:46:08.907Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl", hash = "sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189", size = 57328, upload-time = "2026-04-27T01:46:07.06Z" },
 ]
 
 [[package]]
@@ -2287,11 +4012,11 @@ wheels = [
 
 [[package]]
 name = "platformdirs"
-version = "4.11.3"
+version = "4.14.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b8/d7/e7bfbc86e9f99ff7807e24de7703f032e9c9ba80bb355cf26e0e9bc5a75e/platformdirs-4.11.3.tar.gz", hash = "sha256:66a73d38a849810252df809a3d8bcbda8e26f6c189920e7535ad608a48dbb5ab", size = 33050, upload-time = "2026-08-13T22:43:27.52Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/28/1c058a9143d2304b3078f8dadcbb9dc27f7d3581b5d05157c84869c4cc0d/platformdirs-4.14.0.tar.gz", hash = "sha256:83f009c1e8c5fc36869b5171755b291887bd2cade7965233cdfabd23d754720b", size = 70387, upload-time = "2026-10-28T18:27:30.973Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/a9/c34aebedd3a4c9afe5101b1b8713710b3fec18087c8a36c35d2f909861bd/platformdirs-4.11.3-py3-none-any.whl", hash = "sha256:5ed065d443751de711da036041a7a214122efc4a4de393b3f4137ba5576540e7", size = 23491, upload-time = "2026-08-13T22:43:26.121Z" },
+    { url = "https://files.pythonhosted.org/packages/69/2b/887969ef4bb53e0cb271dc7c3f4a73d50c5d58bb88aeaae311e3340cd57e/platformdirs-4.14.0-py3-none-any.whl", hash = "sha256:1dadfc59a8a5d7565b3d9270ae8fa71c065595352c4277b41c11ee6c222c4b91", size = 35259, upload-time = "2026-10-28T18:27:29.659Z" },
 ]
 
 [[package]]
@@ -2375,14 +4100,14 @@ wheels = [
 
 [[package]]
 name = "psycopg"
-version = "3.3.4"
+version = "3.3.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/2f/cb91e5502ec9de1de6f1b76cfbf69531932725361168bb06963620c77e2e/psycopg-3.3.4.tar.gz", hash = "sha256:e21207764952cff81b6b8bdacad9a3939f2793367fdac2987b3aac36a651b5bc", size = 165799, upload-time = "2026-05-01T23:31:55.179Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/26/3ea4ca5eaea1c0debcdf7ee7c1613fbe721dc27a03c461c0817ffd8a0601/psycopg-3.3.6.tar.gz", hash = "sha256:c081f2250df751a943036e42db6df4571c66cd0aabe8291a7a506512b12007d2", size = 168171, upload-time = "2026-09-18T13:22:55.152Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5c/e0/7b3dee031daae7743609ce3c746565d4a3ed7c2c186479eb48e34e838c64/psycopg-3.3.4-py3-none-any.whl", hash = "sha256:b6bbc25ccf05c8fad3b061d9db2ef0909a555171b84b07f29458a447253d679a", size = 213001, upload-time = "2026-05-01T23:20:50.816Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/de/748bd7609c71cae5d737f0ba9192f19329f70180ecda8fff3cac02c5abe3/psycopg-3.3.6-py3-none-any.whl", hash = "sha256:a1db9f7148b06a28606767efaca51fa6f9398c5c0a3810519be69d7000bdb631", size = 215490, upload-time = "2026-09-18T13:15:29.374Z" },
 ]
 
 [package.optional-dependencies]
@@ -2395,20 +4120,31 @@ pool = [
 
 [[package]]
 name = "psycopg-binary"
-version = "3.3.4"
+version = "3.3.6"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/a6/828c9185701dab71b234c2a76c38a08b098ebfec5020716b4e93807492b5/psycopg_binary-3.3.4-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:28b7398fdd19db3232c884fb24550bdfe951221f510e195e233299e4c9b78f97", size = 4607292, upload-time = "2026-05-01T23:30:38.962Z" },
-    { url = "https://files.pythonhosted.org/packages/92/58/5b40dbc9d839045c9dae956960e4fb6d20bcabe6c59a2aa34fc3a371913f/psycopg_binary-3.3.4-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:1fbaa292a3c8bb61b45df1ad3da1908ccee7cb889db9425e3557d9e34e2a4829", size = 4687023, upload-time = "2026-05-01T23:30:47.227Z" },
-    { url = "https://files.pythonhosted.org/packages/85/a9/793f0ac107a9003b48441d0d1f9f616d96e0f37458dd8dc12528ceff55fb/psycopg_binary-3.3.4-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:94596f9e7633ee3f6440711d43bb70aa31cc0a46a900ab8b4201a366ace5c9e7", size = 5486985, upload-time = "2026-05-01T23:30:55.517Z" },
-    { url = "https://files.pythonhosted.org/packages/8f/26/42e8533497e2592334f68ec529cf5f840f7fa4e99575a4bb61aa184dbfbf/psycopg_binary-3.3.4-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:8c0056529e68dbe9184cd4019a1f3d8f3a4ead2f6fc7a5afcf27d3314edd1277", size = 5168745, upload-time = "2026-05-01T23:31:01.904Z" },
-    { url = "https://files.pythonhosted.org/packages/15/af/b7151776cc08d5935d45c833ec818a9beb417cf7c08239af1aafbdae78ee/psycopg_binary-3.3.4-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2c09aad7051326e7603c14e50636db9c01f78272dc54b3accff03d46370461e6", size = 6761486, upload-time = "2026-05-01T23:31:14.511Z" },
-    { url = "https://files.pythonhosted.org/packages/d0/ed/c92533b9124712d592cbf1cd6c76da933a2e0acea81dfe1fbe7e735f0cff/psycopg_binary-3.3.4-cp314-cp314-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:514404ed543efd620c85602b747df2a23cf1241b4067199e1a66f2d2757aaa41", size = 4997427, upload-time = "2026-05-01T23:31:20.901Z" },
-    { url = "https://files.pythonhosted.org/packages/a2/23/ccadfd0de416aa188356daa199453af24087b042e296088706d190ae0295/psycopg_binary-3.3.4-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:46893c26858be12cc49ca4226ed6a60b4bfccadd946b3bebb783a60b38788228", size = 4533549, upload-time = "2026-05-01T23:31:26.204Z" },
-    { url = "https://files.pythonhosted.org/packages/fd/a0/c8f43cee36386f7bc891ab41a9d31ea07cf9826038e732da79f26b1e5f34/psycopg_binary-3.3.4-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:df1d567fc430f6df15c9fcf67d87685fc49bdb325adc0db5af1adfb2f44eb5c9", size = 4210256, upload-time = "2026-05-01T23:31:33.884Z" },
-    { url = "https://files.pythonhosted.org/packages/4e/2c/c1547871be3790676e8868b38655496422f94f0978dfb66b74bdba2f1676/psycopg_binary-3.3.4-cp314-cp314-musllinux_1_2_riscv64.whl", hash = "sha256:6b9016b1714da4dd5ecaaa75b82098aa5a0b87854ce9b092e21c27c4ae23e014", size = 3946204, upload-time = "2026-05-01T23:31:39.626Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/b1/f6670f00fa7ea601584623f6c11602ab92117d83eaff885e0210f6de7418/psycopg_binary-3.3.4-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:47c656a8a7ba6eb0cff1801a4caaa9c8bdc12d03080e273aff1c8ac39971a77e", size = 4255811, upload-time = "2026-05-01T23:31:44.986Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/e6/5fff07a70d1f945ed90ae131c3bd76cab32beff7c58c6db15ad5820b6d1f/psycopg_binary-3.3.4-cp314-cp314-win_amd64.whl", hash = "sha256:c37e024c07308cd06cf3ec51bfd0e7f6157585a4d84d1bce4a7f5f7913719bf8", size = 3666849, upload-time = "2026-05-01T23:31:51.165Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/b9/60711317c284a442511644ea7185b56ebe627606d6741e732cd16108c47b/psycopg_binary-3.3.6-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:b3f75dee0f9afafabe4edc52c4842f1e1878ed2069bd05b22d6fe961e97e4dba", size = 4720512, upload-time = "2026-09-18T13:20:29.278Z" },
+    { url = "https://files.pythonhosted.org/packages/63/da/28befc84454cbc6374550de7746f591f8fe1b6165c1fce249652cc8291c4/psycopg_binary-3.3.6-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:5927b7ba63153cd8e9862987290a2b783a5c590daf2a4ef981700cc3569166d4", size = 4782318, upload-time = "2026-09-18T13:20:35.401Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/8a/0d21c2c833cdc0d4244c77e858e0ed37fa2abec2623be4fd686f617109ce/psycopg_binary-3.3.6-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:0bf08b749cc144f33b44a91b78e3f71c60eb07963746a0df5a100b36ce3d7475", size = 5567460, upload-time = "2026-09-18T13:20:41.902Z" },
+    { url = "https://files.pythonhosted.org/packages/49/6d/7692d0d4e656b6cc9868d8acc2e3b42f17a0db4a625400a6d093cb0533a1/psycopg_binary-3.3.6-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:31cd942c23f613276b81a6e6598cefa12960058b0f46e1e874b540c793f6aca5", size = 5246902, upload-time = "2026-09-18T13:20:47.661Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/c1/b8a1f18fb1b7558a17f57f7cb3fc8bc93189feea2958925950b3acb15743/psycopg_binary-3.3.6-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4690cf67738f0e0e49a32aeec99bf0e4595cc2b4f1af984a4345394b1dcff91a", size = 6847192, upload-time = "2026-09-18T13:20:56.874Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/76/404f33519167c65cca88ec4998776f1dbebccc301ee977f0e62c47fb0826/psycopg_binary-3.3.6-cp314-cp314-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:ad1c785e784cfd87e8436c6b7702f2d321fc39601bbaf29bc63a41a867091638", size = 5079573, upload-time = "2026-09-18T13:21:04.155Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/d9/79e8fbc8f37262a415f3550f0bcc5f98037442bf3d12ef6cbae2056655ae/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:79a2a1c3449f6c3409427078ed1cec10de79f3023cb5f2504f0597d350ad46c7", size = 4613633, upload-time = "2026-09-18T13:21:10.664Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/47/96225db74be7d2ce04b3a58678b53cda610225055edf5faa775c9f501d8b/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:86147cb5d140341c3363fb5bacce31f8d5543902a46699d3c536b101bbceaf9e", size = 4293375, upload-time = "2026-09-18T13:21:16.027Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/d2/18e9c779a5efd565250329adaf529ecc2b8b2ed5be5cb0f6ccee208cbfd9/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_riscv64.whl", hash = "sha256:7308c93cf0b19bbaf8e6ff0a6ad50d3c442385739245fe15a8d593bf841734a6", size = 4019883, upload-time = "2026-09-18T13:21:21.587Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/28/0cc654afc6c2cda982767f5679d3646b30b1ec86545bdaa9402202d6776c/psycopg_binary-3.3.6-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:05a83ac9fd52b9bca7cb5ab04b3691163170bd16f53defa27216ea3aa07ee781", size = 4332607, upload-time = "2026-09-18T13:21:27.63Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/3e/0a753a74fbd7aef120f286c016e09d3cc3f1daf7688f4a145d27281260b2/psycopg_binary-3.3.6-cp314-cp314-win_amd64.whl", hash = "sha256:1fbd30e537dab22cafdf080608f10148fe2a5f3a61294ddb5113caac8a623840", size = 3755671, upload-time = "2026-09-18T13:21:33.855Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/b1/a372b9c02aea50148e71c9853e19efca8fa5ae2010a8e27243b9b8f790c0/psycopg_binary-3.3.6-cp315-cp315-macosx_10_15_x86_64.whl", hash = "sha256:bf8c8481d026b85dd70c5fa7dde85b2333aed0b32a2602bcd38a900cbd78a49c", size = 4719571, upload-time = "2026-09-18T13:21:41.437Z" },
+    { url = "https://files.pythonhosted.org/packages/65/7c/811e3828c6b82e2f10c6c9cdd963cfc66f3e024026e5a69ac18530bad984/psycopg_binary-3.3.6-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:b599defe9190b17e9907c8b4d114c181e702c87efcd1b8a0ad40971cdcc4634a", size = 4781230, upload-time = "2026-09-18T13:21:49.516Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/15/9a784eed813ea9e97c294af3ead63d02b7b203502c66380336c50065e441/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:b8ece331509f7a975b90501f41e83ad905e4141753fedf3f2711b2bc70a8efbc", size = 5566111, upload-time = "2026-09-18T13:21:58.089Z" },
+    { url = "https://files.pythonhosted.org/packages/68/16/47194e002007c27337b11e49bf459c4b19727463f9aff2e1a90917bcc806/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:c61617eaae0112ca154da87ffb99b73af2c74067acac28dfb9a4455b019dff2e", size = 5249963, upload-time = "2026-09-18T13:22:06.695Z" },
+    { url = "https://files.pythonhosted.org/packages/53/84/5dcf9f310b11f0675cd860c6b2c70f58ce61798a3ee3f6f962b53fa358ca/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c6d19cb4999d03231e8730a5f66c8f5068bc3b532677eb39dab0f600bff3e312", size = 6847925, upload-time = "2026-09-18T13:22:13.088Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/06/1957a06dc22963c418c27b284929579de84f29c37ad1abe6dc6ee9e8cf25/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:e8cbb54454dbf1bbf2ff08dd7693e8d94ac94b1a20f70f4b3b813d52ecb5cbc1", size = 5087720, upload-time = "2026-09-18T13:22:17.959Z" },
+    { url = "https://files.pythonhosted.org/packages/21/43/ac07d042bae99b57bf123bb473632f29af544008094da0ffd285ab8011e2/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_aarch64.whl", hash = "sha256:dc75da5a20951049f7b773145f998f69d181adad9c58a0ff36e0cf1d73c10e10", size = 4613412, upload-time = "2026-09-18T13:22:26.719Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/b1/019156fbeafcefb4cccc9d109de4699493bceb8313c7545c8349e089dfbc/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_ppc64le.whl", hash = "sha256:955e3dd94da361e052d2e49acf591017158dc8f8ed2c8a42c2e3943403c39dc2", size = 4292618, upload-time = "2026-09-18T13:22:33.042Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/0f/62113dc6b1df65983a1f2fc816c04b1edfa22f2ae9d4abee74ed267f4a96/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_riscv64.whl", hash = "sha256:c7753871eb57e6a5f4646f6168590c6653073dea5e9e720b201c8875332df4c8", size = 4027121, upload-time = "2026-09-18T13:22:38.334Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/d5/cf0cbd1ea5a7d8167fe2c6953efde19101f7b193bd61a23e6d622ad6854c/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:303732e798fe6729f8e12021b9c96107df8e95ecec4dd487c67b98ec2a59435e", size = 4336388, upload-time = "2026-09-18T13:22:45.576Z" },
+    { url = "https://files.pythonhosted.org/packages/98/33/e2a5b36edf8aa422f6fa4b894756eb33dc93b36df5f65121280bb8b929c4/psycopg_binary-3.3.6-cp315-cp315-win_amd64.whl", hash = "sha256:2f122603f36050937982abf9668d8bc4769a79f7c93a65013b1c49f1cab7b56b", size = 3756154, upload-time = "2026-09-18T13:22:51.283Z" },
 ]
 
 [[package]]
@@ -2425,15 +4161,15 @@ wheels = [
 
 [[package]]
 name = "py-key-value-aio"
-version = "0.4.5"
+version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beartype" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/e2/d689d922894a7ecde73b6daeaf9b13dab5aae06fe6aaaf7514722644d382/py_key_value_aio-0.4.5.tar.gz", hash = "sha256:c6563a2c6abe5da5e20f4f9e875c2a9b425a2244a54fadbf46cf140a9eea45d7", size = 107547, upload-time = "2026-05-27T16:37:08.107Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/99/c346e3474853801ec5ecf4c3ee60cfc6060327ebc31424df4e346620dde4/py_key_value_aio-0.4.6.tar.gz", hash = "sha256:267c03c3e24cb99d3097612f8a5cfd8e11785c6a2975e272db0e303ea1850bfd", size = 112876, upload-time = "2026-09-18T15:29:52.002Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/95/b8ba862968712caa12a19666175334fa979e1f198b896a430adb3bacfe87/py_key_value_aio-0.4.5-py3-none-any.whl", hash = "sha256:ab862adbcb8c72547d1c57821f22cbbb71ab86509039c96f36e914e0336c8dd7", size = 170005, upload-time = "2026-05-27T16:37:06.629Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/46/12871550fb0613d149144bb9d41f22680d5f46717bc45a76eb5798c20c3f/py_key_value_aio-0.4.6-py3-none-any.whl", hash = "sha256:820b30c7959fc738ea3d00160cdb10cd258f51e38737b2add530defeea1ded77", size = 171289, upload-time = "2026-09-18T15:29:50.665Z" },
 ]
 
 [package.optional-dependencies]
@@ -2522,11 +4258,12 @@ email = [
 
 [[package]]
 name = "pydantic-ai-slim"
-version = "2.33.0"
+version = "2.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "genai-prices" },
+    { name = "genai-prices", version = "0.1.13", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15'" },
+    { name = "genai-prices", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
     { name = "griffelib" },
     { name = "httpx2" },
     { name = "opentelemetry-api" },
@@ -2534,9 +4271,9 @@ dependencies = [
     { name = "pydantic-graph" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/00/ab2ec7a91f499e33fadd524f380acae3acf960f2f9140c8adce2e91c872b/pydantic_ai_slim-2.33.0.tar.gz", hash = "sha256:7809e3000df0265ee93e7c55ff1d852621a23b22ccb5ad790d9228e457cfb10a", size = 1229403, upload-time = "2026-08-21T05:05:55.276Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/ec/59161f7aa44251775afec888615b84905634252b7dac6f0acf2f430ffadf/pydantic_ai_slim-2.42.0.tar.gz", hash = "sha256:045c788b1636e0ed79542f2b7562d2688a3e3701744ed7379a928fceec446336", size = 1453904, upload-time = "2026-09-09T03:48:51.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/c0/d6120efa7f6466da2194e80032c483f8f8ececc5bafcf07cf064792f9702/pydantic_ai_slim-2.33.0-py3-none-any.whl", hash = "sha256:5ab28c9f6d7c0a6dd8e5c4f75ba4bcfa84a7f6aa0faa7b64209fbcaa981f922b", size = 1448791, upload-time = "2026-08-21T05:05:46.881Z" },
+    { url = "https://files.pythonhosted.org/packages/80/d5/5f9489b6d8583366c32c76671f4d5c3a91cf7e0e0a7073269d9fee756f28/pydantic_ai_slim-2.42.0-py3-none-any.whl", hash = "sha256:a042b73551470c40a2ab7cd532e26c20f592b5731ae544ff3eecbcdf6ceebcc4", size = 1714452, upload-time = "2026-09-09T03:48:43.81Z" },
 ]
 
 [package.optional-dependencies]
@@ -2594,7 +4331,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-graph"
-version = "2.33.0"
+version = "2.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2602,23 +4339,24 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/82/68/7bbebffe9d7a2033182c92b5610e5c52840d3ca877337435e1737fe59ed3/pydantic_graph-2.33.0.tar.gz", hash = "sha256:ff4bfd7f6e10b85b0fb77c85100140733f295e9bd445ed60318221446413e224", size = 45163, upload-time = "2026-08-21T05:05:58.095Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a3/c2/f14d82d10c7f4e4e4d20c880593745e05686b176ac397fe52a5ec40959a9/pydantic_graph-2.42.0.tar.gz", hash = "sha256:eb6c416dee9e3415195194c44ca3abeeae8853bff095d38ac798c7c3395f815d", size = 45189, upload-time = "2026-09-09T03:48:53.398Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/a5/73a9cd5a6dd5ca41391022597a9298aa50f9879df60299ac44f0eb7373e2/pydantic_graph-2.33.0-py3-none-any.whl", hash = "sha256:44e0ab3e0557e8e6f6ff2c939e1f15684b32029a14b55146cc88808a1c5cc464", size = 52648, upload-time = "2026-08-21T05:05:50.524Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/c7/eafabe22e04e4e8dfb8e01725e051feed75d3cda937054a727cffc525497/pydantic_graph-2.42.0-py3-none-any.whl", hash = "sha256:25c47047ac1bbad2fdc6dace23958c6ec700a6366abc18d67dccd41411185df7", size = 52700, upload-time = "2026-09-09T03:48:46.931Z" },
 ]
 
 [[package]]
 name = "pydantic-settings"
-version = "2.15.0"
+version = "2.16.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/ca/31c57507b13119d7d3cfa1576dad2911a4861e3be07b579395f4e9d393f9/pydantic_settings-2.15.0.tar.gz", hash = "sha256:694b793e84f766ba76a90ebdefc01d0a9a045dab0382bee70393da93712ad117", size = 261253, upload-time = "2026-08-07T09:24:57.419Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/31/21d21e0e38a8f5f7a7f0cde22820117b6d17d6bc36f348129527f915d7f4/pydantic_settings-2.16.2.tar.gz", hash = "sha256:3dc08ffabed2bbd5dc2dd55ead7b78b4e4c5cd776aecd04310db5f1224caaf46", size = 309225, upload-time = "2026-10-28T11:14:28.066Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/a4/2bffa9f8e804325a09867f0e9d30795c80ea9f8d62560bd1b6ad6220eb2f/pydantic_settings-2.15.0-py3-none-any.whl", hash = "sha256:0ba092c291c94baceb5eff768aa0d56400a457585bc0175925a5a5510303da42", size = 69413, upload-time = "2026-08-07T09:24:55.839Z" },
+    { url = "https://files.pythonhosted.org/packages/39/88/4131c51ff87b7cd7f82a1194d0c0a2b7ca68c72d9da04c3b7e69ab91a79f/pydantic_settings-2.16.2-py3-none-any.whl", hash = "sha256:8d523e5c129b097686bde019bd6109bff53f4c8c3f63f1ddf9933ffa42e5ab4f", size = 81994, upload-time = "2026-10-28T11:14:26.716Z" },
 ]
 
 [[package]]
@@ -2632,11 +4370,11 @@ wheels = [
 
 [[package]]
 name = "pyjwt"
-version = "2.13.0"
+version = "2.15.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3b/81/58d0ac84e1ef3a3843791d6954d94c0b33d526c75eeb1efbce9d0a4c4077/pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423", size = 107515, upload-time = "2026-05-21T19:54:36.618Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/ea/5194e52748b0da83d71e082d75496eaec6e58f419f5e184786ded517e6a9/pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8", size = 121252, upload-time = "2026-09-28T18:40:42.598Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/5e/ecf12fdb62546d64385c158514e9b2b671f7832108ef2ecd2020ce0af2d1/pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728", size = 31274, upload-time = "2026-05-21T19:54:35.362Z" },
+    { url = "https://files.pythonhosted.org/packages/50/ca/44de4e75f8aadc457f0634be3b542815078ded46dca30efb960edeecad6e/pyjwt-2.15.1-py3-none-any.whl", hash = "sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193", size = 33860, upload-time = "2026-09-28T18:40:41.429Z" },
 ]
 
 [package.optional-dependencies]
@@ -2658,31 +4396,32 @@ wheels = [
 
 [[package]]
 name = "pypdfium2"
-version = "5.13.0"
+version = "5.14.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ec/78/a52cb80611339ec95f35c7a10d7bfe7a6f97f3b50a35a9f94283d062512e/pypdfium2-5.13.0.tar.gz", hash = "sha256:7ca2d8e31bd8d0d40c496416b7d8bea423388669ffd494929f50e8c3a82326b8", size = 273639, upload-time = "2026-08-13T10:58:15.837Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/d0/c81d3a7c2a9af37b817ace1de0acd40cf44d15f12407c5e86b3668364a5c/pypdfium2-5.14.0.tar.gz", hash = "sha256:c5f009b3157f10e97dceb55963f5910eff92feb00587ba10a76f12b87ce1a4b6", size = 376498, upload-time = "2026-10-04T15:19:19.835Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/9c/a49050af85055054299c7fab658ac63f8fddde575774aecbf8f71c7a9e5f/pypdfium2-5.13.0-py3-none-android_23_arm64_v8a.whl", hash = "sha256:882f4bbd4b17a335b43603169a14cde9341de12b238acd5c39e690cbca7c4293", size = 3417299, upload-time = "2026-08-13T10:57:40.522Z" },
-    { url = "https://files.pythonhosted.org/packages/50/ad/f23027328843ee2bdd05afe16bb101f5906befd0c70de35fa8c53f60a5ff/pypdfium2-5.13.0-py3-none-android_23_armeabi_v7a.whl", hash = "sha256:d96929bde3bd64c771ab3558ca1ffd7704cc4d872ab92cd9f8f8b8a20f7f36b8", size = 2864708, upload-time = "2026-08-13T10:57:42.259Z" },
-    { url = "https://files.pythonhosted.org/packages/08/99/1fe58428b69d2722dcbcfaa08ce71834a332c5b518fd58874bcef936b823/pypdfium2-5.13.0-py3-none-macosx_13_0_arm64.whl", hash = "sha256:da5c7b74eebf40b5c1fbe1de01aa1edc8827a79fb1efd999616bc20dcaf77ba4", size = 3507415, upload-time = "2026-08-13T10:57:43.978Z" },
-    { url = "https://files.pythonhosted.org/packages/9f/41/06e26da88a4f5b4ed289325868717a186020661b7b221aa6df622711d31b/pypdfium2-5.13.0-py3-none-macosx_13_0_x86_64.whl", hash = "sha256:2abedfb5c70992b19c780ed58d7f7b929e8ce8ee52c9140158f44317c90ec6c7", size = 3670979, upload-time = "2026-08-13T10:57:45.607Z" },
-    { url = "https://files.pythonhosted.org/packages/fe/31/f8210d53775f142be934336665b1d60e800c3f176f28c29b4908d945c518/pypdfium2-5.13.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9ee8c2bb2e68b396ab4a763215ac100dacb6b96d0da5bebeb239a021aecc3a7e", size = 3676486, upload-time = "2026-08-13T10:57:47.267Z" },
-    { url = "https://files.pythonhosted.org/packages/94/50/d339fa09fbe592564b100bfc76833170a1104a764a458ac2abfffcb632f2/pypdfium2-5.13.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:07f58e91b8c45ca144a1ff3008faf3c73ef8a5e9fb32988831788363288228cd", size = 3400883, upload-time = "2026-08-13T10:57:49.189Z" },
-    { url = "https://files.pythonhosted.org/packages/c3/e0/b10cf41b5e9f0212d014c40635659c6ab95bb4fcc6fc47f5d3c571f8d57f/pypdfium2-5.13.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:46b2f5be9e7ae941ee4216e3d20b66f9dc3d81944a3d57756272de5275204709", size = 3803912, upload-time = "2026-08-13T10:57:50.865Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/d8/25ba4ce9a9059ece82f4514df0658fde0aa9bbeafe135e76017c052bf56f/pypdfium2-5.13.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d96beb7f379e6c76d874ca93fcd182ac3168dd499056407070f9927fb1061b8e", size = 4218231, upload-time = "2026-08-13T10:57:52.525Z" },
-    { url = "https://files.pythonhosted.org/packages/d3/7c/74a2fb48e5b0d2402d9ca64b39074c722d67e9a8a2c58449a843a8c2329a/pypdfium2-5.13.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:81df25c1ab4c13ff773102d3cbea1967511d079123b067fc077bd0c4d57d91d8", size = 3730077, upload-time = "2026-08-13T10:57:54.021Z" },
-    { url = "https://files.pythonhosted.org/packages/59/12/8c922f00518c26dc47d3676cc09c1d3c95e991c1977e31067d23cc2215cb/pypdfium2-5.13.0-py3-none-manylinux_2_27_s390x.manylinux_2_28_s390x.whl", hash = "sha256:d66a32d89fa5b4a2715810171239eb194df4aba604727483ab760512f3c6a851", size = 4031512, upload-time = "2026-08-13T10:57:55.736Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/48/a171d034c2dac01adcc57d3dad3c97ba11f19d916f421176002c9e02c904/pypdfium2-5.13.0-py3-none-manylinux_2_34_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:b90b0a5ac310bb34db8eb848e58fcab4e201e124e3cf3cb1ccb7b85293e034af", size = 3995485, upload-time = "2026-08-13T10:57:57.39Z" },
-    { url = "https://files.pythonhosted.org/packages/36/2e/dcb24776d409bb9e5b7fb26a0c62a87b98ab0e30dfcca645eaf31e35123b/pypdfium2-5.13.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:ada81c36483cd61d07e32bc7814620ee96256b4f421b913f566861bf91800248", size = 5016636, upload-time = "2026-08-13T10:57:59.181Z" },
-    { url = "https://files.pythonhosted.org/packages/93/24/1fab8470fc6de6f4481f009c90757b1a1ee0a61d8e864ed273f72ffca855/pypdfium2-5.13.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:3826e521e895648983cb9ee6b934d4bf51552600043984f84e9c2b3b14b696f3", size = 4555251, upload-time = "2026-08-13T10:58:00.753Z" },
-    { url = "https://files.pythonhosted.org/packages/cd/ef/6e8dbea1eddcb55cf34172753ffccd39566333c803cc94d43c653f369f2f/pypdfium2-5.13.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:5c029d7163a91f264eafab51fb442a84a33efd9fd83d5a06c0136a7857a3cc8d", size = 5263483, upload-time = "2026-08-13T10:58:02.48Z" },
-    { url = "https://files.pythonhosted.org/packages/53/fe/2ff673730189a621c01f9193c74b0f6aa70d8740889fdf11949e1c541869/pypdfium2-5.13.0-py3-none-musllinux_1_2_ppc64le.whl", hash = "sha256:be2dccbde0ce7efe334ecd8f348df4308db360756ede4f0821d82dfc9a58caa8", size = 5144135, upload-time = "2026-08-13T10:58:04.351Z" },
-    { url = "https://files.pythonhosted.org/packages/19/0b/759b9037c007317fa5c990dd3f6eff2b99d3fbced251d1e2512be92f2e2e/pypdfium2-5.13.0-py3-none-musllinux_1_2_riscv64.whl", hash = "sha256:bcd81394fe101405e026eedb3e40bef84635c1e5d974dd6036420eb6937753c6", size = 4648156, upload-time = "2026-08-13T10:58:06.036Z" },
-    { url = "https://files.pythonhosted.org/packages/db/3b/ffe29679c52efe8eb02d77aa6656e6d6201395423329af018ebd5923a3d0/pypdfium2-5.13.0-py3-none-musllinux_1_2_s390x.whl", hash = "sha256:2ed32ff685f8e05e637c990bedbf5fca66727bf27718d8bc33eeab21ce0630d1", size = 5089852, upload-time = "2026-08-13T10:58:07.791Z" },
-    { url = "https://files.pythonhosted.org/packages/7b/b6/cebacc1601ddfdcd1e6a1dc321533d215ceccf9b825fa9b91b11c6dc39fb/pypdfium2-5.13.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:9c777edba28d1d5fd15435ed3a78ee2fdb93dd069be37cb53b559bc122793770", size = 5074153, upload-time = "2026-08-13T10:58:09.396Z" },
-    { url = "https://files.pythonhosted.org/packages/54/40/cf14c4f534f817788966857afdedb90002198dca5ce4fe2c6ecb031955ae/pypdfium2-5.13.0-py3-none-win32.whl", hash = "sha256:d33ee7077db67478b75efe4b5ea9610fb96c5416a0bc4949227f0f59c34dfcd9", size = 3753164, upload-time = "2026-08-13T10:58:10.97Z" },
-    { url = "https://files.pythonhosted.org/packages/5d/99/a37b6b902457569468ed5908c94e56cb6c4032541f02cf89f723d42a9148/pypdfium2-5.13.0-py3-none-win_amd64.whl", hash = "sha256:47dcca2a8d507b5fd24f94c3c9d48fb379430f097bc20f01beff6c963ffbcedb", size = 3885553, upload-time = "2026-08-13T10:58:12.709Z" },
-    { url = "https://files.pythonhosted.org/packages/50/7f/d39f6e64375c2ffd50ea100e3c73af79085c880c2791eb7203bc61d8913f/pypdfium2-5.13.0-py3-none-win_arm64.whl", hash = "sha256:554a0b23376460af1410e3c915906895e2dac67a086b9e6ccde0643a795d3b0d", size = 3700026, upload-time = "2026-08-13T10:58:14.206Z" },
+    { url = "https://files.pythonhosted.org/packages/91/03/79e89eac9d811e83d606342e129f5f39e168442ddf23b024fea4a7ee4762/pypdfium2-5.14.0-py3-none-android_23_arm64_v8a.whl", hash = "sha256:bed597b2cea3990164e43f9003f71db18959d0abd5d73adc9c176e7be2d84b98", size = 3453370, upload-time = "2026-10-04T15:18:40.79Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/68/369b80e408017b18eaecaa3c730bded07d90bfb65562215df200b56fb8e2/pypdfium2-5.14.0-py3-none-android_23_armeabi_v7a.whl", hash = "sha256:1951f0aed469150b13c62eabd501a9839e608ab9983ca8579be9eb73213b72b6", size = 2889924, upload-time = "2026-10-04T15:18:42.825Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/ea/14673bc9d8b7beeaa1eb46e9951b22543edaf2a4676c586e3b1e032ff6ee/pypdfium2-5.14.0-py3-none-macosx_13_0_arm64.whl", hash = "sha256:2de384df66ba55fcaab0775f30f28ec1090af3dfa60276a07821efc96d993118", size = 3542294, upload-time = "2026-10-04T15:18:44.345Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/11/b720097b01fa0874854f2f6669cbea4e4ea4e075769687714fac64d68964/pypdfium2-5.14.0-py3-none-macosx_13_0_x86_64.whl", hash = "sha256:e4e203ea9710fd00e5448edb6f1615dc8587035357f75f40b432dde0c33e8da1", size = 3735845, upload-time = "2026-10-04T15:18:45.975Z" },
+    { url = "https://files.pythonhosted.org/packages/92/b4/0c31aa51887cd6cd032191dfe010a6d01ed43cf03204cfbd2184ebe4b715/pypdfium2-5.14.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f1b696e6901e16f114a2ec6332e5e3f8f5033a901614ead28499ab18ca6024f5", size = 3719672, upload-time = "2026-10-04T15:18:47.455Z" },
+    { url = "https://files.pythonhosted.org/packages/93/a8/ae6ef96bf66559328d07b9e402ea704352ea00c49b6a73573da57e1fb378/pypdfium2-5.14.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:593f2c952ae3ffdca0efcbb3d9464fbccb876254386114ff900cabef21157c3f", size = 3435593, upload-time = "2026-10-04T15:18:49.131Z" },
+    { url = "https://files.pythonhosted.org/packages/59/ff/a78405fab4c8bad0ec25b49c5efba2c85ed14609ec73645f95220560bd81/pypdfium2-5.14.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d436ee9e024f981e68f5775f5a9d115f93ea14ee6c2c6efd35dd17d83edf4942", size = 3868604, upload-time = "2026-10-04T15:18:51.304Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/6e/09e9b62ab66c9acef5ad14f8a8c0d7b4d8d6ea6492e4e65b612ef146d373/pypdfium2-5.14.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f6f13bbcc5f4adabc2676e52f662c6cb375de86b314790b0ae08f3ab62eb116a", size = 4279333, upload-time = "2026-10-04T15:18:52.948Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/a3/c9cc797fc8bdfb8f37b9b0f8b9d02a5fc196b2015f408d53624cab5b0519/pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d", size = 3799581, upload-time = "2026-10-04T15:18:54.913Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/76/54355a4bbd88bdd5ed3f4405bdc345eb593df9995daf90d285cbdf5c1410/pypdfium2-5.14.0-py3-none-manylinux_2_27_s390x.manylinux_2_28_s390x.whl", hash = "sha256:51d9e9b64ebc34effaf57f9b6d4511b3f66ad3744bd1690d2cc6700853173dcf", size = 4113022, upload-time = "2026-10-04T15:18:56.774Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/bc/ea461961ed0e0c4866df7a5610e76f769ef468bff28cd007e2aeecc8b882/pypdfium2-5.14.0-py3-none-manylinux_2_34_riscv64.manylinux_2_39_riscv64.whl", hash = "sha256:605ab9d0d4c5e223599c9065b88d16b2c1f131c807c80dea8adbb16f1433e95b", size = 4062832, upload-time = "2026-10-04T15:18:58.471Z" },
+    { url = "https://files.pythonhosted.org/packages/32/30/dde99bc8cb3f8ace1d856095c2b4a29c80eecf9089b186a3b0845d0abc69/pypdfium2-5.14.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:382de7fe20d32c42993a274d7b6c555a5623a97570dfc1d2f5e0a16fe0d5d482", size = 5058436, upload-time = "2026-10-04T15:18:59.993Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/16/5314182dda2695fdf5bd414a450ee866087068cca4725703932770d4be04/pypdfium2-5.14.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:dbfd6deff68cc46b134acd6be380d98d694a9f018fbb622c07229225c85db389", size = 4595505, upload-time = "2026-10-04T15:19:01.835Z" },
+    { url = "https://files.pythonhosted.org/packages/63/3f/474c42e726f0020095c7d5f3fb88cfd4e5d39c1361105a72899ada0ecd1b/pypdfium2-5.14.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:9f4d77db5232826dd03a63481f32164331b96c21fd68f0667b2e43dbae141a93", size = 5309775, upload-time = "2026-10-04T15:19:03.564Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/0c/723a6cf11cff00f125310d8c2c08362dc6c100d05fff8f92285a4df1bd41/pypdfium2-5.14.0-py3-none-musllinux_1_2_ppc64le.whl", hash = "sha256:b40a0913196a1483f0fdc22a53f8719c3aef87f1c4d8d9c38d2ad4e207500fdf", size = 5224565, upload-time = "2026-10-04T15:19:05.264Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/c5/86ab02a41e77a7aa962af6545a406815aeb9abaecd9f25dec34dbc336b72/pypdfium2-5.14.0-py3-none-musllinux_1_2_riscv64.whl", hash = "sha256:790e2cac1641a65912b73bd7243f45195d36f1663c85a3e1a126a8f5867c82a3", size = 4704416, upload-time = "2026-10-04T15:19:07.05Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/de/fb75013f924c5a4dde4a4a41ec13e7495f9b80022bf35dd51baa54e05910/pypdfium2-5.14.0-py3-none-musllinux_1_2_s390x.whl", hash = "sha256:09b99c8f0cb427eb17fec13c0862ed598bba34b4843df153f70fff806a2820bc", size = 5163621, upload-time = "2026-10-04T15:19:09.021Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/77/e59c814f10b533bc4565abe90ccef888ba29be45ada4627ebbf710961f0d/pypdfium2-5.14.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e70d87cb0577eab38f2106f9c9606b458930beef612a1b5f298772ed259f5ec0", size = 5121606, upload-time = "2026-10-04T15:19:10.609Z" },
+    { url = "https://files.pythonhosted.org/packages/21/25/e067396b4bdd26c19f0997bfa3422d3975a49ceec2c59668e7599f2adcba/pypdfium2-5.14.0-py3-none-pyemscripten_2026_0_wasm32.whl", hash = "sha256:c73be14076bedebd9bcaf9b062579c95c668580043bccd29eb0db502101d5716", size = 2675501, upload-time = "2026-10-04T15:19:12.588Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/0c/6c21f68a57d0c4c506b9e5f72506ba91d8dde47eef699f3fd9561f7bff0e/pypdfium2-5.14.0-py3-none-win32.whl", hash = "sha256:9fd5cc94a389d50298e4d8cb79af6b9b8e0d785606e2a937725dc6e271c9c6e6", size = 3805374, upload-time = "2026-10-04T15:19:14.357Z" },
+    { url = "https://files.pythonhosted.org/packages/00/dc/ca7874924c9cfd701ad53f89529968523790e70473e0b71e834668316148/pypdfium2-5.14.0-py3-none-win_amd64.whl", hash = "sha256:149fd5c6397b8df8bf7911a93506eff0be874f877afe7ac936cf5d37d21a6a06", size = 3947280, upload-time = "2026-10-04T15:19:16.302Z" },
+    { url = "https://files.pythonhosted.org/packages/46/ab/35f2276deeeebb781925e2647dd88a39f8ea1a910104a0dbb28218473502/pypdfium2-5.14.0-py3-none-win_arm64.whl", hash = "sha256:eb8aeca157808f323e39ea298cc6d6c8e080c192ea2efb1ca81daa0f0ff4d095", size = 3745021, upload-time = "2026-10-04T15:19:18.276Z" },
 ]
 
 [[package]]
@@ -2790,11 +4529,11 @@ wheels = [
 
 [[package]]
 name = "pytz"
-version = "2026.3.post1"
+version = "2026.6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fb/48/fb042503b6ca6cd271261dc559fd6432f7d8c713153e9ec5c591af4dfc1c/pytz-2026.3.post1.tar.gz", hash = "sha256:2211d3fcf9a797d3405cac96ac7f61d80e6a644f72a3309607282fe8a2010c5d", size = 319745, upload-time = "2026-07-25T15:12:07.385Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/b0/168030b0bfcc334cf09fa3313afdb888d892c8a0027324683d1de0ec277e/pytz-2026.6.tar.gz", hash = "sha256:3b0fc2727707663d6e517936f444fd8a8b240f1fc32f4bf7ee03274245945284", size = 318520, upload-time = "2026-10-29T09:05:47.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/7b/39c34ca613b0b198cb866466651b26b045e2009864c5183c979a3b83f383/pytz-2026.3.post1-py2.py3-none-any.whl", hash = "sha256:dd95840dd199baea12d9cc096a1d452caa6596a1c1e4b5f3dbd1541855d5e815", size = 508283, upload-time = "2026-07-25T15:12:05.782Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/25/564f3fc5b70c1398d706c51f2b1470d0ea0b1b2f96fee67877b6f5bdf3b6/pytz-2026.6-py2.py3-none-any.whl", hash = "sha256:7fed3fee8fd6bd4a2b7b75a8d56021d0624127bf69bd5691f115db929ac570b3", size = 506321, upload-time = "2026-10-29T09:05:45.14Z" },
 ]
 
 [[package]]
@@ -2987,15 +4726,15 @@ wheels = [
 
 [[package]]
 name = "rich-rst"
-version = "2.1.0"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pygments" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/d6/d0b9fafc73b65767200da027acab1db1bdb1048f4fea5ebf659df01c700e/rich_rst-2.1.0.tar.gz", hash = "sha256:f4d117b49697f338769759fa5cacf5197da4888b347b9fda2e50aef5cd8d93bd", size = 302732, upload-time = "2026-07-05T02:59:44.308Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/0e/faf7c7e36630561e3e9611730c47510cd972dd5fde8f95941ff78f76accd/rich_rst-2.2.0.tar.gz", hash = "sha256:b1e6a67f8f694a6f36035624bf73e2b1a0a4be13edaf3ba5e654d9758b61073a", size = 326270, upload-time = "2026-09-27T19:12:42.163Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/68/1fc93dd759605b5d00fc98b50200739e41ed32bd22d6ba35ca6c3932371b/rich_rst-2.1.0-py3-none-any.whl", hash = "sha256:7ecd1343ee12c879d0e7ae74c3eb6d263b023d2929c6d114212eb1fd91057255", size = 272987, upload-time = "2026-07-05T02:59:42.792Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/4e/716b42bf066e180c1235783b46f095a5d871d05dca7006d2295aac29c491/rich_rst-2.2.0-py3-none-any.whl", hash = "sha256:1ea1c43813dc4a8d86475fce27ffb74e0ada3d4656c9f8130ba2a59868055fe9", size = 279274, upload-time = "2026-09-27T19:12:40.548Z" },
 ]
 
 [[package]]
@@ -3169,11 +4908,11 @@ wheels = [
 
 [[package]]
 name = "slack-sdk"
-version = "3.43.0"
+version = "3.44.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/13/75/a4964eb771a0c74d79ee7a3bee6fb5d9718909dd1b675e80d62a6a0ad90a/slack_sdk-3.43.0.tar.gz", hash = "sha256:0553152e46c4259eb69f7464cdadc35ba4802ca10f9f5a849c92cf03d6c2ba07", size = 252769, upload-time = "2026-06-30T18:04:41.59Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/4e/371068dd7281139307e60cd18553b96b9c8c391a4c3040617192713a3cc4/slack_sdk-3.44.1.tar.gz", hash = "sha256:ca19505423789fa2a3189ff486f989f02e49289f008d0a5813df7255b3fb93ea", size = 256661, upload-time = "2026-09-03T14:21:13.879Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/55/42141b8338d46323d5b3c6095201b044c670c20f898643b322ea9b1543a1/slack_sdk-3.43.0-py2.py3-none-any.whl", hash = "sha256:4b6557c65577fc172f685af218b811f9f3b4909e24cddd839ada09565f10c585", size = 315866, upload-time = "2026-06-30T18:04:39.636Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/fc/67352b742fc6fa520a550581b0284f5757e4e31a32327c2a00276747fd30/slack_sdk-3.44.1-py2.py3-none-any.whl", hash = "sha256:d6f20a0fbe3fecf9cac955c99d686301b48a645b7045472c3a0cdd186d7c42b2", size = 319865, upload-time = "2026-09-03T14:21:12.405Z" },
 ]
 
 [[package]]
@@ -3214,27 +4953,27 @@ wheels = [
 
 [[package]]
 name = "sse-starlette"
-version = "3.4.8"
+version = "3.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/00/b42a44342a054d58cb1115d7c8aa9cb4290dd9442f9c1b91a4b8173dba22/sse_starlette-3.4.8.tar.gz", hash = "sha256:ed89ffbb75cbf78a5fe2f2109cd584792ee7f9dfac96f791db546df8f15f3f9c", size = 32548, upload-time = "2026-08-05T11:19:49.982Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/7f/3b8ec4f27833f7b8c270a3ef960b6d435e1065439847bc0fcd1e58ae898b/sse_starlette-3.6.0.tar.gz", hash = "sha256:623151d6c20dc0eebf1b3379c27faae91fff883bac7ab6665f16f46440a88b3a", size = 41174, upload-time = "2026-10-25T20:31:59.372Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/3a/764912c58293d95b6dcdf4cc255f9d10de310580ced547b082eb9d72018c/sse_starlette-3.4.8-py3-none-any.whl", hash = "sha256:6e82314c786709a3cd9520f2285cf9fff90e181e598e8a357b0cf80f66afba0d", size = 16516, upload-time = "2026-08-05T11:19:48.748Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/49/35053078cdfcf639237e8bee6dc6f34f1b3a3cc8d01800a1e213e1660ff6/sse_starlette-3.6.0-py3-none-any.whl", hash = "sha256:e4dfa4d237d2712cb2b4d4918eda9b457cd6b44bbecdc838af75de836565bafd", size = 17985, upload-time = "2026-10-25T20:31:58.134Z" },
 ]
 
 [[package]]
 name = "starlette"
-version = "1.6.0"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/b4/205b0d5241d934e8add0c38aa924c4f9fb7330834ff11e5444db964ec3f9/starlette-1.6.0.tar.gz", hash = "sha256:d4e3ac5e546444960c710297a3c9fc3f7ebae1b7e963f3d36173b49da535be9b", size = 2716969, upload-time = "2026-08-08T18:27:57.512Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/bb/3d8757f21e9a53d9035c9eb039a777047139a16bfdbedfc7a58241c3d914/starlette-1.10.0.tar.gz", hash = "sha256:b8399098d4c1e3522734f7235dc79b1fc967f96cf139c81e0fa30479e0685f9b", size = 2734356, upload-time = "2026-10-24T15:04:12.342Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl", hash = "sha256:a86dd39d14bb45f85a3d18525215a9ef0cfd1f192ac793220e72598c90335f0c", size = 75969, upload-time = "2026-08-08T18:27:56.196Z" },
+    { url = "https://files.pythonhosted.org/packages/88/2e/947cfe02def9371c07cd5bf5b6b61c829e9aecb9904db02a66cfafbc1eec/starlette-1.10.0-py3-none-any.whl", hash = "sha256:478c0ab3b4ced6e82719849c118fa406f0278a3499c1a898cd15cd31bdc38ce4", size = 80571, upload-time = "2026-10-24T15:04:10.371Z" },
 ]
 
 [[package]]
@@ -3330,11 +5069,11 @@ wheels = [
 
 [[package]]
 name = "tomlkit"
-version = "0.15.1"
+version = "0.15.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/96/e07752635b98536177fa1f37671c8f3cdde2e724c6bcf6034b2cfb571565/tomlkit-0.15.1.tar.gz", hash = "sha256:e25bbf38843005246210a12982776f27f99cb9be67160e14434d0c0d21ee1e97", size = 180129, upload-time = "2026-07-17T01:48:04.562Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/72/fc01563df95c189a9f65850096bdc205bc2fe37da6c740cd64afaf18d07e/tomlkit-0.15.2.tar.gz", hash = "sha256:83e32755ba1d20d9340bd069ee97e9f6232ba2346b63ffcba425de01f7e327a6", size = 190522, upload-time = "2026-10-16T04:07:08.166Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/bc/8c13eb66537dce1d2bd3a57132902f38d0e7f5bb46fa9f4daed9fe9d76ee/tomlkit-0.15.1-py3-none-any.whl", hash = "sha256:177a05aece5a8ca5266fd3c448abb47b8d352f09d477d3ca8332db4d89b24304", size = 49449, upload-time = "2026-07-17T01:48:05.728Z" },
+    { url = "https://files.pythonhosted.org/packages/da/46/7d84138a60a8bd796825b2d38ebe92d0d16501ca57d501b7c5d677401bbc/tomlkit-0.15.2-py3-none-any.whl", hash = "sha256:05562412163a3037b94497385fb7f9204c637bc605af7a48199e41cf2272f437", size = 52225, upload-time = "2026-10-16T04:07:09.216Z" },
 ]
 
 [[package]]
@@ -3347,15 +5086,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/21/3b/6c24bec5be5e743ffd99576daa5cc077722fc7d5bbc00bd133fa0c698dc6/tqdm-4.70.0.tar.gz", hash = "sha256:55b0b0dbd97462d06ebee91e4dac24ed4d4702be82b24f07e6c1d27e08cea220", size = 795438, upload-time = "2026-07-27T11:33:15.271Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/1c/01bfd571a64e7f270e6bab5e33777debe0edc56759233ce84f27dec92d14/tqdm-4.70.0-py3-none-any.whl", hash = "sha256:7f585706bfddbdebf89daac705b2dfcc16890130727d3197ca62c732b4310953", size = 80184, upload-time = "2026-07-27T11:33:13.167Z" },
-]
-
-[[package]]
-name = "trove-classifiers"
-version = "2026.6.1.19"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c2/e3/7ca82ee24c82d344584abd5b8637b3bd056f2900226e8d82fc22f1184b92/trove_classifiers-2026.6.1.19.tar.gz", hash = "sha256:c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745", size = 17059, upload-time = "2026-06-01T19:41:34.649Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/a4/81502f486f01db95bc8320646a8a12511f5e556cb63d5e224d91816605c4/trove_classifiers-2026.6.1.19-py3-none-any.whl", hash = "sha256:ab4c4ec93cc4a4e7815fa759906e05e6bb3f2fbd92ea0f897288c6a43efd15b3", size = 14211, upload-time = "2026-06-01T19:41:33.434Z" },
 ]
 
 [[package]]
@@ -3488,11 +5218,11 @@ wheels = [
 
 [[package]]
 name = "uncalled-for"
-version = "0.4.0"
+version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6b/5a/92ce0b3ea5481915f55da994c2c2c5f7a3c09949afde196ee89f8ab961aa/uncalled_for-0.4.0.tar.gz", hash = "sha256:335b95bd2422332ec210d518f314a16e4c640921c39fc8bf2ad095bd3538f4af", size = 56979, upload-time = "2026-08-10T14:51:46.247Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6c/54/4651e4c5fe84300f8e03c0390aaad41bcb9c7b81d7783542a3ee690b40ee/uncalled_for-0.4.1.tar.gz", hash = "sha256:6412b19d1b1e7d431981fee01f8b47be7802f48328a48cbe9603acee757ec553", size = 56971, upload-time = "2026-10-09T12:54:34.941Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/40/97cec87c077eb3291fc7905e6633e08b7ca593c57d30238444bcb6bb3d53/uncalled_for-0.4.0-py3-none-any.whl", hash = "sha256:16c4bb3337532e4bd5569adc192285976f3ad5305402256d34c67a12b5c968bd", size = 15502, upload-time = "2026-08-10T14:51:45.068Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/a6/ba763e3812e572de7291676c3a41adfac1ef1209a6acda6bae055970f127/uncalled_for-0.4.1-py3-none-any.whl", hash = "sha256:b611b38879d9fe5088297e7bb28f2ddd12d2d73dad933d93da107fb63eb4058e", size = 14889, upload-time = "2026-10-09T12:54:33.596Z" },
 ]
 
 [[package]]

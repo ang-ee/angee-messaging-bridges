@@ -1,0 +1,20 @@
+build-system = { requires = ["hatch-angee>=1,<2"], build-backend = "hatch_angee" }
+
+[project]
+name = "angee-messaging-integrate-telegram"
+version = "1.0.0"
+description = "Telegram sync — pairs a user account by QR code and pulls chats into messaging"
+keywords = ["telegram", "chat", "sync"]
+dependencies = ["angee-messaging>=3,<4", "angee-integrate>=3,<4", "angee-parties>=3,<4", "angee-workflows-integrate>=3,<4", "angee-web>=3,<4", "cryptg>=0.6.0", "telethon>=1.44"]
+
+[project.entry-points]
+"angee.addons" = {"angee.messaging_integrate_telegram" = "angee.messaging_integrate_telegram"}
+
+[tool.angee]
+
+[[tool.angee.resources.master]]
+path = "master/010_integrate.vendor.yaml"
+adopt = "slug"
+
+[tool.angee.platform]
+category = "Integration"

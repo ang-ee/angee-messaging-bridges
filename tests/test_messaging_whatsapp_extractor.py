@@ -6,13 +6,14 @@ import hashlib
 import sqlite3
 import zipfile
 from contextlib import nullcontext
+from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
+from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.messaging import backup_ingest
@@ -136,10 +137,12 @@ def test_whatsapp_addon_registers_extractor_and_depends_on_bridge() -> None:
     """WhatsApp contributes its vendor extractor through the bridge's settings seam."""
 
     config = apps.get_app_config("messaging_integrate_whatsapp")
-    contract = addon_manifest(config)
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = next(iter(providers)).dist
 
     assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
+    assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
     assert WHATSAPP_SETTINGS[
         "ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES.whatsapp_iphone_backup"
     ] == "angee.messaging_integrate_whatsapp.extractor.WhatsAppIphoneBackupExtractor"

@@ -4,23 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from angee.utils.autoconfig import AutoConfig
-from angee.conf import prepend_import_paths
 from django.apps import AppConfig
-
-from angee import integrate
-
-ANGEE_ADDON_DIRS = (
-    Path(__file__).resolve().parent.parent / "addons",
-    Path(integrate.__file__).resolve().parents[2],
-)
-prepend_import_paths(ANGEE_ADDON_DIRS)
-
-
-class BareAngeeConfig(AppConfig):
-    """Register source-only tests without importing a prebuilt application."""
-
-    name = "angee"
 
 
 class BareGraphQLConfig(AppConfig):
@@ -36,9 +20,10 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.postgres",
+    "axes",
+    "django_celery_beat",
     "rebac",
     "simple_history",
-    "tests.settings.BareAngeeConfig",
     "angee.base",
     "angee.provenance",
     "tests.settings.BareGraphQLConfig",
@@ -48,7 +33,6 @@ INSTALLED_APPS = [
     "tests.iam_app.TestIAMConfig",
     "angee.integrate",
     "angee.integrate_vcs",
-    "angee.integrate_iphone",
     "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",
@@ -83,7 +67,6 @@ INSTALLED_APPS = [
     "angee.integrate.testing",
     "angee.workflows.testing",
 ]
-AutoConfig.apply_installed(globals(), environment=False)
 CELERY_BROKER_URL = "memory://"
 
 # Checkout-local so parallel git worktrees do not share one SQLite file.
@@ -109,7 +92,6 @@ DATABASES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "iam.User"
 USE_TZ = True
-COMPOSE_RUNTIME_MODULE = "tests.runtime"
 ANGEE_STORAGE_DEFAULT_DRIVE = "assets"
 ANGEE_STORAGE_PROXY_UPLOAD_MAX_BYTES = 64 * 1024 * 1024
 ANGEE_STORAGE_DRAFT_TTL_HOURS = 24
@@ -124,3 +106,83 @@ STRAWBERRY_DJANGO = {
     "DEFAULT_PK_FIELD_NAME": "sqid",
     "MAP_AUTO_ID_AS_GLOBAL_ID": False,
 }
+
+# Ordinary Django inputs for this bare source-model host. Production activation
+# and composed-host tests use native configuration/receipts in another process.
+BASE_DIR = Path(__file__).resolve().parent.parent
+ANGEE_CHANGESET_MODEL = "provenance.Changeset"
+ANGEE_GRAPHQL_WRITE_BACKEND_ADAPTER = "angee.provenance.graphql.write_backend"
+SIMPLE_HISTORY_HISTORY_CHANGE_REASON_USE_TEXT_FIELD = True
+REBAC_BACKEND = "local"
+REBAC_LOCAL_BACKEND_STORAGE = "registry"
+REBAC_STRICT_MODE = True
+REBAC_FIELD_READ_MODE = "redact"
+REBAC_ALLOW_SUDO = True
+REBAC_SUPERUSER_BYPASS = False
+REBAC_LINT_BARE_PREFETCH = False
+ANGEE_MERGE_GUARDS = ["angee.resources.managers.seeded_record_merge_guard"]
+ANGEE_TIMELINE_KINDS = ["angee.provenance.timeline.timeline_kinds"]
+STATIC_URL = "/static/"
+
+# The fixture roster owns these explicit implementation selections.
+ANGEE_CHANNEL_BACKEND_CLASSES = {
+    "email": "angee.messaging.email.AnymailEmailChannelBackend",
+    "manual": "angee.messaging.backends.ManualChannelBackend",
+    "webform": "angee.messaging.backends.WebformChannelBackend",
+    "imap": "angee.messaging_integrate_imap.backend.ImapChannelBackend",
+    "feed": "angee.posts.backends.FeedChannelBackend",
+    "whatsapp": "angee.messaging_integrate_whatsapp.backend.WhatsAppChannelBackend",
+    "imessage": "angee.messaging_integrate_imessage.backend.ImessageChannelBackend",
+    "telegram": "angee.messaging_integrate_telegram.backend.TelegramChannelBackend",
+    "facebook": "angee.messaging_integrate_facebook.backend.FacebookChannelBackend",
+    "signal": "angee.messaging_integrate_signal.backend.SignalChannelBackend",
+    "matrix": "angee.messaging_integrate_matrix.backend.MatrixChannelBackend",
+    "discord": "angee.messaging_integrate_discord.backend.DiscordChannelBackend",
+}
+ANGEE_DIRECTORY_BACKEND_CLASSES = {"manual": "angee.parties.backends.ManualDirectoryBackend"}
+ANGEE_KNOWLEDGE_RETRIEVAL_CLASSES = {"lexical": "angee.knowledge.retrieval.LexicalRetrievalBackend"}
+ANGEE_OAUTH_PROVIDER_TYPE_CLASSES = {
+    "generic_oauth2": "angee.integrate.oauth.providers.GenericOAuth2",
+    "google_youtube": "angee.posts_integrate_youtube.oauth.GoogleYouTube",
+    "meta_facebook": "angee.posts_integrate_facebook.oauth.MetaFacebook",
+}
+ANGEE_POSTS_FEED_BACKEND_CLASSES = {
+    "manual": "angee.posts.backends.ManualFeedBackend",
+    "youtube": "angee.posts_integrate_youtube.backend.YouTubeFeedBackend",
+    "facebook": "angee.posts_integrate_facebook.backend.FacebookFeedBackend",
+}
+ANGEE_RESOURCE_ENTRY_KIND_CLASSES = {
+    "workflows.workflowextension": "angee.workflows.resources.WorkflowExtensionResourceKind"
+}
+ANGEE_RESOURCE_SOURCE_CLASSES = {
+    "path": "angee.resources.sources.PathSource",
+    "url": "angee.integrate.resource_source.UrlSource",
+}
+ANGEE_STORAGE_BACKEND_CLASSES = {"local": "angee.storage.backends.LocalBackend"}
+ANGEE_VCS_BACKEND_CLASSES = {
+    "local": "angee.integrate_vcs.backend.LocalVCSBackend",
+    "stub": "tests.conftest.StubVCSBackend",
+}
+ANGEE_WORKFLOW_ARCHIVE_EXTRACTOR_CLASSES = {
+    "whatsapp_iphone_backup": "angee.messaging_integrate_whatsapp.extractor.WhatsAppIphoneBackupExtractor",
+    "whatsapp_iphone_mount": "angee.messaging_integrate_whatsapp.mount_extractor.WhatsAppPersonalMountExtractor",
+    "whatsapp_smb_iphone_mount": "angee.messaging_integrate_whatsapp.mount_extractor.WhatsAppBusinessMountExtractor",
+    "imessage_iphone_backup": "angee.messaging_integrate_imessage.extractor.ImessageIphoneBackupExtractor",
+    "imessage_iphone_mount": "angee.messaging_integrate_imessage.mount_extractor.ImessageMountBackupExtractor",
+    "telegram_takeout": "angee.messaging_integrate_telegram.extractor.TelegramTakeoutExtractor",
+    "facebook_takeout": "angee.messaging_integrate_facebook.extractor.FacebookTakeoutExtractor",
+    "facebook_takeout_mount": "angee.messaging_integrate_facebook.mount_extractor.FacebookMountTakeoutExtractor",
+}
+ANGEE_WORKFLOW_STEP_CLASSES = {
+    "ask_decision": "angee.workflows.decision_steps.AskDecision",
+    "map": "angee.workflows.maps.Map",
+    "await_run": "angee.workflows.awaits.AwaitRun",
+    "integrate_stream": "angee.workflows_integrate.steps.StreamStage",
+    "integrate_rescan": "angee.workflows_integrate.steps.Rescan",
+    "integrate_conflicts": "angee.workflows_integrate.steps.ConflictReview",
+    "archive_probe": "angee.workflows_integrate.archive_steps.ArchiveProbe",
+    "archive_gate": "angee.workflows_integrate.archive_steps.ArchiveGate",
+    "archive_execute": "angee.workflows_integrate.archive_steps.ArchiveExecute",
+    "archive_summary": "angee.workflows_integrate.archive_steps.ArchiveSummary",
+}
+ANGEE_WORKFLOW_TRIGGER_SOURCE_CLASSES = {"record_changed": "angee.workflows.triggers.RecordChanged"}

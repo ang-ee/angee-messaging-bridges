@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import zipfile
+from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
+from packaging.requirements import Requirement
 
 from angee.messaging_integrate_facebook import extractor as extractor_module
 from angee.messaging_integrate_facebook.autoconfig import SETTINGS
@@ -76,12 +77,15 @@ def test_execute_stages_and_delegates_to_the_one_facade(
 
 
 def test_addon_registers_backend_and_both_extractors() -> None:
-    """Manifest dependencies and autoconfig expose the complete addon shape."""
+    """Native distribution dependencies and autoconfig expose the addon shape."""
 
-    contract = addon_manifest(apps.get_app_config("messaging_integrate_facebook"))
+    config = apps.get_app_config("messaging_integrate_facebook")
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = next(iter(providers)).dist
 
     assert contract is not None
-    assert "angee.messaging_integrate_meta" in contract.depends_on
+    assert "angee-messaging-integrate-meta" in {Requirement(raw).name for raw in contract.requires or ()}
     assert SETTINGS["ANGEE_CHANNEL_BACKEND_CLASSES.facebook"].endswith(
         ".FacebookChannelBackend"
     )
