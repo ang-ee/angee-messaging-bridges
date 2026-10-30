@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import tomllib
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -12,7 +11,6 @@ from zoneinfo import ZoneInfo
 
 import httpx2
 import pytest
-import yaml
 from django.apps import apps
 from django.conf import settings
 from django.db import connection, transaction
@@ -43,13 +41,12 @@ from angee.posts_integrate_youtube.cursors import (
 )
 from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
+from angee.resources.entries import ResourceEntry, resource_manifest_for
 from tests.conftest import claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
 AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
 """A fixed instant for synthetic publication, watermark and quota assertions."""
-ADDON = Path(__file__).resolve().parents[1] / "addons/angee/posts_integrate_youtube"
-"""The addon-owned package metadata and adopted OAuth client resource."""
 
 
 
@@ -292,11 +289,13 @@ def activity(wire):
 
 
 def test_youtube_preset_seed_and_read_only_discovery_field(feed):
-    metadata = tomllib.loads((ADDON / "pyproject.toml").read_text())
-    resource = metadata["tool"]["angee"]["resources"]["install"][0]
-    [client] = yaml.safe_load((ADDON / resource["path"]).read_text())
-    assert resource["adopt"] == ["slug", "environment"]
-    assert client["xref"] == "oauth_youtube" and client["slug"] == YouTubeFeedBackend.oauth_client
+    config = apps.get_app_config("posts_integrate_youtube")
+    resource = resource_manifest_for(config)["install"][0]
+    entry = ResourceEntry.from_declaration(config, "install", resource)
+    [group] = entry.read_groups()
+    [client] = group.dataset.dict
+    assert entry.adopt == ("slug", "environment")
+    assert client["_xref"] == "oauth_youtube" and client["slug"] == YouTubeFeedBackend.oauth_client
     assert client["provider_type"] == GoogleYouTube.key
     assert "client_id" not in client and "client_secret" not in client
     assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES[GoogleYouTube.key].endswith(".GoogleYouTube")
