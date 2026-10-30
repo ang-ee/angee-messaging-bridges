@@ -15,7 +15,6 @@ from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
-from angee.base.testing.packages import write_addon_distribution
 from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -23,6 +22,7 @@ from django.test import RequestFactory
 from django.utils import timezone
 from rebac import actor_context, system_context
 
+from angee.base.testing.packages import write_addon_distribution
 from angee.decisions.testing import models as decisions_models  # noqa: F401 -- register shared FK targets
 from angee.graphql.actions import ActionSelectionInput
 from angee.graphql.ids import PublicID

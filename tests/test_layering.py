@@ -7,7 +7,7 @@ import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BRIDGE_PACKAGES_ROOT = ROOT / "addons" / "angee"
+BRIDGE_PACKAGES_ROOT = ROOT / "src" / "angee"
 ANGEE_SPEC = importlib.util.find_spec("angee")
 assert ANGEE_SPEC is not None and ANGEE_SPEC.submodule_search_locations
 ANGEE_PACKAGE_ROOTS = tuple(Path(location).resolve() for location in ANGEE_SPEC.submodule_search_locations)

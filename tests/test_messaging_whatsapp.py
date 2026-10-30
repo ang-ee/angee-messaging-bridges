@@ -193,7 +193,6 @@ import time  # noqa: E402
 from typing import Any, ClassVar, cast  # noqa: E402
 
 import pytest  # noqa: E402
-from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from rebac import system_context  # noqa: E402
 
@@ -203,6 +202,7 @@ from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
+from angee.jobs.locks import task_lock_is_held  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
 from tests.conftest import make_integration  # noqa: E402
 from tests.messaging_fixtures import Message, Thread  # noqa: E402
