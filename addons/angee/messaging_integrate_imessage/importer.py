@@ -94,7 +94,8 @@ def import_backup_per_line(
         for line_key, raw_variants in sorted(
             variants.items(), key=lambda item: (item[0] is None, item[0] or "")
         ):
-            channel = get_or_create_imessage_channel(owner, name=line_channel_name(line_key))
+            name = line_channel_name(line_key)
+            channel = None if dry_run else get_or_create_imessage_channel(owner, name=name)
             watermarks = (
                 thread_watermarks(channel, reason=_WATERMARK_REASON) if resume and not dry_run else {}
             )
@@ -104,7 +105,7 @@ def import_backup_per_line(
                 watermarks=watermarks,
                 caller_ids=tuple(raw_variants),
             )
-            results[str(channel.sqid or channel.display_name)] = batch_ingest(
+            results[name if dry_run else str(channel.sqid or channel.display_name)] = batch_ingest(
                 channel,
                 messages,
                 parsed_message,

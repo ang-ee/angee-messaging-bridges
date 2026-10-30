@@ -30,6 +30,7 @@ class _ExportChatKind:
     is_private: bool = False
     is_group: bool = False
     is_channel: bool = False
+    is_public: bool = False
 
 
 _EXPORT_CHAT_KINDS = {
@@ -39,9 +40,9 @@ _EXPORT_CHAT_KINDS = {
     "verification_codes": _ExportChatKind("user", is_private=True),
     "private_group": _ExportChatKind("chat", is_group=True),
     "private_supergroup": _ExportChatKind("channel", is_group=True, is_channel=True),
-    "public_supergroup": _ExportChatKind("channel", is_group=True, is_channel=True),
+    "public_supergroup": _ExportChatKind("channel", is_group=True, is_channel=True, is_public=True),
     "private_channel": _ExportChatKind("channel", is_channel=True),
-    "public_channel": _ExportChatKind("channel", is_channel=True),
+    "public_channel": _ExportChatKind("channel", is_channel=True, is_public=True),
 }
 
 
@@ -127,6 +128,7 @@ def parsed_message(
     is_private: bool,
     is_group: bool,
     is_channel: bool,
+    is_public: bool | None = None,
 ) -> ParsedMessage:
     """Map one Telethon-shaped message directly onto the neutral ingest seam."""
 
@@ -161,9 +163,11 @@ def parsed_message(
                 is_group=is_group,
                 is_channel=is_channel,
             ),
-            # A broadcast channel is a public feed, not a private conversation —
-            # the same adapter-level vocabulary mapping as thread_modality.
-            visibility="public" if is_channel else "",
+            # A live channel's public username is an audience fact; channel peer
+            # transport alone also includes private channels and megagroups.
+            visibility="public" if (is_public if is_public is not None else bool(
+                is_channel and getattr(chat, "username", None)
+            )) else "",
             title=_display_name(chat),
         ),
         body=body_part(text),
@@ -216,6 +220,7 @@ def parsed_export_message(
         is_private=chat_kind.is_private,
         is_group=chat_kind.is_group,
         is_channel=chat_kind.is_channel,
+        is_public=chat_kind.is_public,
     )
     if not media:
         return parsed

@@ -235,3 +235,20 @@ def _write_chunk(
         ),
         encoding="utf-8",
     )
+
+
+def test_resume_replays_equal_timestamp_occurrences_without_changing_identity(tmp_path):
+    root = tmp_path / "your_facebook_activity/messages/inbox/chat"
+    root.mkdir(parents=True)
+    path = root / "message_1.json"
+    _write_chunk(path, timestamp_ms=1000, content="same", media=[])
+    data = json.loads(path.read_text())
+    data["messages"] *= 3
+    path.write_text(json.dumps(data))
+    export = MetaExport(tmp_path, activity_directory="your_facebook_activity", root_prefix="facebook-")
+    complete = list(export.message_records(folders=("inbox",), counter=ContentKeyCounter()))
+    first = list(export.message_records(folders=("inbox",), counter=ContentKeyCounter(), limit=1))
+    resumed = list(export.message_records(folders=("inbox",), counter=ContentKeyCounter(),
+                                         watermarks={"chat": first[0].sent_at}))
+    assert len(first) == 1 and len(resumed) == 3
+    assert [row.external_id for row in resumed] == [row.external_id for row in complete]

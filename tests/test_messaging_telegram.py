@@ -8,14 +8,15 @@ import queue
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
+from importlib import metadata
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
-from angee.addons import addon_manifest
 from django.apps import apps
 from django.core.exceptions import ValidationError
+from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
@@ -349,9 +350,12 @@ def test_create_telegram_channel_rejects_a_credential_of_another_kind(
 def test_telegram_backend_registration_and_pairing_projection(telegram_tables: Any) -> None:
     """Autoconfig registers a live backend whose projection prefers saved profile labels."""
 
-    contract = addon_manifest(apps.get_app_config("messaging_integrate_telegram"))
+    config = apps.get_app_config("messaging_integrate_telegram")
+    providers = metadata.entry_points(group="angee.addons", name=config.name)
+    assert len(providers) == 1
+    contract = next(iter(providers)).dist
     assert contract is not None
-    assert "angee.workflows_integrate" in contract.depends_on
+    assert "angee-workflows-integrate" in {Requirement(raw).name for raw in contract.requires or ()}
     autoconfig = _telegram_module("autoconfig")
     backend_module = _telegram_module("backend")
     assert autoconfig.SETTINGS == {

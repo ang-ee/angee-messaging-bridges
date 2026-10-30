@@ -62,6 +62,8 @@ class Command(BaseCommand):
     def _channel(self, options: dict[str, Any]) -> Any:
         """Resolve exactly one existing or idempotently created Facebook channel."""
 
+        if options["dry_run"] and options["create"]:
+            raise CommandError("--dry-run requires an existing --channel; it never creates a target.")
         if bool(options["channel"]) == bool(options["create"]):
             raise CommandError("Pass exactly one of --channel or --create.")
         if options["channel"]:

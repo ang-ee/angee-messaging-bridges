@@ -294,7 +294,7 @@ class MetaExport:
                     content=message_content_projection(data),
                 )
                 watermark = (watermarks or {}).get(thread_key)
-                if watermark is not None and sent_at <= watermark:
+                if watermark is not None and sent_at < watermark:
                     continue
                 yield MetaMessageRecord(
                     data=data,
