@@ -5,7 +5,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from django_compose.addons import enabled_apps, installed_addons
+from django_compose.components import enabled_apps, installed_components
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
@@ -35,7 +35,7 @@ def test_fixture_addons_rediscover_native_requirement_edges() -> None:
     """The shared writer feeds native closure and capability readers immediately."""
 
     first = make_addon(schemas={"native_fixture": {}})
-    assert first.name in installed_addons("angee.addons").providers
+    assert first.name in installed_components("angee.addons").providers
     second = make_addon(depends_on=(first.name,))
     closure = enabled_apps((second.name,), group="angee.addons")
     assert closure.entries == (first.name, second.name)
