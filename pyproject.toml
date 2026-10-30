@@ -129,7 +129,6 @@ arp-rating = {path = "../angee-arp/addons/arp/rating", editable = true}
 arp-sales = {path = "../angee-arp/addons/arp/sales", editable = true}
 example-notes = {path = "../angee/examples/addons/example/notes", editable = true}
 example-theme = {path = "../angee/examples/addons/example/theme", editable = true}
-hatch-angee = {path = "../angee/tools/hatch-angee"}
 phrogg-ap = {path = "../angee-phrogg/addons/phrogg/ap", editable = true}
 phrogg-painkiller = {path = "../angee-phrogg/addons/phrogg/painkiller", editable = true}
 phrogg-theme-phrogg = {path = "../angee-phrogg/addons/phrogg/theme_phrogg", editable = true}

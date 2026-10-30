@@ -1,4 +1,4 @@
-build-system = { requires = ["hatch-angee>=1,<2"], build-backend = "hatch_angee" }
+build-system = { requires = ["hatch-angee>=1.1,<2"], build-backend = "hatch_angee" }
 
 [project]
 name = "angee-posts-integrate-youtube"
@@ -18,6 +18,3 @@ adopt = ["slug", "environment"]
 
 [tool.angee.platform]
 category = "Integration"
-
-[tool.hatch.metadata]
-allow-direct-references = true
