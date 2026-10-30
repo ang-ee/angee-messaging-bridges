@@ -6,9 +6,7 @@ version = "1.0.0"
 description = "Meta vendor catalogue and reader for Facebook and Instagram Download Your Information exports"
 keywords = ["meta", "facebook", "instagram", "takeout", "import"]
 dependencies = ["angee-messaging>=3,<4"]
-
-[project.entry-points]
-"angee.addons" = {"angee.messaging_integrate_meta" = "angee.messaging_integrate_meta"}
+dynamic = ["entry-points"]
 
 [tool.angee]
 
