@@ -63,7 +63,7 @@ def signal_tables(
     del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     settings.SIGNAL_CLI_BIN = "/opt/angee/bin/signal-cli"
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda *args, **kwargs: None)
 
 
 def _inbound(
@@ -247,7 +247,7 @@ def test_create_signal_channel_resets_newest_unfinished_channel(
 
     connect = _signal_module("connect")
     monkeypatch.setattr("angee.integrate.live.task_locks_are_cross_process", lambda: True)
-    monkeypatch.setattr("angee.messaging.connect.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.base.locks.task_locks_are_cross_process", lambda: True)
     admin = _platform_admin("msg-signal-retry-admin")
     with system_context(reason="test.messaging.signal.retry.seed"):
         Vendor.objects.create(slug="signal", display_name="Signal")
@@ -1002,3 +1002,27 @@ class _BareBridge:
 
     def __init__(self, _store: Path) -> None:
         self.subscription_state = {}
+
+
+def test_signal_failed_reap_retains_pid_identity(tmp_path):
+    """A failed bounded kill must leave the next owner enough identity to reap."""
+    import io
+    import subprocess
+    from types import SimpleNamespace
+
+    session_module = _signal_module("session")
+    client = object.__new__(session_module.SignalCliClient)
+    client.pidfile = tmp_path / "signal-cli.pid"
+    client.pidfile.write_text("12345\n")
+    client.stdin = io.BytesIO()
+    client.stdout = io.BytesIO()
+
+    def still_alive(*, timeout):
+        raise subprocess.TimeoutExpired("signal-cli", timeout)
+
+    client.process = SimpleNamespace(
+        pid=12345, poll=lambda: None, terminate=lambda: None, kill=lambda: None, wait=still_alive,
+    )
+    assert client.shutdown(0) is False
+    assert client.pidfile.read_text() == "12345\n"
+    assert client.stdin.closed and client.stdout.closed

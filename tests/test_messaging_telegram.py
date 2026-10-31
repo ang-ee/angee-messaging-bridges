@@ -74,7 +74,7 @@ def telegram_tables(
 
     del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda *args, **kwargs: None)
 
 
 def _message(**fields: Any) -> SimpleNamespace:

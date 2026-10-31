@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from rebac import system_context
 
-from angee.messaging_integrate_facebook.connect import (
-    confirmed_facebook_channel,
-    get_or_create_facebook_channel,
-)
+from angee.messaging_integrate_facebook.backend import FacebookChannelBackend
 from angee.messaging_integrate_facebook.importer import import_archive
 
 
@@ -68,7 +66,9 @@ class Command(BaseCommand):
             raise CommandError("Pass exactly one of --channel or --create.")
         if options["channel"]:
             try:
-                return confirmed_facebook_channel(options["channel"])
+                return apps.get_model("messaging", "Channel").objects.require_backend_target(
+                    options["channel"], backend_class=FacebookChannelBackend.key,
+                )
             except ValidationError as error:
                 raise CommandError(str(error)) from error
         if not options["owner"]:
@@ -77,4 +77,6 @@ class Command(BaseCommand):
             owner = get_user_model()._base_manager.filter(username=options["owner"]).first()
         if owner is None:
             raise CommandError(f"No user {options['owner']!r}.")
-        return get_or_create_facebook_channel(owner, name=options["create"])
+        return apps.get_model("messaging", "Channel").objects.named_import_channel(
+            owner, name=options["create"], backend_class=FacebookChannelBackend.key,
+        )

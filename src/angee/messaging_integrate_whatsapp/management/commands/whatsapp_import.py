@@ -6,6 +6,7 @@ from typing import Any
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.utils.dateparse import parse_datetime
 from rebac import system_context
@@ -110,11 +111,12 @@ class Command(BaseCommand):
             raise CommandError("Pass either --channel or --create, not both.")
         if options["channel"]:
             model = apps.get_model("messaging", "Channel")
-            with system_context(reason="whatsapp_import.resolve_channel"):
-                channel = model.objects.filter(sqid=options["channel"]).first()
-            if channel is None or channel.backend_class != WhatsAppChannelBackend.key:
-                raise CommandError(f"No WhatsApp channel {options['channel']!r}.")
-            return channel
+            try:
+                return model.objects.require_backend_target(
+                    options["channel"], backend_class=WhatsAppChannelBackend.key,
+                )
+            except ValidationError as error:
+                raise CommandError(error.messages[0]) from error
         if options["create"]:
             if not options["owner"]:
                 raise CommandError("--create needs --owner <username>.")

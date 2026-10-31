@@ -259,9 +259,9 @@ class WhatsAppSession(LiveChannelSession):
     def _lid_to_phone(self, jid: str) -> str:
         """Return the phone-number JID a hidden LID maps to, or ``""``."""
 
-        resolver = getattr(self.client, "get_pn_from_lid", None)
+        resolver = self.client.get_pn_from_lid
         proto = self._jid_proto(jid)
-        if resolver is None or proto is None:
+        if proto is None:
             return ""
         try:
             return _jid_str(resolver(proto))
@@ -272,9 +272,9 @@ class WhatsAppSession(LiveChannelSession):
     def _contact_name(self, jid: str) -> str:
         """Return a contact-store display name for a JID, or ``""``."""
 
-        getter = getattr(getattr(self.client, "contact", None), "get_contact", None)
+        getter = self.client.contact.get_contact
         proto = self._jid_proto(jid)
-        if getter is None or proto is None:
+        if proto is None:
             return ""
         try:
             info = getter(proto)
