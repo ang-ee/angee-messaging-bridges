@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from angee.integrate.credentials import CredentialKind
 from angee.messaging.backends import LiveChannelBackend, ParsedMessage
 from angee.messaging_integrate_discord.constants import SESSION_QUEUE
 
@@ -30,13 +33,20 @@ class DiscordChannelBackend(LiveChannelBackend):
     def remember_account_profile(self, own_id: str, *, username: str) -> None:
         """Persist the mutable bot username beside the durable bot id."""
 
-        if self.normalize_account_id(own_id) != self.normalize_account_id(
-            self.bridge.subscription_state.get(self.state_identity_key, "")
-        ):
-            return
-        self.bridge.merge_subscription_state(username=str(username or "").strip())
+        self.bridge.remember_discord_profile(own_id, username=username)
 
     def parse_live_message(self, message: ParsedMessage) -> ParsedMessage:
         """Pass the worker boundary's already-neutral message through."""
 
         return message
+
+
+def discord_bot_token(credential: Any) -> str:
+    """Return the bot token owned by one STATIC_TOKEN credential."""
+
+    if credential.kind != CredentialKind.STATIC_TOKEN:
+        raise ValueError("A Discord channel requires a static-token credential.")
+    token = str(credential.reveal().get("api_key") or "").strip()
+    if not token:
+        raise ValueError("The Discord credential requires a bot token.")
+    return token

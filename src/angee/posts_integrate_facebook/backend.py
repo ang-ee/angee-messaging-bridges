@@ -111,7 +111,8 @@ class FacebookFeedBackend(FeedBackend):
         if credential.kind != CredentialKind.OAUTH or credential.oauth_client is None:
             raise IntegrationError("Connect this Facebook Page through Meta OAuth.", transient=False)
         pages: dict[str, dict[str, Any]] = {}
-        after, seen = "", set()
+        after = ""
+        seen: set[str] = set()
         while True:
             data = self._request(
                 "me/accounts", credential=credential, fields="id,name,access_token",
@@ -188,12 +189,12 @@ class FacebookFeedBackend(FeedBackend):
             if stream.key == "activity" and self.bridge.live_since is not None:
                 floor = max(floor, self.bridge.live_since)
             state.scan_floor = floor.isoformat()
-        floor = timestamp(state.scan_floor)
+        scan_floor = timestamp(state.scan_floor)
         try:
             data = self._request(
                 f"{stream.partition}/posts", fields=_POST_FIELDS, limit=limit,
                 after=state.posts_after or None, reobserve=stream.key == "reobserve",
-                since=int(floor.timestamp()) if floor is not None else None,
+                since=int(scan_floor.timestamp()) if scan_floor is not None else None,
             )
             after = _after(data, previous=state.posts_after, seen=state.posts_seen)
         except CursorInvalid:
@@ -208,7 +209,7 @@ class FacebookFeedBackend(FeedBackend):
             record = self._parse(raw, post_id="", fallback=f"{stream.partition}:post:{index}")
             if isinstance(record, ParsedPost):
                 published = record.message.sent_at
-                if published is not None and floor is not None and published < floor:
+                if published is not None and scan_floor is not None and published < scan_floor:
                     after = ""
                     break
                 if published is not None and (scan_newest is None or published > scan_newest):
@@ -216,11 +217,8 @@ class FacebookFeedBackend(FeedBackend):
                     scan_newest = published
             records.append(record)
         roots = [record for record in records if isinstance(record, ParsedPost)]
-        counts = dict(
-            apps.get_model("posts", "PostMetrics").objects.filter(
-                message__channel_id=self.bridge.pk, message__platform="facebook",
-                message__external_id__in=[record.message.external_id for record in roots],
-            ).values_list("message__external_id", "reply_count")
+        counts = apps.get_model("posts", "PostMetrics").objects.reply_counts(
+            channel=self.bridge, platform="facebook", external_ids=[record.message.external_id for record in roots],
         )
         newest = timestamp(state.newest_published_at)
         state.pending = [
@@ -464,7 +462,9 @@ def _cursor(value: dict[str, Any]) -> FacebookCursor:
             invalid = True
             for issue in error.errors():
                 lost_pending |= issue["loc"][0] == "pending"
-                seed.pop(issue["loc"][0], None)
+                field = issue["loc"][0]
+                if isinstance(field, str):
+                    seed.pop(field, None)
     if invalid:
         if lost_pending:
             state.posts_after, state.posts_seen, state.posts_done = "", [], False

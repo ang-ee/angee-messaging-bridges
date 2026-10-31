@@ -90,9 +90,8 @@ def test_imessage_iphone_backup_execute_delegates_to_backup_importer_owner(
     channel = SimpleNamespace(sqid=target)
     resolved: list[str] = []
     monkeypatch.setattr(
-        extractor_module,
-        "confirmed_imessage_channel",
-        lambda sqid: resolved.append(sqid) or channel,
+        "angee.messaging.managers.ChannelQuerySet.require_backend_target",
+        lambda self, sqid, **kwargs: resolved.append(sqid) or channel,
     )
     calls: list[dict[str, Any]] = []
 

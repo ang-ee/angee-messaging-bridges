@@ -29,7 +29,6 @@ from tests.conftest import (
 )
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
-    Channel,
     _platform_admin,
     _request,
     iam_schema,
@@ -37,6 +36,7 @@ from tests.messaging_graphql_fixtures import (
     messaging_schema,
     parties_schema,
 )
+from tests.provider_channels import DiscordChannel as Channel
 
 Credential = apps.get_model("integrate", "Credential")
 
@@ -55,7 +55,7 @@ def discord_tables(
 
     del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda *args, **kwargs: None)
 
 
 def _gateway_message(**values: Any) -> dict[str, Any]:
@@ -174,7 +174,9 @@ def _discord_channel(user: Any, *, token: str = "valid-bot-token", name: str = "
 
     with system_context(reason="test.messaging.discord.vendor.seed"):
         Vendor.objects.get_or_create(slug="discord", defaults={"display_name": "Discord"})
-    return _discord_module("connect").create_discord_channel(user, name, token)
+    channel = _discord_module("connect").create_discord_channel(user, name, token)
+    with system_context(reason="test.discord.provider_proxy"):
+        return Channel.objects.get(pk=channel.pk)
 
 
 @pytest.mark.django_db(transaction=True)

@@ -18,7 +18,6 @@ from rebac import system_context
 
 from angee.messaging import backup_ingest
 from angee.messaging_integrate_whatsapp import backup
-from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
@@ -95,9 +94,8 @@ def test_whatsapp_iphone_backup_execute_delegates_to_backup_importer_owner(
     channel = SimpleNamespace(sqid=target)
     resolved: list[str] = []
     monkeypatch.setattr(
-        extractor_module,
-        "confirmed_whatsapp_channel",
-        lambda sqid: resolved.append(sqid) or channel,
+        "angee.messaging.managers.ChannelQuerySet.require_backend_target",
+        lambda self, sqid, **kwargs: resolved.append(sqid) or channel,
     )
     calls: list[dict[str, Any]] = []
 

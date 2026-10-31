@@ -205,14 +205,14 @@ import pytest  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from rebac import system_context  # noqa: E402
 
+from angee.base.locks import task_lock_is_held  # noqa: E402
 from angee.integrate import tasks as tasks_module  # noqa: E402
 from angee.integrate.constants import RUN_SESSION_TASK  # noqa: E402
 from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
-from angee.jobs.locks import task_lock_is_held  # noqa: E402
-from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
+from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend  # noqa: E402
 from tests.conftest import make_integration  # noqa: E402
 from tests.messaging_fixtures import Message, Thread  # noqa: E402
 from tests.messaging_graphql_fixtures import Channel  # noqa: E402
@@ -314,8 +314,12 @@ class FakeWhatsAppClient:
     def __init__(self, store: str) -> None:
         self.store = store
         self.event = _FakeRegistry()
+        self.contact = _Namespace(get_contact=lambda _jid: _Namespace())
         self.stopped = threading.Event()
         type(self).instances.append(self)
+
+    def get_pn_from_lid(self, jid: Any) -> Any:
+        return None
 
     def connect(self) -> None:
         for action in type(self).script:
@@ -586,7 +590,7 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
 
     sent: list[dict[str, Any]] = []
     monkeypatch.setattr(
-        "angee.integrate.impl.enqueue_task",
+        "angee.integrate.backends.base.enqueue_task",
         lambda name, *, kwargs, queue=None, expires=None, **_: sent.append(
             {"name": name, "kwargs": kwargs, "queue": queue, "expires": expires}
         ),
@@ -600,7 +604,7 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
         {
             "name": RUN_SESSION_TASK,
             "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk},
-            "queue": SESSION_QUEUE,
+            "queue": WhatsAppChannelBackend.session_queue,
             "expires": 60.0,
         }
     ]
@@ -692,7 +696,7 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     assert channel_pairing(channel).state == PairingState.LOGGED_OUT
 
     sent: list[str] = []
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda name, **_: sent.append(name))
     tasks_module.ensure_bridge_sessions()
     assert sent == []
 
@@ -868,7 +872,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     # this store?" from the row's claim reads this attempt as a never-claimed
     # channel and wipes the credential the first one kept. The store owns that
     # fact, so every attempt answers it the same way.
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: None)
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda name, **_: None)
     connect_module.resume_channel_pairing(resumed)
 
     assert _run_session_task(resumed) == {"ok": False, "duplicate_account": True}
@@ -901,7 +905,7 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
     assert channel.subscription_state["desired"] == Channel.LiveState.LIVE
 
     sent: list[str] = []
-    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
+    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda name, **_: sent.append(name))
     assert tasks_module.ensure_bridge_sessions() == {"ok": True, "dispatched": 0}
     assert sent == []
 
@@ -1401,7 +1405,12 @@ def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_session: A
     )
 
     class _RaisingClient:
-        contact = None
+        @property
+        def contact(self):
+            return self
+
+        def get_contact(self, _jid):
+            raise ValueError("contact lookup failed")
 
         def get_pn_from_lid(self, _jid: Any) -> Any:
             raise ValueError("no mapping")

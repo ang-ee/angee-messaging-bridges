@@ -23,7 +23,6 @@ from django.apps import apps
 from django.db import transaction
 from rebac import system_context
 
-from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
 
 Channel = apps.get_model("messaging", "Channel")
@@ -40,9 +39,7 @@ def create_whatsapp_channel(user: Any, *, name: str) -> Any:
     start later through :func:`connect_whatsapp_channel` / ``start_live``.
     """
 
-    display_name = str(name).strip()
-    if not display_name:
-        raise ValueError("A channel name is required.")
+    display_name = Channel.objects.normalized_name(name)
     with system_context(reason="messaging_integrate_whatsapp.create"), transaction.atomic():
         channel = Channel.objects.create_disconnected(
             user,
@@ -65,5 +62,5 @@ def connect_whatsapp_channel(user: Any, *, name: str) -> Any:
     """
 
     channel = create_whatsapp_channel(user, name=name)
-    resume_channel_pairing(channel)
+    channel.resume_pairing()
     return channel

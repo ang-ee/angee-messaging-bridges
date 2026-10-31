@@ -21,7 +21,7 @@ from angee.messaging.session import (
     INITIAL_HISTORY_TIMEOUT_SECONDS,
     AsyncioLiveSession,
 )
-from angee.messaging_integrate_discord.connect import discord_bot_token
+from angee.messaging_integrate_discord.backend import discord_bot_token
 from angee.messaging_integrate_discord.identity import DiscordMediaFact, parsed_message
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class DiscordSession(AsyncioLiveSession):
             return
         self._history_running = True
         try:
-            initial = not bool(self.bridge.subscription_state.get("history_seeded"))
+            initial = not self.bridge.discord_history_seeded
             completed = await self._history_catch_up()
             if initial and completed:
                 self.events.put(("history_seeded", None))
@@ -118,8 +118,7 @@ class DiscordSession(AsyncioLiveSession):
 
         remaining = INITIAL_HISTORY_LIMIT
         per_channel = max(1, INITIAL_HISTORY_LIMIT // INITIAL_CONVERSATION_LIMIT)
-        watermarks = self.bridge.subscription_state.get("channel_watermarks")
-        saved = watermarks if isinstance(watermarks, Mapping) else {}
+        saved = self.bridge.discord_watermarks
         completed = True
         try:
             async with asyncio.timeout(INITIAL_HISTORY_TIMEOUT_SECONDS):
@@ -143,7 +142,7 @@ class DiscordSession(AsyncioLiveSession):
                                 channel_id=channel_id,
                                 limit=min(remaining, per_channel),
                             )
-                    except _discord_exception_types("Forbidden", "NotFound"):
+                    except (discord.Forbidden, discord.NotFound):
                         logger.info(
                             "Discord history for channel %s is no longer readable by bot %s.",
                             channel_id,
@@ -307,12 +306,7 @@ class DiscordSession(AsyncioLiveSession):
             return self._still_wanted()
         if kind == "history_watermark":
             channel_id, watermark = payload
-            raw = self.bridge.subscription_state.get("channel_watermarks")
-            updated = {str(key): str(value) for key, value in raw.items()} if isinstance(raw, Mapping) else {}
-            previous = updated.get(channel_id, "")
-            if not previous.isdigit() or int(watermark) > int(previous):
-                updated[channel_id] = watermark
-                self.bridge.merge_subscription_state(channel_watermarks=updated)
+            self.bridge.advance_discord_watermark(channel_id, watermark)
             return self._still_wanted()
         return super()._handle(kind, payload)
 
@@ -340,7 +334,7 @@ class DiscordSession(AsyncioLiveSession):
     def _is_logged_out(self, error: Exception) -> bool:
         """Classify Discord authentication failures that void the bot token."""
 
-        if isinstance(error, _discord_exception_types("LoginFailure")):
+        if isinstance(error, discord.LoginFailure):
             return True
         return getattr(error, "status", None) == 401 or getattr(error, "code", None) == 4004
 
@@ -352,17 +346,11 @@ class DiscordSession(AsyncioLiveSession):
                 loop.run_until_complete(self._close_client())
         except Exception:
             logger.info("Discord close for channel %s failed.", self.bridge.sqid)
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        asyncio.set_event_loop(None)
 
     async def _close_client(self) -> None:
         """Let discord.py close its Gateway and HTTP resources cleanly."""
 
-        if self.client is not None and not bool(getattr(self.client, "is_closed", lambda: False)()):
+        if self.client is not None and not self.client.is_closed():
             await asyncio.wait_for(self.client.close(), timeout=API_TIMEOUT_SECONDS)
 
     def _stop_main(self, loop: asyncio.AbstractEventLoop, *, deadline: float) -> None:
@@ -437,13 +425,3 @@ def _message_mapping(message: Any) -> dict[str, Any]:
             }
         ),
     }
-
-
-def _discord_exception_types(*names: str) -> tuple[type[BaseException], ...]:
-    """Return available discord.py exception classes by public name."""
-
-    return tuple(
-        value
-        for name in names
-        if isinstance((value := getattr(discord, name, None)), type) and issubclass(value, BaseException)
-    )
