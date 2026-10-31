@@ -9,8 +9,10 @@ The supported layout is a stack workspace slot: this checkout sits at
 `<stack>/workspaces/<ws>/angee-messaging-bridges` with the consolidated
 `angee/` repository (`src/` and `packages/`) as a sibling slot. The stack root owns
 the composed host — the `@angee/gql` fixture resolves from the stack root's
-`runtime/` (the owning stack's native compose, provision and codegen jobs
-regenerate it after native uv dependency installation).
+`runtime/`. Native composition and provisioning prepare the host after uv
+dependency installation; the shared Vite integration generates web artifacts
+for development and builds. See the framework's [checks](../angee/docs/checks.md)
+for explicit CLI generation and verification.
 Shared messaging behavior belongs in the base `angee.messaging` addon, not in
 an individual bridge.
 
