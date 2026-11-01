@@ -37,7 +37,7 @@ function parseValues(
 /** Telegram declarations plus its credential-creation relation affordance. */
 export function ConnectTelegramChannelAction(): React.ReactElement {
   const uiT = useUiT();
-  const [createAppKeys] = useAuthoredMutation(CreateTelegramAppKeys);
+  const [createAppKeys] = useAuthoredMutation(CreateTelegramAppKeys, { transient: true });
   const fields = React.useCallback<ConnectChannelFields>(
     (translate) => {
       const createFields: readonly DescriptorField[] = [
