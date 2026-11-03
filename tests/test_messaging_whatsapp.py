@@ -603,7 +603,7 @@ def test_channel_live_lifecycle_persists_desire_and_dispatches(
     assert sent == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk},
+            "kwargs": {"model_label": channel._meta.label_lower, "pk": channel.pk, "using": channel._state.db},
             "queue": WhatsAppChannelBackend.session_queue,
             "expires": 60.0,
         }
@@ -638,7 +638,7 @@ def test_run_session_task_hosts_whatsapp_without_resolving_the_vendor_session(
     monkeypatch.setattr(WhatsAppChannelBackend, "session_class_resolved", resolve_vendor)
     # No child is spawned here; the production backend's cross-process lock
     # requirement is exercised by the framework process-host tests.
-    monkeypatch.setattr("angee.integrate.session_runner.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.integrate.session_runner.task_locks_are_cross_process", lambda *, using: True)
 
     assert channel.backend.session_isolation == "process"
     assert tasks_module.run_bridge_session(channel._meta.label_lower, channel.pk) == outcome
