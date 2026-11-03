@@ -246,8 +246,8 @@ def test_create_signal_channel_resets_newest_unfinished_channel(
     """A rejected account's retained directory is wiped before pairing restarts."""
 
     connect = _signal_module("connect")
-    monkeypatch.setattr("angee.integrate.live.task_locks_are_cross_process", lambda: True)
-    monkeypatch.setattr("angee.base.locks.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.integrate.live.task_locks_are_cross_process", lambda *, using=None: True)
+    monkeypatch.setattr("angee.base.locks.task_locks_are_cross_process", lambda *, using=None: True)
     admin = _platform_admin("msg-signal-retry-admin")
     with system_context(reason="test.messaging.signal.retry.seed"):
         Vendor.objects.create(slug="signal", display_name="Signal")

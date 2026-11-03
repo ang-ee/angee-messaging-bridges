@@ -3,12 +3,19 @@
 import os
 import subprocess
 import sys
+from importlib.util import find_spec
 from pathlib import Path
 
 
 def test_discord_native_composed_host(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    framework = root.parent / "angee"
+    spec = find_spec("angee")
+    assert spec is not None and spec.submodule_search_locations
+    framework = next(
+        candidate
+        for location in spec.submodule_search_locations
+        if (candidate := Path(location).resolve().parents[1]).joinpath("tests/composed_host.py").is_file()
+    )
     env = dict(os.environ)
     env.pop("DJANGO_SETTINGS_MODULE", None)
     result = subprocess.run(

@@ -163,6 +163,9 @@ class VcsBridge(AbstractVcsBridge, Integration):
     one test depends on another test having been collected first.
     """
 
+    created_at = Integration.created_at
+    updated_at = Integration.updated_at
+
     class Meta(AbstractVcsBridge.Meta):
         """Django model options for the canonical test VCS bridge."""
 
