@@ -61,7 +61,8 @@ def test_execute_stages_and_delegates_to_the_one_facade(
         nonlocal heartbeats
         heartbeats += 1
 
-    monkeypatch.setattr(extractor_module, "confirmed_facebook_channel", lambda _pk: channel)
+    monkeypatch.setattr("angee.messaging.managers.ChannelQuerySet.require_backend_target",
+                        lambda self, _pk, **kwargs: channel)
     monkeypatch.setattr(extractor_module, "import_archive", fake_import)
     result = FacebookTakeoutExtractor().execute(
         _ArchiveFile(archive),

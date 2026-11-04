@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from angee.messaging.connect import resume_or_create_channel
+from django.apps import apps
+
 from angee.messaging_integrate_signal.backend import SignalChannelBackend
 
 
@@ -16,4 +17,6 @@ def create_signal_channel(user: Any) -> Any:
     that directory so a rejected account cannot bypass fresh QR pairing.
     """
 
-    return resume_or_create_channel(user, name=SignalChannelBackend.label, backend_class=SignalChannelBackend.key)
+    return apps.get_model("messaging", "Channel").objects.resume_or_create_pairing(
+        user, name=SignalChannelBackend.label, backend_class=SignalChannelBackend.key,
+    )

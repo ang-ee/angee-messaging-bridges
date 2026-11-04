@@ -65,7 +65,7 @@ from tests import host_models  # noqa: F401 -- register the shared composition's
 def composed_tables(composed_tables: None) -> None:
     """The bridges' composed tables also carry the declared statement principals.
 
-    Extends the ``angee.base.testing`` plugin fixture of the same name: after its REBAC
+    Extends the ``angee.iam.testing`` plugin fixture of the same name: after its REBAC
     sync, the install-tier principals and grants that admission reads are loaded,
     exactly as the framework's hosts do.
     """
@@ -162,6 +162,9 @@ class VcsBridge(AbstractVcsBridge, Integration):
     module) rather than in a single test file — otherwise importing the schema from
     one test depends on another test having been collected first.
     """
+
+    created_at = Integration.created_at
+    updated_at = Integration.updated_at
 
     class Meta(AbstractVcsBridge.Meta):
         """Django model options for the canonical test VCS bridge."""

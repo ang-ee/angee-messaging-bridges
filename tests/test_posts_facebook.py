@@ -792,6 +792,8 @@ def test_reconciliation_finds_older_exact_match_after_newer_differing_page_reply
 
 @pytest.mark.parametrize("budget", [0, 1])
 def test_reobservation_budget_retains_cursor_and_live_comments_continue(feed, graph, monkeypatch, budget):
+    recent = timestamp(graph["posts_first"]["data"][0]["created_time"]) + timedelta(days=1)
+    monkeypatch.setattr(timezone, "now", lambda: recent)
     calls = transport(monkeypatch, lambda method, path, *args: (
         {"data": [graph["posts_first"]["data"][0]]} if path.endswith("/posts")
         else {"data": [graph["comments_first"]["data"][0]]}
