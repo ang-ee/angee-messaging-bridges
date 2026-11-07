@@ -32,7 +32,7 @@ from angee.messaging.session import (
     AsyncioLiveSession,
 )
 from angee.messaging_integrate_matrix import recovery
-from angee.messaging_integrate_matrix.backend import matrix_login
+from angee.messaging_integrate_matrix.connect import matrix_login
 from angee.messaging_integrate_matrix.identity import MatrixMediaFact, parsed_message
 
 logger = logging.getLogger(__name__)
@@ -401,6 +401,12 @@ class MatrixSession(AsyncioLiveSession):
             loop.run_until_complete(self._close_client())
         except Exception:
             logger.info("Closing Matrix channel %s did not finish cleanly.", self.bridge.sqid)
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        asyncio.set_event_loop(None)
 
     def _stop_main(self, loop: asyncio.AbstractEventLoop, *, deadline: float) -> None:
         """Cancel Matrix sync without blocking beyond its fire-and-forget handoff."""

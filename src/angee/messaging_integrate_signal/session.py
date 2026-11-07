@@ -170,8 +170,7 @@ class SignalCliClient:
                     pipe.close()
                 except OSError:
                     pass
-            if self.process.poll() is not None:
-                self._remove_own_pidfile()
+            self._remove_own_pidfile()
 
     def _reap_orphan(self) -> None:
         """Terminate a store-matching child left by a crashed worker."""

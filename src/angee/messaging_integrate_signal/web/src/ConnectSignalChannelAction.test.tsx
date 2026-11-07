@@ -68,10 +68,8 @@ describe("ConnectSignalChannelAction", () => {
   test("creates a credential-free channel, then opens shared pairing", async () => {
     render(<ConnectSignalChannelAction />);
 
-    // Shared pairing now treats the one-time connect result as transient.
     expect(actionMocks.mutationOptions).toEqual({
       invalidateModels: ["messaging.Channel"],
-      transient: true,
     });
     fireEvent.click(screen.getByRole("button", { name: /channel.signal.button/ }));
 

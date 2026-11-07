@@ -27,8 +27,10 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from angee.integrate_iphone.backup import (
+    SQLITE_HEADER_LENGTH,
     BackupError,
     IosBackup,
+    is_sqlite_header,
 )
 from angee.messaging.backends import MediaItem
 from angee.messaging_integrate_imessage.attributed_body import attributed_body_text
@@ -84,7 +86,14 @@ def sms_store_path(backup: IosBackup) -> Path | None:
 def has_sms_store(backup: IosBackup) -> bool:
     """Return whether ``backup`` carries a SQLite Messages store."""
 
-    return backup.has_sqlite_file(SMS_DOMAIN, SMS_PATH)
+    store = sms_store_path(backup)
+    if store is None:
+        return False
+    try:
+        with store.open("rb") as stream:
+            return is_sqlite_header(stream.read(SQLITE_HEADER_LENGTH))
+    except OSError:
+        return False
 
 
 class ImessageStore:

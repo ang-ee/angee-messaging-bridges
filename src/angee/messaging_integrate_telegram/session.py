@@ -29,7 +29,7 @@ from angee.messaging.session import (
     INITIAL_HISTORY_TIMEOUT_SECONDS,
     AsyncioLiveSession,
 )
-from angee.messaging_integrate_telegram.backend import telegram_app_keys
+from angee.messaging_integrate_telegram.connect import telegram_app_keys
 from angee.messaging_integrate_telegram.identity import parsed_message
 
 logger = logging.getLogger(__name__)

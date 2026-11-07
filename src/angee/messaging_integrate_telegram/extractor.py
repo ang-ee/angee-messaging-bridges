@@ -20,6 +20,8 @@ from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO, TextIO, cast
 
 from django.apps import apps
+from django.core.exceptions import ValidationError
+from rebac import system_context
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem, ParsedMessage
@@ -103,9 +105,7 @@ class TelegramTakeoutExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Stream the staged takeout through the confirmed channel's ingest path."""
 
-        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-            target_pk, backend_class=TelegramChannelBackend.key,
-        )
+        channel = _confirmed_channel(target_pk)
         result = _import_archive(file, channel=channel, reporter=reporter)
         return {"channel": str(channel.sqid), **result}
 
@@ -587,3 +587,17 @@ def _media_items(
             )
         )
     return tuple(items)
+
+
+def _confirmed_channel(target_pk: str) -> Any:
+    """Return the confirmed Telegram channel named by its public sqid."""
+
+    channel_model = apps.get_model("messaging", "Channel")
+    with system_context(reason="messaging_integrate_telegram.archive_import.channel"):
+        channel = channel_model._base_manager.filter(
+            sqid=target_pk,
+            backend_class=TelegramChannelBackend.key,
+        ).first()
+    if channel is None:
+        raise ValidationError({"target": f"No Telegram channel {target_pk!r}."})
+    return channel

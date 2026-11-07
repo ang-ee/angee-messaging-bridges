@@ -6,10 +6,8 @@ import zipfile
 from pathlib import PurePosixPath
 from typing import Any, BinaryIO, cast
 
-from django.apps import apps
-
 from angee.messaging_integrate_facebook.archive import ACTIVITY_DIRECTORY, MARKER_RELATIVE_PATHS
-from angee.messaging_integrate_facebook.backend import FacebookChannelBackend
+from angee.messaging_integrate_facebook.connect import confirmed_facebook_channel
 from angee.messaging_integrate_facebook.importer import import_archive
 from angee.storage.archives import (
     ArchiveError,
@@ -55,9 +53,7 @@ class FacebookTakeoutExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Stage the ZIP and delegate all landing to the one import facade."""
 
-        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-            target_pk, backend_class=FacebookChannelBackend.key,
-        )
+        channel = confirmed_facebook_channel(target_pk)
         try:
             with file.open_stream() as stream, zipfile.ZipFile(stream) as archive:
                 if not _has_marker(archive):

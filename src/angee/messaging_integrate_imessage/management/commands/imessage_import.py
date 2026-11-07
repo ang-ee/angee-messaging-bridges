@@ -6,13 +6,13 @@ from typing import Any
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.utils.dateparse import parse_datetime
 from rebac import system_context
 
 from angee.integrate_iphone.backup import BackupError
 from angee.messaging_integrate_imessage.backend import ImessageChannelBackend
+from angee.messaging_integrate_imessage.connect import create_imessage_channel
 from angee.messaging_integrate_imessage.importer import import_backup, import_backup_per_line
 
 
@@ -134,16 +134,11 @@ class Command(BaseCommand):
             raise CommandError("Pass either --channel or --create, not both.")
         if options["channel"]:
             model = apps.get_model("messaging", "Channel")
-            try:
-                return model.objects.require_backend_target(
-                    options["channel"], backend_class=ImessageChannelBackend.key,
-                )
-            except ValidationError as error:
-                raise CommandError(f"No iMessage channel {options['channel']!r}.") from error
+            with system_context(reason="imessage_import.resolve_channel"):
+                channel = model.objects.filter(sqid=options["channel"]).first()
+            if channel is None or channel.backend_class != ImessageChannelBackend.key:
+                raise CommandError(f"No iMessage channel {options['channel']!r}.")
+            return channel
         if options["create"]:
-            with system_context(reason="imessage_import.create_channel"):
-                return apps.get_model("messaging", "Channel").objects.create_disconnected(
-                    self._owner(options, flag="--create"), name=options["create"],
-                    backend_class=ImessageChannelBackend.key,
-                )
+            return create_imessage_channel(self._owner(options, flag="--create"), name=options["create"])
         raise CommandError("Pass --channel <sqid> or --create <name> --owner <username>.")

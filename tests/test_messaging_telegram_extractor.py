@@ -14,10 +14,7 @@ import pytest
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
-
-# d9cb71734 split angee.messaging.managers into a package; these ingest helpers live in
-# angee.messaging.managers.messages and the framework exposes no public seam for them.
-from angee.messaging.managers.messages import _bounded_message_metadata, _parsed_sync_hash
+from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
 from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
@@ -450,13 +447,16 @@ def _install_messaging_doubles(
     filters: list[dict[str, str]] = []
 
     class _ChannelQuery:
-        def require_backend_target(self, target_pk: str, *, backend_class: str) -> Any:
-            filters.append({"sqid": target_pk, "backend_class": backend_class})
+        def filter(self, **kwargs: str) -> _ChannelQuery:
+            filters.append(kwargs)
+            return self
+
+        def first(self) -> Any:
             return channel
 
     manager = _RecordingMessageManager()
     models = {
-        "Channel": SimpleNamespace(objects=_ChannelQuery()),
+        "Channel": SimpleNamespace(_base_manager=_ChannelQuery()),
         "Message": SimpleNamespace(
             objects=manager,
             MessageKind=SimpleNamespace(CHAT="chat"),

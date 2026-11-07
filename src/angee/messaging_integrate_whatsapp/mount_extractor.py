@@ -15,10 +15,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from django.apps import apps
-
 from angee.messaging_integrate_whatsapp import backup
-from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
+from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -62,9 +60,7 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Import this domain's chats from the drive's backup into the confirmed channel."""
 
-        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-            target_pk, backend_class=WhatsAppChannelBackend.key,
-        )
+        channel = confirmed_whatsapp_channel(target_pk)
         manifest = subject.local_file_path("Manifest.db")
         root = manifest.parent if manifest is not None else None
         if root is None:

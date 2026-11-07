@@ -167,10 +167,7 @@ class YouTubeFeedBackend(FeedBackend):
     def extract(self, stream: Any, page_bound: int, *, deadline: float | None = None) -> StreamPage:
         """Return a bounded page; the driver alone advances or resets its epoch."""
 
-        cursor_types: dict[str, type[ActivityCursor] | type[HistoryCursor] | type[ReobserveCursor]] = {
-            "activity": ActivityCursor, "history": HistoryCursor, "reobserve": ReobserveCursor,
-        }
-        cursor_type = cursor_types[stream.key]
+        cursor_type = {"activity": ActivityCursor, "history": HistoryCursor, "reobserve": ReobserveCursor}[stream.key]
         try:
             state = cursor_type.model_validate(stream.cursor)
         except CursorValidationError as error:
@@ -481,11 +478,10 @@ class YouTubeFeedBackend(FeedBackend):
         by_id = {work.thread_id: work for work in chosen}
         rows = []
         for raw in _items(data, len(chosen)):
-            identity = _identity(raw)
-            if identity not in by_id:
+            work = by_id.pop(_identity(raw), None)
+            if work is None:
                 self._refuse("unexpected_thread", _identity(raw))
                 continue
-            del by_id[identity]
             rows.append(raw)
         for identity in by_id:
             self._refuse("thread_unavailable", identity)
@@ -525,9 +521,9 @@ class YouTubeFeedBackend(FeedBackend):
                 if isinstance(state, ReobserveCursor) and moderation != "published":
                     state.moderation_complete = False
         comments = [top["id"] for _, top, _ in usable]
-        counts = apps.get_model("posts", "PostMetrics").objects.reply_counts(
-            channel=self.bridge, platform="youtube", external_ids=comments,
-        )
+        counts = dict(apps.get_model("posts", "PostMetrics").objects.filter(
+            message__channel_id=self.bridge.pk, message__platform="youtube", message__external_id__in=comments,
+        ).values_list("message__external_id", "reply_count"))
         if changed_only:
             usable = [entry for entry in usable if state.force or entry[2] != counts.get(entry[1]["id"])]
         prior_hidden = {

@@ -12,8 +12,8 @@ from rebac import system_context
 
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.net import is_unsafe_address, parse_http_url, resolved_addresses
+from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_matrix.backend import MatrixChannelBackend
-from angee.messaging_integrate_matrix.backend import matrix_login as matrix_login
 
 Channel = apps.get_model("messaging", "Channel")
 Credential = apps.get_model("integrate", "Credential")
@@ -42,10 +42,21 @@ def create_matrix_channel(user: Any, homeserver: str, username: str, password: s
             subscription_state={"homeserver": base_url},
         )
         channel.connect(credential=credential)
-    channel.resume_pairing()
+    resume_channel_pairing(channel)
     return channel
 
 
+def matrix_login(credential: Any) -> tuple[str, str]:
+    """Return the Matrix ``(username, password)`` owned by one BASIC_AUTH row."""
+
+    if credential.kind != CredentialKind.BASIC_AUTH:
+        raise ValueError("A Matrix channel requires a basic-auth credential.")
+    material = credential.reveal()
+    username = str(material.get("username") or "").strip()
+    password = str(material.get("password") or "")
+    if not username or not password:
+        raise ValueError("The Matrix credential requires a username and password.")
+    return username, password
 
 
 def matrix_homeserver_url(value: object) -> str:

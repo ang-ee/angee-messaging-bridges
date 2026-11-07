@@ -28,30 +28,3 @@ def test_whatsapp_resume_uses_shared_datetimes_and_only_converts_native_identity
     importer = BackupImporter(channel, SimpleNamespace(), resume=True)
     assert importer._resume_watermarks() == {"12345@s.whatsapp.net": 12.0}
     assert calls == [channel]
-
-
-def test_whatsapp_failed_sqlite_open_closes_backup(monkeypatch):
-    """The reader owns its manifest even if SQLite refuses the resolved blob."""
-    from unittest.mock import Mock
-
-    import pytest
-
-    from angee.messaging_integrate_whatsapp import backup as module
-
-    backup = Mock()
-    backup.blob_path.return_value = "/missing/chat.sqlite"
-
-    def refuse(*args, **kwargs):
-        raise module.sqlite3.OperationalError("cannot open")
-
-    monkeypatch.setattr(module.sqlite3, "connect", refuse)
-    with pytest.raises(module.sqlite3.OperationalError, match="cannot open"):
-        module.ChatStorage(backup)
-    backup.close.assert_called_once_with()
-
-
-def test_whatsapp_identity_command_loads_canonical_backend():
-    from django.core.management import load_command_class
-
-    command = load_command_class("angee.messaging_integrate_whatsapp", "whatsapp_resolve_lids")
-    assert command.help

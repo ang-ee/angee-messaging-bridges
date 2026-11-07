@@ -10,7 +10,7 @@ from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.constants import RUN_SESSION_TASK
-from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
+from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE
 from tests.conftest import SchemaAddon, Vendor, execute_schema, make_integration
 from tests.conftest import result_data as _data
 from tests.messaging_graphql_fixtures import (
@@ -36,7 +36,7 @@ def whatsapp_graphql(
         Vendor.objects.create(slug="whatsapp", display_name="WhatsApp")
     sent: list[dict[str, Any]] = []
     monkeypatch.setattr(
-        "angee.integrate.backends.base.enqueue_task",
+        "angee.integrate.impl.enqueue_task",
         lambda name, *, kwargs, queue=None, expires=None, **_: sent.append(
             {"name": name, "kwargs": kwargs, "queue": queue, "expires": expires}
         ),
@@ -70,8 +70,8 @@ def test_connect_whatsapp_channel_starts_pairing(whatsapp_graphql: list[dict[str
     assert whatsapp_graphql == [
         {
             "name": RUN_SESSION_TASK,
-            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk, "using": saved._state.db},
-            "queue": WhatsAppChannelBackend.session_queue,
+            "kwargs": {"model_label": saved._meta.label_lower, "pk": saved.pk},
+            "queue": SESSION_QUEUE,
             "expires": 60.0,
         }
     ]

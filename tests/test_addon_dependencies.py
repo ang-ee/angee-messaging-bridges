@@ -27,11 +27,8 @@ def test_collection_requires_each_workspace_addon() -> None:
             assert name not in expected, f"duplicate workspace distribution: {name}"
             expected[name] = f"=={metadata['version']}"
     requirements = [Requirement(value) for value in project["project"]["dependencies"]]
-    actual = {canonicalize_name(item.name): str(item.specifier) for item in requirements}
-    # 0d50dba composes the protected bridge tests from IAM owners, so the collection
-    # requires angee-iam beside its workspace addons.
-    assert len(actual) == len(requirements)
-    assert actual == {**expected, "angee-iam": "<4,>=3"}
+    assert len(requirements) == len(expected)
+    assert {canonicalize_name(item.name): str(item.specifier) for item in requirements} == expected
 
 
 def test_fixture_addons_rediscover_native_requirement_edges() -> None:

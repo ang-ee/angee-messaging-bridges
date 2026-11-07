@@ -5,11 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from angee.iam.models.base import ProtectedModel
 from django.conf import settings
 from django.db import models
 
 from angee.base.models.audit import AuditMixin
+from angee.base.models.base import AngeeModel
 from angee.base.models.identity import SqidMixin
 from angee.messaging.models import ThreadedModelMixin
 from angee.messaging.testing.models import Address as Address
@@ -38,7 +38,7 @@ from angee.messaging.testing.models import ThreadNotification as ThreadNotificat
 from tests.conftest import Backend, Drive, MimeType
 
 
-class ThreadedTicket(SqidMixin, AuditMixin, ThreadedModelMixin, ProtectedModel):
+class ThreadedTicket(SqidMixin, AuditMixin, ThreadedModelMixin, AngeeModel):
     """Concrete model that opts into record chatter for messaging tests."""
 
     sqid_prefix = "tkt_"

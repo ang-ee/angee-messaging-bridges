@@ -7,11 +7,9 @@ import zipfile
 from pathlib import PurePosixPath
 from typing import Any
 
-from django.apps import apps
-
 from angee.integrate_iphone.archives import backup_manifest
 from angee.messaging_integrate_whatsapp import backup
-from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
+from angee.messaging_integrate_whatsapp.backend import confirmed_whatsapp_channel
 from angee.storage.archives import (
     ArchiveError,
     archive_entries,
@@ -53,9 +51,7 @@ class WhatsAppIphoneBackupExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Import through the existing backup importer into the confirmed channel."""
 
-        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-            target_pk, backend_class=WhatsAppChannelBackend.key,
-        )
+        channel = confirmed_whatsapp_channel(target_pk)
         total = _import_archive(file, channel=channel, reporter=reporter)
         return {"channel": str(channel.sqid), "imported": total}
 

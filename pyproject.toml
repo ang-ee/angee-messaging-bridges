@@ -5,7 +5,7 @@ description = "angee-messaging-bridges addon collection"
 requires-python = ">=3.14"
 license = "LGPL-3.0-or-later"
 license-files = ["LICENSE", "LICENSE.GPL"]
-dependencies = ["angee-iam>=3,<4", "angee-messaging-integrate-discord==1.0.0", "angee-messaging-integrate-facebook==1.0.0", "angee-messaging-integrate-imessage==1.0.0", "angee-messaging-integrate-matrix==1.0.0", "angee-messaging-integrate-meta==1.0.0", "angee-messaging-integrate-signal==1.0.0", "angee-messaging-integrate-telegram==1.0.0", "angee-messaging-integrate-whatsapp==1.0.0", "angee-posts-integrate-facebook==1.0.0", "angee-posts-integrate-youtube==1.0.0"]
+dependencies = ["angee-messaging-integrate-discord==1.0.0", "angee-messaging-integrate-facebook==1.0.0", "angee-messaging-integrate-imessage==1.0.0", "angee-messaging-integrate-matrix==1.0.0", "angee-messaging-integrate-meta==1.0.0", "angee-messaging-integrate-signal==1.0.0", "angee-messaging-integrate-telegram==1.0.0", "angee-messaging-integrate-whatsapp==1.0.0", "angee-posts-integrate-facebook==1.0.0", "angee-posts-integrate-youtube==1.0.0"]
 
 [dependency-groups]
 dev = [

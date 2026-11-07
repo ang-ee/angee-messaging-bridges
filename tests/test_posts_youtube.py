@@ -28,8 +28,7 @@ from angee.jobs.enqueue import celery_app
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.delivery import RECONCILE_BACKOFF, run_message_delivery
 from angee.messaging.events import message_ingested
-from angee.posts.ingest import land_posts
-from angee.posts.models import MessagePublic
+from angee.posts.ingest import PROVIDER_TRASH_REASON, land_posts
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
 from angee.posts_integrate_youtube.cursors import (
@@ -1006,7 +1005,7 @@ def test_youtube_hide_detection_uses_current_provider_provenance(
         if moderation == "stale":
             subject.restore()
             monkeypatch.setattr(timezone, "now", lambda: AT + timedelta(seconds=1))
-        subject.trash(reason=MessagePublic.PROVIDER_TRASH_REASON)
+        subject.trash(reason=PROVIDER_TRASH_REASON)
         if moderation == "operator":
             assert "provider_hidden" not in subject.local_metadata
         else:

@@ -9,7 +9,7 @@ from django.apps import apps
 from rebac import system_context
 
 from angee.messaging_integrate_facebook.archive import ACTIVITY_DIRECTORY, MARKER_FILENAMES
-from angee.messaging_integrate_facebook.backend import FacebookChannelBackend
+from angee.messaging_integrate_facebook.connect import confirmed_facebook_channel
 from angee.messaging_integrate_facebook.importer import import_archive
 from angee.storage.archives import ArchiveError
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
@@ -36,9 +36,7 @@ class FacebookMountTakeoutExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Delegate the mounted export to the same import facade."""
 
-        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-            target_pk, backend_class=FacebookChannelBackend.key,
-        )
+        channel = confirmed_facebook_channel(target_pk)
         root = _export_root(subject)
         if root is None:
             raise ArchiveError("This drive does not expose a Facebook export on disk.")

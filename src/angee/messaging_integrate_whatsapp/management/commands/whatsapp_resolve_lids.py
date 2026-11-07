@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 
@@ -13,7 +12,7 @@ from angee.integrate.session import LiveSession
 from angee.messaging_integrate_whatsapp.backend import (
     StoreResolver,
     StoreUnreadable,
-    WhatsAppChannelBackend,
+    confirmed_whatsapp_channel,
     resolve_channel_lids,
 )
 
@@ -35,9 +34,7 @@ class Command(BaseCommand):
         """Read the store, resolve the channel's LIDs and print the summary."""
         del args
         try:
-            channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
-                options["channel"], backend_class=WhatsAppChannelBackend.key,
-            )
+            channel = confirmed_whatsapp_channel(options["channel"])
         except ValidationError as error:
             raise CommandError(str(error)) from error
         db_path = session_store_path(channel) / LiveSession.session_file_name

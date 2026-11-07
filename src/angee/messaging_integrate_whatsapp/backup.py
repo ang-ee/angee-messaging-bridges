@@ -28,8 +28,10 @@ from pathlib import Path
 from typing import Any
 
 from angee.integrate_iphone.backup import (
+    SQLITE_HEADER_LENGTH,
     BackupError,
     IosBackup,
+    is_sqlite_header,
 )
 from angee.messaging.backends import MediaItem
 from angee.messaging.backup_ingest import batch_ingest, thread_watermarks
@@ -60,7 +62,14 @@ def chat_storage_path(backup: IosBackup, domain: str = WHATSAPP_DOMAIN) -> Path 
 def has_chat_storage(backup: IosBackup, domain: str = WHATSAPP_DOMAIN) -> bool:
     """Return whether ``domain`` carries a SQLite WhatsApp chat store."""
 
-    return backup.has_sqlite_file(domain, CHAT_STORAGE_PATH)
+    store = chat_storage_path(backup, domain)
+    if store is None:
+        return False
+    try:
+        with store.open("rb") as stream:
+            return is_sqlite_header(stream.read(SQLITE_HEADER_LENGTH))
+    except OSError:
+        return False
 
 
 class ChatStorage:
@@ -69,14 +78,12 @@ class ChatStorage:
     def __init__(self, backup: IosBackup, *, domain: str = WHATSAPP_DOMAIN) -> None:
         self.backup = backup
         self.domain = domain
-        try:
-            store = chat_storage_path(backup, domain)
-            if store is None:
-                raise BackupError("This backup contains no WhatsApp chat store.")
-            self._db = sqlite3.connect(f"file:{store}?mode=ro&immutable=1", uri=True)
-        except BaseException:
+        store = chat_storage_path(backup, domain)
+        if store is None:
+            # Close the backup's manifest connection we can no longer own.
             backup.close()
-            raise
+            raise BackupError("This backup contains no WhatsApp chat store.")
+        self._db = sqlite3.connect(f"file:{store}?mode=ro&immutable=1", uri=True)
 
     def close(self) -> None:
         """Close the chat store and the backup manifest connection it owns."""

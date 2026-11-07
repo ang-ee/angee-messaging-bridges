@@ -172,7 +172,7 @@ def matrix_tables(
 
     del composed_tables
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
-    monkeypatch.setattr("angee.integrate.backends.base.enqueue_task", lambda *args, **kwargs: None)
+    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
 
 
 def _matrix_channel(user: Any, *, history_seeded: bool = False) -> Any:
@@ -337,7 +337,7 @@ def test_matrix_reset_wipes_only_recovery_key(
     channel.credential.update_material(recovery_key="transient-recovery-key")
     monkeypatch.setattr(messaging_connect, "await_session_exit", lambda _channel: None)
     monkeypatch.setattr(messaging_connect, "reset_session_store", lambda _channel: None)
-    monkeypatch.setattr(type(channel), "resume_pairing", lambda _channel: None)
+    monkeypatch.setattr(messaging_connect, "resume_channel_pairing", lambda _channel: None)
 
     messaging_connect.reset_channel_pairing(channel)
 
