@@ -6,23 +6,27 @@ import logging
 import queue
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from django.conf import settings
 from neonize.client import NewClient
 from neonize.events import (
+    ClientOutdatedEv,
     ConnectedEv,
+    ConnectFailureEv,
     HistorySyncEv,
     LoggedOutEv,
     MessageEv,
     PairStatusEv,
     PictureEv,
+    TemporaryBanEv,
 )
-from neonize.proto.Neonize_pb2 import GetProfilePictureParams
+from neonize.proto.Neonize_pb2 import ConnectFailureReason, GetProfilePictureParams
 from neonize.utils.jid import build_jid
 
+from angee.integrate.errors import IntegrationError
 from angee.integrate.live import STOP_JOIN_SECONDS, WAKE_SECONDS
 from angee.messaging.backends import ParsedHandle
 from angee.messaging.session import LiveChannelSession
@@ -47,6 +51,29 @@ _NO_AVATAR_ANSWER = "does not have a profile picture"
 Its hidden-from-you answer is not this one: that hides the avatar from this account
 only, so the handle keeps the avatar another account may still see.
 """
+
+
+CLIENT_OUTDATED_RETRY = timedelta(hours=1)
+"""How long an outdated-client refusal waits: only a bridge update, picked up by a restart, can fix it."""
+
+
+class WhatsAppConnectionRefused(IntegrationError):
+    """WhatsApp refused this client's connection without logging the device out.
+
+    whatsmeow does not reconnect after these refusals, so the session ends and
+    the integrate retry policy owns when it tries again.
+    """
+
+    transient = True
+
+
+def _connect_failure_reason(event: Any) -> str:
+    """Name a ``ConnectFailure`` reason from neonize's enum, never from server text."""
+
+    try:
+        return ConnectFailureReason.Name(event.Reason).lower().replace("_", " ")
+    except (AttributeError, TypeError, ValueError):
+        return "unknown reason"
 
 
 def _jid_str(jid: Any) -> str:
@@ -131,8 +158,9 @@ class WhatsAppSession(LiveChannelSession):
         threading.Thread(target=self._read_avatars, name=f"whatsapp-avatars-{self.bridge.sqid}", daemon=True).start()
         try:
             self.client.connect()
-        except Exception:
+        except Exception as error:
             logger.exception("WhatsApp connection for channel %s crashed.", self.bridge.sqid)
+            self.events.put(("error", error))
         finally:
             self.events.put(("disconnected", None))
 
@@ -306,6 +334,9 @@ class WhatsAppSession(LiveChannelSession):
         client.event(ConnectedEv)(self._on_connected)
         client.event(PairStatusEv)(self._on_pair_status)
         client.event(LoggedOutEv)(self._on_logged_out)
+        client.event(ClientOutdatedEv)(self._on_client_outdated)
+        client.event(ConnectFailureEv)(self._on_connect_failure)
+        client.event(TemporaryBanEv)(self._on_temporary_ban)
         client.event(MessageEv)(self._on_message)
         client.event(HistorySyncEv)(self._on_history)
         client.event(PictureEv)(self._on_avatar_change)
@@ -352,6 +383,34 @@ class WhatsAppSession(LiveChannelSession):
 
     def _on_logged_out(self, _client: Any, _event: Any) -> None:
         self.events.put(("logged_out", None))
+
+    def _refused(self, error: WhatsAppConnectionRefused) -> None:
+        """End the session on a refusal whatsmeow will not reconnect from."""
+
+        logger.error("WhatsApp refused channel %s: %s", self.bridge.sqid, error.public_message)
+        self.events.put(("error", error))
+        self.events.put(("disconnected", None))
+
+    def _on_client_outdated(self, _client: Any, _event: Any) -> None:
+        self._refused(
+            WhatsAppConnectionRefused(
+                "WhatsApp rejected this client version as outdated; the WhatsApp bridge needs an update.",
+                retry_after=CLIENT_OUTDATED_RETRY,
+            )
+        )
+
+    def _on_connect_failure(self, _client: Any, event: Any) -> None:
+        self._refused(WhatsAppConnectionRefused(f"WhatsApp refused the connection ({_connect_failure_reason(event)})."))
+
+    def _on_temporary_ban(self, _client: Any, event: Any) -> None:
+        # neonize carries the ban's remaining time in whole seconds.
+        expire = int(getattr(event, "Expire", 0) or 0)
+        self._refused(
+            WhatsAppConnectionRefused(
+                "WhatsApp temporarily banned this account from connecting.",
+                retry_after=timedelta(seconds=expire) if expire > 0 else None,
+            )
+        )
 
     def _on_avatar_change(self, _client: Any, event: Any) -> None:
         """Read a changed avatar again for a sender this session already read.
