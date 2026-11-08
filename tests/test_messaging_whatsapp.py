@@ -2017,3 +2017,97 @@ def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
             Thread._base_manager.filter(pk__in=[row.pk for row in others]).values_list("modality", flat=True)
         ) == {"group"}
         assert list(Message._base_manager.filter(pk=update.pk).values()) == before
+
+
+# --- connection refusals ----------------------------------------------------
+
+from neonize.proto.Neonize_pb2 import ConnectFailureReason  # noqa: E402
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize(
+    ("event_name", "payload", "message", "minimum_wait"),
+    [
+        (
+            "ClientOutdated",
+            _Namespace(),
+            "WhatsApp rejected this client version as outdated; the WhatsApp bridge needs an update.",
+            timedelta(hours=1),
+        ),
+        (
+            "ConnectFailure",
+            _Namespace(Reason=ConnectFailureReason.Value("BAD_USER_AGENT"), Message="raw server text"),
+            "WhatsApp refused the connection (bad user agent).",
+            timedelta(minutes=1),
+        ),
+        (
+            "TemporaryBan",
+            _Namespace(Code=1, Expire=3600),
+            "WhatsApp temporarily banned this account from connecting.",
+            timedelta(hours=1),
+        ),
+    ],
+)
+def test_connection_refusal_ends_the_session_visibly_and_defers_the_retry(
+    whatsapp_session: Any,
+    whatsapp_tables: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    event_name: str,
+    payload: Any,
+    message: str,
+    minimum_wait: timedelta,
+) -> None:
+    """A refusal whatsmeow will not reconnect from is shown, not left as a silent stall.
+
+    The session ends instead of idling in ``discovering`` behind a blocked
+    connect; runtime health stays OK (the account is not implicated), the
+    operator-safe message lands on ``sync_error``, and the reconciler waits out
+    the backoff before trying again.
+    """
+
+    from django.utils import timezone as django_timezone
+
+    channel = _whatsapp_channel(f"whatsapp-refused-{event_name.lower()}")
+    monkeypatch.setattr(whatsapp_session.WhatsAppSession, "client_class", FakeWhatsAppClient)
+    FakeWhatsAppClient.script = (lambda client: client.event.handlers[event_name](client, payload),)
+
+    before = django_timezone.now()
+    result = _run_session_task(channel)
+
+    assert result["ok"] is False and result["session_error"] is True
+    channel.refresh_from_db()
+    assert channel.runtime_status == IntegrationRuntimeStatus.OK
+    assert channel.lifecycle == IntegrationLifecycle.CONNECTED
+    assert channel.subscription_state["desired"] == Channel.LiveState.LIVE
+    assert channel.sync_stage == Channel.SyncStage.FAILED
+    assert channel.sync_error == message
+    assert channel.live_retry_at - before >= minimum_wait
+    assert FakeWhatsAppClient.instances[0].stopped.is_set()
+
+    sent: list[str] = []
+    monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
+    tasks_module.ensure_bridge_sessions()
+    assert sent == []
+
+
+
+@pytest.mark.django_db(transaction=True)
+def test_a_crashed_connect_is_reported_not_swallowed(
+    whatsapp_session: Any, whatsapp_tables: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A vendor connect that raises reaches the session outcome instead of an idle stall."""
+
+    def crash(client: Any) -> None:
+        raise ConnectionError("websocket closed")
+
+    channel = _whatsapp_channel("whatsapp-connect-crash")
+    monkeypatch.setattr(whatsapp_session.WhatsAppSession, "client_class", FakeWhatsAppClient)
+    FakeWhatsAppClient.script = (crash,)
+
+    result = _run_session_task(channel)
+
+    assert result["session_error"] is True
+    channel.refresh_from_db()
+    assert channel.runtime_status == IntegrationRuntimeStatus.OK
+    assert channel.sync_stage == Channel.SyncStage.FAILED
+    assert channel.live_retry_at is not None
