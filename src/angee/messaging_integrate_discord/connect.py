@@ -20,10 +20,8 @@ Credential = apps.get_model("integrate", "Credential")
 def create_discord_channel(user: Any, name: str, token: str) -> Any:
     """Atomically persist one bot token and channel, then start Gateway login."""
 
-    clean_name = str(name or "").strip()
+    clean_name = Channel.objects.normalized_name(name)
     clean_token = str(token or "").strip()
-    if not clean_name:
-        raise ValueError("A Discord connection name is required.")
     if not clean_token:
         raise ValueError("A Discord bot token is required.")
 

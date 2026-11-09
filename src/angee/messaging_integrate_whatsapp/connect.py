@@ -39,13 +39,10 @@ def create_whatsapp_channel(user: Any, *, name: str) -> Any:
     start later through :func:`connect_whatsapp_channel` / ``start_live``.
     """
 
-    display_name = str(name).strip()
-    if not display_name:
-        raise ValueError("A channel name is required.")
     with system_context(reason="messaging_integrate_whatsapp.create"), transaction.atomic():
         channel = Channel.objects.create_disconnected(
             user,
-            name=display_name,
+            name=name,
             backend_class=_WHATSAPP_SLUG,
         )
     return channel

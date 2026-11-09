@@ -28,14 +28,11 @@ def create_imessage_channel(user: Any, *, name: str) -> Any:
     this module never touches the app registry.
     """
 
-    display_name = str(name).strip()
-    if not display_name:
-        raise ValueError("A channel name is required.")
     channel_model = apps.get_model("messaging", "Channel")
     with system_context(reason="messaging_integrate_imessage.create"), transaction.atomic():
         channel = channel_model.objects.create_disconnected(
             user,
-            name=display_name,
+            name=name,
             backend_class=_IMESSAGE_SLUG,
         )
     return channel
