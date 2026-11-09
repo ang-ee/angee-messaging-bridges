@@ -27,12 +27,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from angee.integrate_iphone.backup import (
-    SQLITE_HEADER_LENGTH,
-    BackupError,
-    IosBackup,
-    is_sqlite_header,
-)
+from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging.backends import MediaItem
 from angee.messaging.backup_ingest import batch_ingest, thread_watermarks
 from angee.messaging_integrate_whatsapp.parser import ChatMessage, bare_jid, is_group_jid, parsed_message
@@ -57,19 +52,6 @@ def chat_storage_path(backup: IosBackup, domain: str = WHATSAPP_DOMAIN) -> Path 
     """Return one WhatsApp app domain's manifest-resolved chat-store blob."""
 
     return backup.blob_path(domain, CHAT_STORAGE_PATH)
-
-
-def has_chat_storage(backup: IosBackup, domain: str = WHATSAPP_DOMAIN) -> bool:
-    """Return whether ``domain`` carries a SQLite WhatsApp chat store."""
-
-    store = chat_storage_path(backup, domain)
-    if store is None:
-        return False
-    try:
-        with store.open("rb") as stream:
-            return is_sqlite_header(stream.read(SQLITE_HEADER_LENGTH))
-    except OSError:
-        return False
 
 
 class ChatStorage:
@@ -311,7 +293,7 @@ def whatsapp_domains(backup: IosBackup) -> tuple[str, ...]:
     :class:`~messaging.Channel`.
     """
 
-    return tuple(domain for domain in WHATSAPP_DOMAINS if has_chat_storage(backup, domain))
+    return tuple(domain for domain in WHATSAPP_DOMAINS if backup.has_sqlite_file(domain, CHAT_STORAGE_PATH))
 
 
 def import_backup(

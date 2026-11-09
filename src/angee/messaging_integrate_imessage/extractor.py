@@ -7,11 +7,13 @@ import zipfile
 from pathlib import PurePosixPath
 from typing import Any
 
+from django.apps import apps
+
 from angee.integrate_iphone.archives import backup_manifest
 from angee.integrate_iphone.backup import (
     BackupError,
 )
-from angee.messaging_integrate_imessage.backend import confirmed_imessage_channel
+from angee.messaging_integrate_imessage.backend import ImessageChannelBackend
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import SMS_DOMAIN, SMS_PATH
 from angee.storage.archives import (
@@ -55,7 +57,9 @@ class ImessageIphoneBackupExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Import through the backup importer into the confirmed channel."""
 
-        channel = confirmed_imessage_channel(target_pk)
+        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
+            target_pk, backend_class=ImessageChannelBackend.key
+        )
         total = _import_archive(file, channel=channel, reporter=reporter)
         return {"channel": str(channel.sqid), "imported": total}
 

@@ -21,7 +21,7 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import CursorInvalid, advance_stream, open_stream, reset_stream
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
-from angee.messaging.delivery import RECONCILE_BACKOFF
+from angee.messaging.constants import RECONCILE_BACKOFF
 from angee.messaging.events import message_ingested
 from angee.posts.ingest import land_posts
 from angee.posts_integrate_facebook.backend import FacebookFeedBackend

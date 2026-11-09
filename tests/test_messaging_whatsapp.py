@@ -205,13 +205,13 @@ import pytest  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from rebac import system_context  # noqa: E402
 
+from angee.base.locks import task_lock_is_held  # noqa: E402
 from angee.integrate import tasks as tasks_module  # noqa: E402
 from angee.integrate.constants import RUN_SESSION_TASK  # noqa: E402
 from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
 from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
 from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
-from angee.base.locks import task_lock_is_held  # noqa: E402
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
 from tests.conftest import make_integration  # noqa: E402
 from tests.messaging_fixtures import Message, Thread  # noqa: E402
@@ -239,7 +239,7 @@ def whatsapp_tables(composed_tables: None, tmp_path: Path, settings: Any, monkey
 def _whatsapp_channel(slug: str = "whatsapp") -> Any:
     """Create a connected, live-desired WhatsApp Channel row.
 
-    The shape ``resume_channel_pairing`` leaves behind, and the only one a
+    The shape ``Channel.resume_pairing`` leaves behind, and the only one a
     session ever runs for: the operator declared connection intent (CONNECTED)
     and the base persisted the live desire.
     """
@@ -668,7 +668,6 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     """
 
     from angee.integrate.live import session_store_path
-    from angee.messaging.connect import channel_pairing
 
     channel = _whatsapp_channel()
     with system_context(reason="test whatsapp logout setup"):
@@ -689,7 +688,7 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     assert not store.exists()
     assert channel.sync_stage == Channel.SyncStage.FAILED
     assert channel.next_sync_at is None
-    assert channel_pairing(channel).state == PairingState.LOGGED_OUT
+    assert channel.pairing().state == PairingState.LOGGED_OUT
 
     sent: list[str] = []
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
@@ -820,7 +819,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
 
     The reachable counter-sequence, no race: ``disconnect`` deliberately retains
     ``own_jid`` and the store, a disconnected row holds no claim so another
-    channel takes the same account, and ``resume_channel_pairing`` re-declares
+    channel takes the same account, and ``Channel.resume_pairing`` re-declares
     intent without re-checking that the retained claim is still available. The
     rejection that follows is not proof this row's credential is void — deleting
     it here would destroy exactly what ``disconnect`` was designed to preserve,
@@ -831,11 +830,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     the store can, which is where the answer now comes from.
     """
 
-    # Imported here rather than at module scope: connect.py resolves the concrete
-    # Channel at import time, and this file's registry only carries it once
-    # tests.messaging_graphql_fixtures has been imported above.
     from angee.integrate.live import session_store_path
-    from angee.messaging import connect as connect_module
 
     resumed = _whatsapp_channel()
     claimant = _whatsapp_channel("whatsapp-later-claimant")
@@ -869,7 +864,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     # channel and wipes the credential the first one kept. The store owns that
     # fact, so every attempt answers it the same way.
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: None)
-    connect_module.resume_channel_pairing(resumed)
+    resumed.resume_pairing()
 
     assert _run_session_task(resumed) == {"ok": False, "duplicate_account": True}
     assert (resumed_store / "session.db").read_bytes() == b"the device credential disconnect retained"

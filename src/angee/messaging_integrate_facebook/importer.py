@@ -25,7 +25,6 @@ from angee.messaging_integrate_facebook.parser import (
     parsed_message,
     parsed_post,
 )
-from angee.parties.connections import ingest_connections
 from angee.posts.ingest import land_posts
 
 logger = logging.getLogger(__name__)
@@ -122,7 +121,7 @@ def import_archive(
                 landed += len(comments[start : start + _PUBLIC_CHUNK])
                 if on_batch is not None:
                     on_batch(landed)
-        ingest_connections(
+        apps.get_model("parties", "Party").objects.ingest_connections(
             observe_connections(channel, connections),
             created_by_id=channel.owner_id,
             asserted_by=channel.integration_ptr,

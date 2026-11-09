@@ -17,8 +17,8 @@ from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.messaging import backup_ingest
+from angee.messaging.managers import ChannelQuerySet
 from angee.messaging_integrate_whatsapp import backup
-from angee.messaging_integrate_whatsapp import extractor as extractor_module
 from angee.messaging_integrate_whatsapp.autoconfig import SETTINGS as WHATSAPP_SETTINGS
 from angee.messaging_integrate_whatsapp.extractor import WhatsAppIphoneBackupExtractor
 from angee.resources.entries import resource_manifest_for
@@ -93,11 +93,11 @@ def test_whatsapp_iphone_backup_execute_delegates_to_backup_importer_owner(
 
     target = "int_confirmed"
     channel = SimpleNamespace(sqid=target)
-    resolved: list[str] = []
+    resolved: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        extractor_module,
-        "confirmed_whatsapp_channel",
-        lambda sqid: resolved.append(sqid) or channel,
+        ChannelQuerySet,
+        "require_backend_target",
+        lambda _channels, public_id, *, backend_class: resolved.append((public_id, backend_class)) or channel,
     )
     calls: list[dict[str, Any]] = []
 
@@ -127,7 +127,7 @@ def test_whatsapp_iphone_backup_execute_delegates_to_backup_importer_owner(
         reporter,
     )
 
-    assert resolved == [target]
+    assert resolved == [(target, "whatsapp")]
     assert calls == [{"channel": channel, "manifest": True}]
     assert heartbeats == [True]
     assert result == {"channel": target, "imported": 4}

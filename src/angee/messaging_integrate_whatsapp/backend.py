@@ -61,24 +61,6 @@ class WhatsAppChannelBackend(LiveChannelBackend):
         return SessionLoggedOut("The linked phone removed this device.")
 
 
-def confirmed_whatsapp_channel(sqid: str) -> Any:
-    """Return the confirmed WhatsApp channel named by its public sqid.
-
-    The single owner of "resolve an import target to a WhatsApp channel", shared
-    by the archive (ZIP) and mount (drive) backup extractors. The Channel model
-    is resolved lazily so importing this module never touches the app registry.
-    """
-
-    channel_model = apps.get_model("messaging", "Channel")
-    with system_context(reason="messaging_integrate_whatsapp.channel.confirm"):
-        channel = channel_model._base_manager.filter(
-            sqid=sqid, backend_class=WhatsAppChannelBackend.key
-        ).first()
-    if channel is None:
-        raise ValidationError({"target": f"No WhatsApp channel {sqid!r}."})
-    return channel
-
-
 class StoreUnreadable(Exception):
     """The whatsmeow store cannot supply its LID map."""
 
