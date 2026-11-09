@@ -395,18 +395,12 @@ class MatrixSession(AsyncioLiveSession):
         return isinstance(error, MatrixApiError) and error.errcode in {"M_MISSING_TOKEN", "M_UNKNOWN_TOKEN"}
 
     def _teardown_loop(self, loop: asyncio.AbstractEventLoop) -> None:
-        """Close the Matrix client and cancel remaining loop tasks."""
+        """Close the Matrix client; the session drains the loop's remaining tasks."""
 
         try:
             loop.run_until_complete(self._close_client())
         except Exception:
             logger.info("Closing Matrix channel %s did not finish cleanly.", self.bridge.sqid)
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        asyncio.set_event_loop(None)
 
     def _stop_main(self, loop: asyncio.AbstractEventLoop, *, deadline: float) -> None:
         """Cancel Matrix sync without blocking beyond its fire-and-forget handoff."""

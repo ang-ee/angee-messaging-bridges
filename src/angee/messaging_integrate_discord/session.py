@@ -345,19 +345,13 @@ class DiscordSession(AsyncioLiveSession):
         return getattr(error, "status", None) == 401 or getattr(error, "code", None) == 4004
 
     def _teardown_loop(self, loop: asyncio.AbstractEventLoop) -> None:
-        """Close Discord HTTP/Gateway resources and cancel remaining loop tasks."""
+        """Close Discord HTTP/Gateway resources; the session drains the loop's remaining tasks."""
 
         try:
             if not loop.is_closed():
                 loop.run_until_complete(self._close_client())
         except Exception:
             logger.info("Discord close for channel %s failed.", self.bridge.sqid)
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        asyncio.set_event_loop(None)
 
     async def _close_client(self) -> None:
         """Let discord.py close its Gateway and HTTP resources cleanly."""
