@@ -11,13 +11,16 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from rebac import system_context
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
-from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
+from angee.messaging.testing.models import Channel, Message
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
 from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
+from tests.conftest import make_integration
+from tests.messaging_fixtures import _storage_drive
 
 
 class _TakeoutArchiveFile:
@@ -150,11 +153,14 @@ def test_export_chat_id_rejects_unmarkable_export_identity(
         extractor_module.export_chat_id(chat_type, chat_id)
 
 
+@pytest.mark.django_db(transaction=True)
 def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
+    composed_tables: None,
     tmp_path: Path,
 ) -> None:
-    """Takeout and live parsing produce identical external and sync-hash inputs."""
+    """Takeout and live messages land on the same row through public ingest."""
 
+    del composed_tables
     export_root = tmp_path / "takeout"
     photo = export_root / "chats/chat_001/photos/photo.jpg"
     photo.parent.mkdir(parents=True)
@@ -193,6 +199,7 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
         is_private=False,
         is_group=False,
         is_channel=True,
+        is_public=True,
     )
     live_metadata = dict(live_adapter.metadata)
     live_facts = live_metadata.pop("_media_facts")
@@ -204,7 +211,15 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
     assert exported.external_id == live.external_id == f"{marked_chat_id}/17"
     assert exported.thread is not None and live.thread is not None
     assert exported.thread.external_id == live.thread.external_id == str(marked_chat_id)
-    assert _sync_hash(exported) == _sync_hash(live)
+    with system_context(reason="test messaging telegram takeout and live convergence"):
+        channel = make_integration("telegram", model=Channel, backend_class="telegram")
+        _storage_drive(tmp_path / "drive", owner=channel.owner)
+        [imported] = Message.objects.ingest([exported], channel=channel, quote_edges=False, historical=True)
+        [landed] = Message.objects.ingest([live], channel=channel, quote_edges=False)
+
+        assert landed.pk == imported.pk
+        assert landed.thread_id == imported.thread_id
+        assert Message.objects.filter(channel=channel).count() == 1
 
 
 def test_telegram_takeout_broadcast_channel_uses_public_thread_modality() -> None:
@@ -420,16 +435,6 @@ def test_telegram_takeout_media_limits_and_bad_paths_degrade_to_markers(
     ).with_media(too_large)
     assert marker.body is not None
     assert "media unavailable: video.mp4" in str(marker.body)
-
-
-def _sync_hash(message: Any) -> str:
-    """Return messaging's exact sync hash for one neutral test message."""
-
-    return _parsed_sync_hash(
-        message,
-        channel_id="channel-1",
-        metadata=_bounded_message_metadata(message.metadata),
-    )
 
 
 def _install_messaging_doubles(

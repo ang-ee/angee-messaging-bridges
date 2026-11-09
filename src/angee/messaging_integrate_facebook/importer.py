@@ -25,7 +25,6 @@ from angee.messaging_integrate_facebook.parser import (
     parsed_message,
     parsed_post,
 )
-from angee.posts.ingest import land_posts
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +101,7 @@ def import_archive(
     landed = message_count
     if not dry_run:
         with system_context(reason=_IMPORT_REASON):
+            land_posts = apps.get_model("messaging", "Message").posts.land
             for start in range(0, len(post_records), _PUBLIC_CHUNK):
                 chunk = [
                     parsed_post(record, archive=archive, own_name=own_name)
