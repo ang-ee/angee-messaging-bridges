@@ -16,9 +16,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from django.apps import apps
+
 from angee.integrate_iphone.backup import IosBackup
 from angee.messaging.backup_ingest import batch_ingest, thread_watermarks
-from angee.messaging_integrate_imessage.connect import get_or_create_imessage_channel
+from angee.messaging_integrate_imessage.backend import ImessageChannelBackend
 from angee.messaging_integrate_imessage.lines import line_channel_name
 from angee.messaging_integrate_imessage.parser import parsed_message
 from angee.messaging_integrate_imessage.store import ImessageStore
@@ -95,7 +97,9 @@ def import_backup_per_line(
             variants.items(), key=lambda item: (item[0] is None, item[0] or "")
         ):
             name = line_channel_name(line_key)
-            channel = None if dry_run else get_or_create_imessage_channel(owner, name=name)
+            channel = None if dry_run else apps.get_model("messaging", "Channel").objects.named_import_channel(
+                owner, name=name, backend_class=ImessageChannelBackend.key
+            )
             watermarks = (
                 thread_watermarks(channel, reason=_WATERMARK_REASON) if resume and not dry_run else {}
             )
