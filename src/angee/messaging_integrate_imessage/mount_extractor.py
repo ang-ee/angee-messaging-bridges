@@ -15,8 +15,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.apps import apps
+
 from angee.integrate_iphone.backup import BackupError, IosBackup
-from angee.messaging_integrate_imessage.backend import confirmed_imessage_channel
+from angee.messaging_integrate_imessage.backend import ImessageChannelBackend
 from angee.messaging_integrate_imessage.importer import import_backup
 from angee.messaging_integrate_imessage.store import has_sms_store
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
@@ -61,7 +63,9 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
     ) -> dict[str, Any]:
         """Import the drive's backup Messages store into the confirmed channel."""
 
-        channel = confirmed_imessage_channel(target_pk)
+        channel = apps.get_model("messaging", "Channel").objects.require_backend_target(
+            target_pk, backend_class=ImessageChannelBackend.key
+        )
         manifest = subject.local_file_path("Manifest.db")
         root = manifest.parent if manifest is not None else None
         if root is None:

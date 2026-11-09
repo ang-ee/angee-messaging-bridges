@@ -13,6 +13,7 @@ import pytest
 from django.apps import apps
 from packaging.requirements import Requirement
 
+from angee.messaging.managers import ChannelQuerySet
 from angee.messaging_integrate_facebook import extractor as extractor_module
 from angee.messaging_integrate_facebook.autoconfig import SETTINGS
 from angee.messaging_integrate_facebook.extractor import FacebookTakeoutExtractor
@@ -61,7 +62,12 @@ def test_execute_stages_and_delegates_to_the_one_facade(
         nonlocal heartbeats
         heartbeats += 1
 
-    monkeypatch.setattr(extractor_module, "confirmed_facebook_channel", lambda _pk: channel)
+    resolved: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        ChannelQuerySet,
+        "require_backend_target",
+        lambda _channels, public_id, *, backend_class: resolved.append((public_id, backend_class)) or channel,
+    )
     monkeypatch.setattr(extractor_module, "import_archive", fake_import)
     result = FacebookTakeoutExtractor().execute(
         _ArchiveFile(archive),
@@ -69,6 +75,7 @@ def test_execute_stages_and_delegates_to_the_one_facade(
         SimpleNamespace(heartbeat=heartbeat),
     )
 
+    assert resolved == [("int_facebook", "facebook")]
     assert calls[0]["channel"] is channel
     assert calls[0]["resume"] is True
     assert "message_kind" not in calls[0]

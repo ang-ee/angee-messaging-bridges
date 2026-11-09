@@ -6,6 +6,7 @@ from typing import Any
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.utils.dateparse import parse_datetime
 from rebac import system_context
@@ -133,12 +134,12 @@ class Command(BaseCommand):
         if options["channel"] and options["create"]:
             raise CommandError("Pass either --channel or --create, not both.")
         if options["channel"]:
-            model = apps.get_model("messaging", "Channel")
-            with system_context(reason="imessage_import.resolve_channel"):
-                channel = model.objects.filter(sqid=options["channel"]).first()
-            if channel is None or channel.backend_class != ImessageChannelBackend.key:
-                raise CommandError(f"No iMessage channel {options['channel']!r}.")
-            return channel
+            try:
+                return apps.get_model("messaging", "Channel").objects.require_backend_target(
+                    options["channel"], backend_class=ImessageChannelBackend.key
+                )
+            except ValidationError as error:
+                raise CommandError(str(error)) from error
         if options["create"]:
             return create_imessage_channel(self._owner(options, flag="--create"), name=options["create"])
         raise CommandError("Pass --channel <sqid> or --create <name> --owner <username>.")

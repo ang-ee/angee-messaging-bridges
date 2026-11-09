@@ -11,7 +11,6 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from rebac import system_context
 
 from angee.messaging_integrate_facebook.backend import FacebookChannelBackend
-from angee.messaging_integrate_facebook.connect import confirmed_facebook_channel
 from angee.messaging_integrate_facebook.importer import import_archive
 
 
@@ -65,9 +64,10 @@ class Command(BaseCommand):
             raise CommandError("--dry-run requires an existing --channel; it never creates a target.")
         if bool(options["channel"]) == bool(options["create"]):
             raise CommandError("Pass exactly one of --channel or --create.")
+        channels = apps.get_model("messaging", "Channel").objects
         if options["channel"]:
             try:
-                return confirmed_facebook_channel(options["channel"])
+                return channels.require_backend_target(options["channel"], backend_class=FacebookChannelBackend.key)
             except ValidationError as error:
                 raise CommandError(str(error)) from error
         if not options["owner"]:
@@ -76,6 +76,4 @@ class Command(BaseCommand):
             owner = get_user_model()._base_manager.filter(username=options["owner"]).first()
         if owner is None:
             raise CommandError(f"No user {options['owner']!r}.")
-        return apps.get_model("messaging", "Channel").objects.named_import_channel(
-            owner, name=options["create"], backend_class=FacebookChannelBackend.key
-        )
+        return channels.named_import_channel(owner, name=options["create"], backend_class=FacebookChannelBackend.key)

@@ -239,7 +239,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
 ) -> None:
     """Execution resolves the confirmed channel and lands media through ParsedMessage."""
 
-    channel, manager, filters = _install_messaging_doubles(
+    channel, manager, targets = _install_messaging_doubles(
         monkeypatch,
         subscription_state={"own_id": "9999"},
     )
@@ -253,7 +253,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
         reporter,
     )
 
-    assert filters == [{"sqid": channel.sqid, "backend_class": "telegram"}]
+    assert targets == [(channel.sqid, "telegram")]
     assert len(manager.calls) == 1
     assert manager.calls[0]["channel"] is channel
     assert "message_kind" not in manager.calls[0]
@@ -280,7 +280,7 @@ def test_telegram_takeout_uses_export_owner_id_for_unpaired_channel(
 ) -> None:
     """Personal information makes self-sent messages outbound before live pairing."""
 
-    channel, manager, _filters = _install_messaging_doubles(
+    channel, manager, _targets = _install_messaging_doubles(
         monkeypatch,
         subscription_state={},
     )
@@ -302,7 +302,7 @@ def test_telegram_takeout_reports_every_skipped_message_category(
 ) -> None:
     """Service, unknown-chat, and malformed skips remain visible in the journal."""
 
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     valid = _message(message_id=17)
     service = {**_message(message_id=18), "type": "service"}
     idless = {**_message(message_id=19), "id": ""}
@@ -338,7 +338,7 @@ def test_telegram_takeout_rerun_converges_on_the_same_landed_identity(
 ) -> None:
     """Re-importing one takeout delegates the same external id to idempotent ingest."""
 
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     archive = _takeout_archive(tmp_path)
     extractor = TelegramTakeoutExtractor()
     reporter = SimpleNamespace(heartbeat=lambda: None)
@@ -365,7 +365,7 @@ def test_telegram_takeout_flushes_multiple_bounded_batches(
         monkeypatch.setattr(extractor_module, "_INGEST_BATCH_BYTES", 2 * len(b"telegram-photo-bytes"))
     else:
         monkeypatch.setattr(extractor_module, "_INGEST_BATCH_SIZE", 2)
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     chats = [
         _chat(
             chat_type="public_channel",
@@ -436,7 +436,7 @@ def _install_messaging_doubles(
     monkeypatch: pytest.MonkeyPatch,
     *,
     subscription_state: dict[str, Any] | None = None,
-) -> tuple[Any, _RecordingMessageManager, list[dict[str, str]]]:
+) -> tuple[Any, _RecordingMessageManager, list[tuple[str, str]]]:
     """Install complete channel/message owner doubles for extractor execution."""
 
     channel = SimpleNamespace(
@@ -444,19 +444,15 @@ def _install_messaging_doubles(
         owner_id=99,
         subscription_state=subscription_state or {},
     )
-    filters: list[dict[str, str]] = []
+    targets: list[tuple[str, str]] = []
 
-    class _ChannelQuery:
-        def filter(self, **kwargs: str) -> _ChannelQuery:
-            filters.append(kwargs)
-            return self
-
-        def first(self) -> Any:
-            return channel
+    def require_backend_target(public_id: str, *, backend_class: str) -> Any:
+        targets.append((public_id, backend_class))
+        return channel
 
     manager = _RecordingMessageManager()
     models = {
-        "Channel": SimpleNamespace(_base_manager=_ChannelQuery()),
+        "Channel": SimpleNamespace(objects=SimpleNamespace(require_backend_target=require_backend_target)),
         "Message": SimpleNamespace(
             objects=manager,
             MessageKind=SimpleNamespace(CHAT="chat"),
@@ -468,7 +464,7 @@ def _install_messaging_doubles(
         return models[model_name]
 
     monkeypatch.setattr(extractor_module.apps, "get_model", get_model)
-    return channel, manager, filters
+    return channel, manager, targets
 
 
 def _chat(
