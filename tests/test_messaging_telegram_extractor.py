@@ -14,7 +14,6 @@ import pytest
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
-from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
 from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
@@ -204,7 +203,9 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
     assert exported.external_id == live.external_id == f"{marked_chat_id}/17"
     assert exported.thread is not None and live.thread is not None
     assert exported.thread.external_id == live.thread.external_id == str(marked_chat_id)
-    assert _sync_hash(exported) == _sync_hash(live)
+    assert exported.sync_hash(channel_id="channel-1", metadata=exported.metadata) == live.sync_hash(
+        channel_id="channel-1", metadata=live.metadata
+    )
 
 
 def test_telegram_takeout_broadcast_channel_uses_public_thread_modality() -> None:
@@ -420,16 +421,6 @@ def test_telegram_takeout_media_limits_and_bad_paths_degrade_to_markers(
     ).with_media(too_large)
     assert marker.body is not None
     assert "media unavailable: video.mp4" in str(marker.body)
-
-
-def _sync_hash(message: Any) -> str:
-    """Return messaging's exact sync hash for one neutral test message."""
-
-    return _parsed_sync_hash(
-        message,
-        channel_id="channel-1",
-        metadata=_bounded_message_metadata(message.metadata),
-    )
 
 
 def _install_messaging_doubles(
