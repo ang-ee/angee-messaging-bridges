@@ -21,7 +21,6 @@ from rebac import system_context
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.live import PairingState, session_store_path
 from angee.integrate.locks import bridge_advisory_lock
-from angee.integrate.sync import BridgeProgressReporter
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -55,9 +54,7 @@ def _signal_module(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def signal_tables(
-    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def signal_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
     del composed_tables
@@ -448,6 +445,7 @@ def test_signal_full_session_pairs_and_ingests_receive_stream(
     signal_tables: None,
     scripted_signal_cli: type[_ScriptedPopen],
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Pair, sync, ingest direct/group/reply/media/echo, skip trust failure, EOF."""
 
@@ -494,14 +492,15 @@ def test_signal_full_session_pairs_and_ingests_receive_stream(
         ]
     )
     reports: list[dict[str, Any]] = []
-    real_reporter = BridgeProgressReporter(channel)
+    report_progress = channel.report_progress
 
-    class _Reporter:
-        def report(self, stage: Any, **payload: Any) -> None:
-            reports.append({"stage": stage, **payload})
-            real_reporter.report(stage, **payload)
+    def spy(stage: Any, **payload: Any) -> None:
+        reports.append({"stage": stage, **payload})
+        report_progress(stage, **payload)
 
-    session = session_module.SignalSession(channel, reporter=_Reporter(), stop_event=threading.Event())
+    monkeypatch.setattr(channel, "report_progress", spy)
+
+    session = session_module.SignalSession(channel, stop_event=threading.Event())
     with system_context(reason="test.messaging.signal.session.run"), bridge_advisory_lock(channel) as acquired:
         assert acquired
         outcome = session.run()
@@ -589,7 +588,6 @@ def test_signal_auth_errors_report_logged_out_without_deleting_store(
     )
     session = session_module.SignalSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = session._build_client(store)
@@ -620,7 +618,6 @@ def test_signal_stdout_eof_reports_disconnected(
     scripted_signal_cli.scripts.append([_response(1, ["+420700000000"])])
     session = session_module.SignalSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = session._build_client(store)
@@ -643,7 +640,7 @@ def test_signal_vendor_failure_queues_error_after_pairing(tmp_path: Path) -> Non
             self.events.put(("paired", "+420700000000"))
             raise error
 
-    session = FailedSession(_BareBridge(tmp_path), reporter=_NoopReporter(), stop_event=threading.Event())
+    session = FailedSession(_BareBridge(tmp_path), stop_event=threading.Event())
     session._connect()
 
     assert session.outcome_error is None
@@ -705,7 +702,6 @@ def test_signal_link_expiry_rotates_qr(
     bridge = _BareBridge(tmp_path)
     session = session_module.SignalSession(
         bridge,
-        reporter=_NoopReporter(),
         stop_event=threading.Event(),
     )
     session.client = session._build_client(tmp_path)
@@ -755,9 +751,7 @@ def test_signal_non_expiry_link_error_fails_session(
             _response(3, error={"code": code, "message": message, "data": data}),
         ]
     )
-    session = session_module.SignalSession(
-        _BareBridge(tmp_path), reporter=_NoopReporter(), stop_event=threading.Event()
-    )
+    session = session_module.SignalSession(_BareBridge(tmp_path), stop_event=threading.Event())
     session.client = session._build_client(tmp_path)
 
     session._connect()
@@ -836,7 +830,6 @@ def test_signal_quiet_liveness_probe_detects_missing_account(
 
     session = session_module.SignalSession(
         _BareBridge(tmp_path),
-        reporter=_NoopReporter(),
         stop_event=threading.Event(),
     )
     client = _LivenessClient()
@@ -865,7 +858,6 @@ def test_signal_quiet_liveness_probe_stop_does_not_report_logged_out(
 
     session = session_module.SignalSession(
         _BareBridge(tmp_path),
-        reporter=_NoopReporter(),
         stop_event=stop_event,
     )
     session.client = _QuietClient()
@@ -951,7 +943,6 @@ def test_signal_attachment_cleanup_waits_for_landed_external_id(tmp_path: Path) 
     attachment.write_bytes(b"content")
     session = session_module.SignalSession(
         _BareBridge(tmp_path),
-        reporter=_NoopReporter(),
         stop_event=threading.Event(),
     )
     session._store = tmp_path
@@ -981,11 +972,6 @@ def test_signal_auth_error_type_ignores_exception_names_in_human_message() -> No
     )
 
     assert error.error_types == {"NetworkFailureException"}
-
-
-class _NoopReporter:
-    def report(self, _stage: Any, **_payload: Any) -> None:
-        return None
 
 
 class _BareLiveImpl:
