@@ -29,7 +29,6 @@ from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.constants import RECONCILE_BACKOFF
 from angee.messaging.delivery import run_message_delivery
 from angee.messaging.events import message_ingested
-from angee.posts.ingest import land_posts
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
 from angee.posts_integrate_youtube.cursors import (
@@ -184,13 +183,21 @@ def seed(feed, wire, *, count=2, hidden=False):
     raw = deepcopy(wire["threads_first"]["items"][0])
     if hidden:
         raw["snippet"]["topLevelComment"]["snippet"]["moderationStatus"] = "heldForReview"
-    land_posts(feed, [
-        video_post(wire["video_fresh"]["items"][0], channel_id=feed.external_id),
-        comment_post(
-            raw["snippet"]["topLevelComment"], video_id="video-fresh", channel_id=feed.external_id,
-            reply_count=count, thread_id=raw["id"],
-        ),
-    ], owner_id=feed.owner_id, historical=True)
+    apps.get_model("messaging", "Message").posts.land(
+        feed,
+        [
+            video_post(wire["video_fresh"]["items"][0], channel_id=feed.external_id),
+            comment_post(
+                raw["snippet"]["topLevelComment"],
+                video_id="video-fresh",
+                channel_id=feed.external_id,
+                reply_count=count,
+                thread_id=raw["id"],
+            ),
+        ],
+        owner_id=feed.owner_id,
+        historical=True,
+    )
     return messages(feed).get(external_id="comment-a")
 
 
@@ -450,7 +457,7 @@ def test_youtube_recheck_id_filter_caps_batches_at_fifty(feed, monkeypatch, wire
         tops.append(comment_post(
             raw, video_id="video-fresh", channel_id=feed.external_id, thread_id=f"thread-batch-{index}",
         ))
-    land_posts(feed, [root, *tops], owner_id=feed.owner_id, historical=True)
+    apps.get_model("messaging", "Message").posts.land(feed, [root, *tops], owner_id=feed.owner_id, historical=True)
     calls = transport(monkeypatch, lambda *args: {"items": []})
     row = source(feed, "reobserve", ReobserveCursor(stage="threads").model_dump(mode="json"))
     drain(feed, row, bound=100)
@@ -991,10 +998,21 @@ def test_youtube_hide_detection_uses_current_provider_provenance(
     raw_reply["snippet"].pop("moderationStatus", None)
     subject, identity = parent, parent.external_id
     if read_path in {"replies", "parent"}:
-        land_posts(feed, [comment_post(
-            raw_reply, video_id="video-fresh", channel_id=feed.external_id,
-            moderation_status="heldForReview" if read_path == "replies" and moderation != "operator" else "published",
-        )], owner_id=feed.owner_id, historical=True)
+        apps.get_model("messaging", "Message").posts.land(
+            feed,
+            [
+                comment_post(
+                    raw_reply,
+                    video_id="video-fresh",
+                    channel_id=feed.external_id,
+                    moderation_status="heldForReview"
+                    if read_path == "replies" and moderation != "operator"
+                    else "published",
+                )
+            ],
+            owner_id=feed.owner_id,
+            historical=True,
+        )
         identity = raw_reply["id"]
         if read_path == "replies":
             subject = messages(feed).get(external_id=identity)
@@ -1045,8 +1063,12 @@ def test_youtube_same_second_watermark_ingests_the_other_comment(feed, wire, mon
 def test_youtube_reobservation_budget_pauses_and_resumes_the_unlanded_page(feed, wire, monkeypatch):
     seed(feed, wire, count=0)
     second = wire["threads_last"]["items"][0]["snippet"]["topLevelComment"]
-    land_posts(feed, [comment_post(second, video_id="video-fresh", channel_id=feed.external_id)],
-               owner_id=feed.owner_id, historical=True)
+    apps.get_model("messaging", "Message").posts.land(
+        feed,
+        [comment_post(second, video_id="video-fresh", channel_id=feed.external_id)],
+        owner_id=feed.owner_id,
+        historical=True,
+    )
     raws = [wire["threads_first"]["items"][0]["snippet"]["topLevelComment"], second]
     calls = transport(monkeypatch, lambda method, resource, query, kwargs: {
         "items": [raw for raw in raws if raw["id"] in query["id"].split(",")],
@@ -1196,10 +1218,19 @@ def test_youtube_owner_scans_restore_only_top_level_comments_and_preserve_hidden
     seed(feed, wire, hidden=True)
     raw = deepcopy(wire["replies_first"]["items"][0])
     raw["snippet"].pop("moderationStatus", None)
-    land_posts(feed, [comment_post(
-        raw, video_id="video-fresh", channel_id=feed.external_id, moderation_status="heldForReview",
-    )],
-               owner_id=feed.owner_id, historical=True)
+    apps.get_model("messaging", "Message").posts.land(
+        feed,
+        [
+            comment_post(
+                raw,
+                video_id="video-fresh",
+                channel_id=feed.external_id,
+                moderation_status="heldForReview",
+            )
+        ],
+        owner_id=feed.owner_id,
+        historical=True,
+    )
     top = deepcopy(wire["threads_first"]["items"][0]["snippet"]["topLevelComment"])
     top["snippet"].pop("moderationStatus", None)
     calls = transport(monkeypatch, lambda *args: {"items": [top, raw]})

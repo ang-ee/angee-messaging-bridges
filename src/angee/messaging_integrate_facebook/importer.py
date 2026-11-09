@@ -25,7 +25,6 @@ from angee.messaging_integrate_facebook.parser import (
     parsed_message,
     parsed_post,
 )
-from angee.posts.ingest import land_posts
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +106,14 @@ def import_archive(
                     parsed_post(record, archive=archive, own_name=own_name)
                     for record in post_records[start : start + _PUBLIC_CHUNK]
                 ]
-                land_posts(channel, chunk, owner_id=channel.owner_id, historical=True)
+                apps.get_model("messaging", "Message").posts.land(
+                    channel, chunk, owner_id=channel.owner_id, historical=True
+                )
                 landed += len(chunk)
                 if on_batch is not None:
                     on_batch(landed)
             for start in range(0, len(comments), _PUBLIC_CHUNK):
-                land_posts(
+                apps.get_model("messaging", "Message").posts.land(
                     channel,
                     comments[start : start + _PUBLIC_CHUNK],
                     owner_id=channel.owner_id,
