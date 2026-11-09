@@ -6,10 +6,10 @@ credential (whatsmeow's device pairing under ``ANGEE_DATA_DIR`` — no
 ``integrate.Credential`` row exists for a WhatsApp channel). Base ``messaging``
 owns the neutral ``Channel`` model and the list/detail surface.
 
-Connecting is two-phase: the channel row commits first, then messaging's generic
-pairing service declares the live intent and dispatches the session task. This
+Connecting is two-phase: the channel row commits first, then the channel's own
+pairing verb declares the live intent and dispatches the session task. This
 addon retains the vendor-named create/connect facade; generic pairing lifecycle
-verbs stay with messaging.
+verbs stay on messaging's ``Channel``.
 
 Row writes specific to WhatsApp belong to the row's selected backend
 (:class:`~.backend.WhatsAppChannelBackend`), not here.
@@ -23,7 +23,6 @@ from django.apps import apps
 from django.db import transaction
 from rebac import system_context
 
-from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_whatsapp.backend import WhatsAppChannelBackend
 
 Channel = apps.get_model("messaging", "Channel")
@@ -56,8 +55,7 @@ def connect_whatsapp_channel(user: Any, *, name: str) -> Any:
     """Create a WhatsApp channel, declare it connected, and start its pairing session.
 
     The row commits disconnected so a failed resume leaves no half-connected
-    channel behind; :func:`angee.messaging.connect.resume_channel_pairing` then
-    declares the intent.
+    channel behind; ``Channel.resume_pairing`` then declares the intent.
     The session task lands on the dedicated ``whatsapp`` queue; without that
     worker (the stack input not enabled) the start simply expires and the
     channel keeps reporting the ``starting`` pairing state until the
@@ -65,5 +63,5 @@ def connect_whatsapp_channel(user: Any, *, name: str) -> Any:
     """
 
     channel = create_whatsapp_channel(user, name=name)
-    resume_channel_pairing(channel)
+    channel.resume_pairing()
     return channel

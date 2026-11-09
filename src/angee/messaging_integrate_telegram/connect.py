@@ -9,7 +9,6 @@ from django.db import transaction
 from rebac import system_context
 
 from angee.integrate.credentials import CredentialKind
-from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_telegram.backend import TelegramChannelBackend
 
 Channel = apps.get_model("messaging", "Channel")
@@ -46,7 +45,7 @@ def create_telegram_channel(
             backend_class=_TELEGRAM_SLUG,
         )
         channel.connect(credential=credential)
-    resume_channel_pairing(channel)
+    channel.resume_pairing()
     return channel
 
 

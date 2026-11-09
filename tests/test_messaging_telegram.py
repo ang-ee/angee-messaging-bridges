@@ -25,7 +25,6 @@ from angee.integrate.live import PairingState, session_store_path
 from angee.integrate.locks import bridge_advisory_lock
 from angee.integrate.models import IntegrationRuntimeStatus
 from angee.integrate.sync import BridgeProgressReporter
-from angee.messaging.connect import submit_channel_password
 from angee.messaging.models import Thread
 from tests.conftest import (
     SchemaAddon,
@@ -643,7 +642,7 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
         wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
         with system_context(reason="test.messaging.telegram.session.password"):
             operator_channel = Channel.objects.get(pk=channel.pk)
-            submit_channel_password(operator_channel, "wrong-password")
+            operator_channel.submit_pairing_password("wrong-password")
         wait_until(
             lambda: any(
                 report.get("details", {}).get("pairing", {}).get("message")
@@ -653,7 +652,7 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
         )
         with system_context(reason="test.messaging.telegram.session.password.retry"):
             operator_channel = Channel.objects.get(pk=channel.pk)
-            submit_channel_password(operator_channel, submitted)
+            operator_channel.submit_pairing_password(submitted)
 
     operator = threading.Thread(target=_submit_password, daemon=True)
     _FakeTelegramClient.instances.clear()

@@ -247,7 +247,8 @@ def test_create_signal_channel_resets_newest_unfinished_channel(
 
     connect = _signal_module("connect")
     monkeypatch.setattr("angee.integrate.live.task_locks_are_cross_process", lambda: True)
-    monkeypatch.setattr("angee.messaging.connect.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.messaging.managers.task_locks_are_cross_process", lambda: True)
+    monkeypatch.setattr("angee.messaging.models.task_locks_are_cross_process", lambda: True)
     admin = _platform_admin("msg-signal-retry-admin")
     with system_context(reason="test.messaging.signal.retry.seed"):
         Vendor.objects.create(slug="signal", display_name="Signal")
