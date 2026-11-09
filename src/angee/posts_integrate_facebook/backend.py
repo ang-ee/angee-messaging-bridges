@@ -216,11 +216,9 @@ class FacebookFeedBackend(FeedBackend):
                     scan_newest = published
             records.append(record)
         roots = [record for record in records if isinstance(record, ParsedPost)]
-        counts = dict(
-            apps.get_model("posts", "PostMetrics").objects.filter(
-                message__channel_id=self.bridge.pk, message__platform="facebook",
-                message__external_id__in=[record.message.external_id for record in roots],
-            ).values_list("message__external_id", "reply_count")
+        counts = apps.get_model("posts", "PostMetrics").objects.reply_counts(
+            channel=self.bridge, platform="facebook",
+            external_ids=[record.message.external_id for record in roots],
         )
         newest = timestamp(state.newest_published_at)
         state.pending = [
