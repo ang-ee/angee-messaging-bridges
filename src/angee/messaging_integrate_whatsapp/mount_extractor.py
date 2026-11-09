@@ -48,7 +48,7 @@ class WhatsAppMountBackupExtractor(ArchiveExtractor):
         except backup.BackupError:
             return False
         try:
-            return backup.has_chat_storage(iphone, self.domain)
+            return iphone.has_sqlite_file(self.domain, backup.CHAT_STORAGE_PATH)
         except backup.BackupError:
             return False
         finally:

@@ -20,7 +20,7 @@ from django.apps import apps
 from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging_integrate_imessage.backend import ImessageChannelBackend
 from angee.messaging_integrate_imessage.importer import import_backup
-from angee.messaging_integrate_imessage.store import has_sms_store
+from angee.messaging_integrate_imessage.store import SMS_DOMAIN, SMS_PATH
 from angee.workflows_integrate.archive_steps import ArchiveExecutionReporter, ArchiveExtractor
 
 
@@ -49,7 +49,7 @@ class ImessageMountBackupExtractor(ArchiveExtractor):
         except BackupError:
             return False
         try:
-            return has_sms_store(iphone)
+            return iphone.has_sqlite_file(SMS_DOMAIN, SMS_PATH)
         except BackupError:
             return False
         finally:
