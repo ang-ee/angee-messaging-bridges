@@ -101,19 +101,18 @@ def import_archive(
     landed = message_count
     if not dry_run:
         with system_context(reason=_IMPORT_REASON):
+            land_posts = apps.get_model("messaging", "Message").posts.land
             for start in range(0, len(post_records), _PUBLIC_CHUNK):
                 chunk = [
                     parsed_post(record, archive=archive, own_name=own_name)
                     for record in post_records[start : start + _PUBLIC_CHUNK]
                 ]
-                apps.get_model("messaging", "Message").posts.land(
-                    channel, chunk, owner_id=channel.owner_id, historical=True
-                )
+                land_posts(channel, chunk, owner_id=channel.owner_id, historical=True)
                 landed += len(chunk)
                 if on_batch is not None:
                     on_batch(landed)
             for start in range(0, len(comments), _PUBLIC_CHUNK):
-                apps.get_model("messaging", "Message").posts.land(
+                land_posts(
                     channel,
                     comments[start : start + _PUBLIC_CHUNK],
                     owner_id=channel.owner_id,
