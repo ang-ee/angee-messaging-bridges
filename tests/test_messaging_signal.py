@@ -20,7 +20,6 @@ from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -501,7 +500,7 @@ def test_signal_full_session_pairs_and_ingests_receive_stream(
     monkeypatch.setattr(channel, "report_progress", spy)
 
     session = session_module.SignalSession(channel, stop_event=threading.Event())
-    with system_context(reason="test.messaging.signal.session.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.signal.session.run"), channel.sync_lock() as acquired:
         assert acquired
         outcome = session.run()
 

@@ -22,7 +22,6 @@ from rebac import system_context
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
 from angee.integrate.models import IntegrationRuntimeStatus
 from angee.messaging.models import Thread
 from tests.conftest import (
@@ -655,7 +654,7 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
     operator = threading.Thread(target=_submit_password, daemon=True)
     _FakeTelegramClient.instances.clear()
     operator.start()
-    with system_context(reason="test.messaging.telegram.session.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.telegram.session.run"), channel.sync_lock() as acquired:
         assert acquired
         outcome = session.run()
     operator.join(timeout=1)
@@ -910,7 +909,7 @@ def test_telegram_qr_rotation_cap_reports_stopped_and_exits(
     session.client = SimpleNamespace(qr_login=qr_login)
 
     assert asyncio.run(session._pair()) is None
-    with system_context(reason="test.messaging.telegram.qr_cap.drain"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.telegram.qr_cap.drain"), channel.sync_lock() as acquired:
         assert acquired
         assert session._drain_once() is True
         assert session._drain_once() is True
@@ -1010,7 +1009,7 @@ def test_telegram_authorized_session_retries_history_until_seeded_once(
     assert ("history_seeded", None) in queued
     with (
         system_context(reason="test.messaging.telegram.history_seed.record"),
-        bridge_advisory_lock(channel) as acquired,
+        channel.sync_lock() as acquired,
     ):
         assert acquired
         assert session._handle("history_seeded", None) is True
@@ -1079,7 +1078,7 @@ def test_telegram_initial_history_lands_caption_and_media_marker_through_ingest(
     assert kind == "messages"
     with (
         system_context(reason="test.messaging.telegram.history_ingest.land"),
-        bridge_advisory_lock(channel) as acquired,
+        channel.sync_lock() as acquired,
     ):
         assert acquired
         assert session._handle(kind, batch) is True

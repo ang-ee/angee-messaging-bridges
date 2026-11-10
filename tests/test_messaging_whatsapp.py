@@ -30,11 +30,11 @@ from rebac import system_context
 
 from angee.base.fields.state import StateField
 from angee.base.locks import task_lock_is_held
+from angee.base.testing.queries import statement_startswith
 from angee.integrate import tasks as tasks_module
 from angee.integrate.constants import RUN_SESSION_TASK
 from angee.integrate.http import HttpClient
 from angee.integrate.live import PairingState, SessionLoggedOut
-from angee.integrate.locks import bridge_advisory_lock
 from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus
 from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
 from angee.messaging_integrate_whatsapp.backend import (
@@ -380,7 +380,7 @@ def _run_session(
         stop_event=stop_event or threading.Event(),
     )
     session.client_class = FakeWhatsAppClient
-    with system_context(reason="test whatsapp session run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp session run"), channel.sync_lock() as acquired:
         assert acquired
         return session.run()
 
@@ -920,7 +920,7 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
     result = _run_session_task(channel)
     assert result["skipped"] and result["reason"] == "not-connected"
 
-    with system_context(reason="test whatsapp generic disconnect wake"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp generic disconnect wake"), channel.sync_lock() as acquired:
         assert acquired
         assert session._still_wanted() is False
         assert session.pairing == PairingState.STOPPED
@@ -1312,7 +1312,7 @@ def _run_lid_session(
     FakeLidClient.instances = []
     session = whatsapp_session.WhatsAppSession(channel, stop_event=stop_event)
     session.client_class = FakeLidClient
-    with system_context(reason="test whatsapp lid session run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp lid session run"), channel.sync_lock() as acquired:
         assert acquired
         return session.run()
 
@@ -1914,10 +1914,8 @@ def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_t
         preview = resolve_channel_lids(channel, resolver, dry_run=True)
     # Native elevated-read audit records remain; identity/provenance rows do not change.
     audit = connection.ops.quote_name(apps.get_model("rebac", "PermissionAuditEvent")._meta.db_table)
-    writes = [
-        query["sql"] for query in queries if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
-    ]
-    assert writes and all(sql.startswith(f"INSERT INTO {audit}") for sql in writes)
+    writes = [query["sql"] for query in queries if statement_startswith(query["sql"], ("INSERT", "UPDATE", "DELETE"))]
+    assert writes and all(statement_startswith(sql, f"INSERT INTO {audit}") for sql in writes)
     result = resolve_channel_lids(channel, resolver)
     assert preview == result
     assert (result.resolved, result.merged, result.named) == (1, 1, not bool(source_name or target_name))
