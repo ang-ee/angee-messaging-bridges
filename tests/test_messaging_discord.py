@@ -18,8 +18,6 @@ from rebac import system_context
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
-from angee.integrate.sync import BridgeProgressReporter
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -48,9 +46,7 @@ def _discord_module(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def discord_tables(
-    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def discord_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
     del composed_tables
@@ -434,7 +430,6 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
     first_stop = threading.Event()
     first = discord_session_module.DiscordSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=first_stop,
     )
     failures: list[BaseException] = []
@@ -457,7 +452,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
             first_stop.set()
 
     operator = threading.Thread(target=stop_first, daemon=True)
-    with system_context(reason="test.messaging.discord.first.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.discord.first.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         first_outcome = first.run()
@@ -501,7 +496,6 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
     second_channel = Channel._base_manager.get(pk=channel.pk)
     second = discord_session_module.DiscordSession(
         second_channel,
-        reporter=BridgeProgressReporter(second_channel),
         stop_event=second_stop,
     )
 
@@ -522,7 +516,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
             second_stop.set()
 
     operator = threading.Thread(target=stop_second, daemon=True)
-    with system_context(reason="test.messaging.discord.second.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.discord.second.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         second_outcome = second.run()
@@ -556,7 +550,6 @@ def test_discord_history_channels_are_ordered_by_recent_activity(
     direct = _FakeDiscordChannel(800, last_message_id=1_200)
     session = discord_session_module.DiscordSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = SimpleNamespace(
@@ -579,7 +572,6 @@ def test_discord_invalid_token_reports_logged_out(
     channel = _discord_channel(admin, token="invalid-bot-token")
     session = discord_session_module.DiscordSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     path = session_store_path(channel) / "session.marker"
@@ -607,7 +599,6 @@ def test_discord_media_download_uses_capped_signed_url_without_bearer(
     channel.config = {"max_media_bytes": 5}
     session = discord_session_module.DiscordSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     calls: list[tuple[str, int]] = []

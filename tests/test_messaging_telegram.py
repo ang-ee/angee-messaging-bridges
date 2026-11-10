@@ -22,10 +22,7 @@ from rebac import system_context
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
 from angee.integrate.models import IntegrationRuntimeStatus
-from angee.integrate.sync import BridgeProgressReporter
-from angee.messaging.connect import submit_channel_password
 from angee.messaging.models import Thread
 from tests.conftest import (
     SchemaAddon,
@@ -67,9 +64,7 @@ def _telegram_module(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def telegram_tables(
-    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def telegram_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
     del composed_tables
@@ -611,6 +606,7 @@ def telegram_session_module(monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
     telegram_tables: Any,
     telegram_session_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Timeout rotation → bounded password handoff → generic paired account claim."""
 
@@ -625,16 +621,16 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
         credential=_app_keys_credential(admin),
     )
     reports: list[dict[str, Any]] = []
-    real_reporter = BridgeProgressReporter(channel)
+    report_progress = channel.report_progress
 
-    class _Reporter:
-        def report(self, stage: Any, **payload: Any) -> None:
-            reports.append({"stage": stage, **payload})
-            real_reporter.report(stage, **payload)
+    def spy(stage: Any, **payload: Any) -> None:
+        reports.append({"stage": stage, **payload})
+        report_progress(stage, **payload)
+
+    monkeypatch.setattr(channel, "report_progress", spy)
 
     session = session_module.TelegramSession(
         channel,
-        reporter=_Reporter(),
         stop_event=threading.Event(),
     )
     submitted = "correct-horse-battery-staple"
@@ -643,7 +639,7 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
         wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
         with system_context(reason="test.messaging.telegram.session.password"):
             operator_channel = Channel.objects.get(pk=channel.pk)
-            submit_channel_password(operator_channel, "wrong-password")
+            operator_channel.submit_pairing_password("wrong-password")
         wait_until(
             lambda: any(
                 report.get("details", {}).get("pairing", {}).get("message")
@@ -653,12 +649,12 @@ def test_telegram_session_rotates_qr_accepts_password_and_claims_account(
         )
         with system_context(reason="test.messaging.telegram.session.password.retry"):
             operator_channel = Channel.objects.get(pk=channel.pk)
-            submit_channel_password(operator_channel, submitted)
+            operator_channel.submit_pairing_password(submitted)
 
     operator = threading.Thread(target=_submit_password, daemon=True)
     _FakeTelegramClient.instances.clear()
     operator.start()
-    with system_context(reason="test.messaging.telegram.session.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.telegram.session.run"), channel.sync_lock() as acquired:
         assert acquired
         outcome = session.run()
     operator.join(timeout=1)
@@ -810,7 +806,6 @@ def test_telegram_password_wait_runs_off_the_vendor_event_loop(
     )
     session = session_module.TelegramSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     request_threads: list[int | None] = []
@@ -909,13 +904,12 @@ def test_telegram_qr_rotation_cap_reports_stopped_and_exits(
 
     session = session_module.TelegramSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = SimpleNamespace(qr_login=qr_login)
 
     assert asyncio.run(session._pair()) is None
-    with system_context(reason="test.messaging.telegram.qr_cap.drain"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.telegram.qr_cap.drain"), channel.sync_lock() as acquired:
         assert acquired
         assert session._drain_once() is True
         assert session._drain_once() is True
@@ -983,7 +977,6 @@ def test_telegram_authorized_session_retries_history_until_seeded_once(
     )
     session = session_module.TelegramSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     disconnected: asyncio.Future[None] | None = None
@@ -1016,7 +1009,7 @@ def test_telegram_authorized_session_retries_history_until_seeded_once(
     assert ("history_seeded", None) in queued
     with (
         system_context(reason="test.messaging.telegram.history_seed.record"),
-        bridge_advisory_lock(channel) as acquired,
+        channel.sync_lock() as acquired,
     ):
         assert acquired
         assert session._handle("history_seeded", None) is True
@@ -1070,7 +1063,6 @@ def test_telegram_initial_history_lands_caption_and_media_marker_through_ingest(
 
     session = session_module.TelegramSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = HistoryClient()
@@ -1086,7 +1078,7 @@ def test_telegram_initial_history_lands_caption_and_media_marker_through_ingest(
     assert kind == "messages"
     with (
         system_context(reason="test.messaging.telegram.history_ingest.land"),
-        bridge_advisory_lock(channel) as acquired,
+        channel.sync_lock() as acquired,
     ):
         assert acquired
         assert session._handle(kind, batch) is True
@@ -1119,7 +1111,6 @@ def test_telegram_client_session_path_derives_from_the_passed_store(
     )
     session = session_module.TelegramSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     store = session_store_path(channel) / "custom.session"
@@ -1136,8 +1127,13 @@ def test_live_channel_resolves_uncached_entity_before_mapping_audience(telegram_
     session.events = queue.Queue()
     entity = SimpleNamespace(id=42, title="Public channel", username="public_chat")
     event = SimpleNamespace(
-        message=_message(id=19), chat_id=-10042, chat=None,
-        is_private=False, is_group=False, is_channel=True, get_chat=AsyncMock(return_value=entity),
+        message=_message(id=19),
+        chat_id=-10042,
+        chat=None,
+        is_private=False,
+        is_group=False,
+        is_channel=True,
+        get_chat=AsyncMock(return_value=entity),
     )
     asyncio.run(session._on_new_message(event))
     event.get_chat.assert_awaited_once()

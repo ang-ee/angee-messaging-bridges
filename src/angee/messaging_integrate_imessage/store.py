@@ -26,12 +26,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from angee.integrate_iphone.backup import (
-    SQLITE_HEADER_LENGTH,
-    BackupError,
-    IosBackup,
-    is_sqlite_header,
-)
+from angee.integrate_iphone.backup import BackupError, IosBackup
 from angee.messaging.backends import MediaItem
 from angee.messaging_integrate_imessage.attributed_body import attributed_body_text
 from angee.messaging_integrate_imessage.lines import normalize_line
@@ -81,19 +76,6 @@ def sms_store_path(backup: IosBackup) -> Path | None:
     """Return the manifest-resolved ``sms.db`` blob in ``backup``, or ``None``."""
 
     return backup.blob_path(SMS_DOMAIN, SMS_PATH)
-
-
-def has_sms_store(backup: IosBackup) -> bool:
-    """Return whether ``backup`` carries a SQLite Messages store."""
-
-    store = sms_store_path(backup)
-    if store is None:
-        return False
-    try:
-        with store.open("rb") as stream:
-            return is_sqlite_header(stream.read(SQLITE_HEADER_LENGTH))
-    except OSError:
-        return False
 
 
 class ImessageStore:

@@ -11,13 +11,16 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from rebac import system_context
 from telethon import types, utils
 
 from angee.messaging.backends import MediaItem
-from angee.messaging.managers import _bounded_message_metadata, _parsed_sync_hash
+from angee.messaging.testing.models import Channel, Message
 from angee.messaging_integrate_telegram import extractor as extractor_module
 from angee.messaging_integrate_telegram import identity
 from angee.messaging_integrate_telegram.extractor import TelegramTakeoutExtractor
+from tests.conftest import make_integration
+from tests.messaging_fixtures import _storage_drive
 
 
 class _TakeoutArchiveFile:
@@ -150,11 +153,14 @@ def test_export_chat_id_rejects_unmarkable_export_identity(
         extractor_module.export_chat_id(chat_type, chat_id)
 
 
+@pytest.mark.django_db(transaction=True)
 def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
+    composed_tables: None,
     tmp_path: Path,
 ) -> None:
-    """Takeout and live parsing produce identical external and sync-hash inputs."""
+    """Takeout and live messages land on the same row through public ingest."""
 
+    del composed_tables
     export_root = tmp_path / "takeout"
     photo = export_root / "chats/chat_001/photos/photo.jpg"
     photo.parent.mkdir(parents=True)
@@ -193,6 +199,7 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
         is_private=False,
         is_group=False,
         is_channel=True,
+        is_public=True,
     )
     live_metadata = dict(live_adapter.metadata)
     live_facts = live_metadata.pop("_media_facts")
@@ -204,7 +211,15 @@ def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
     assert exported.external_id == live.external_id == f"{marked_chat_id}/17"
     assert exported.thread is not None and live.thread is not None
     assert exported.thread.external_id == live.thread.external_id == str(marked_chat_id)
-    assert _sync_hash(exported) == _sync_hash(live)
+    with system_context(reason="test messaging telegram takeout and live convergence"):
+        channel = make_integration("telegram", model=Channel, backend_class="telegram")
+        _storage_drive(tmp_path / "drive", owner=channel.owner)
+        [imported] = Message.objects.ingest([exported], channel=channel, quote_edges=False, historical=True)
+        [landed] = Message.objects.ingest([live], channel=channel, quote_edges=False)
+
+        assert landed.pk == imported.pk
+        assert landed.thread_id == imported.thread_id
+        assert Message.objects.filter(channel=channel).count() == 1
 
 
 def test_telegram_takeout_broadcast_channel_uses_public_thread_modality() -> None:
@@ -239,7 +254,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
 ) -> None:
     """Execution resolves the confirmed channel and lands media through ParsedMessage."""
 
-    channel, manager, filters = _install_messaging_doubles(
+    channel, manager, targets = _install_messaging_doubles(
         monkeypatch,
         subscription_state={"own_id": "9999"},
     )
@@ -253,7 +268,7 @@ def test_telegram_takeout_execute_delegates_to_messaging_ingest(
         reporter,
     )
 
-    assert filters == [{"sqid": channel.sqid, "backend_class": "telegram"}]
+    assert targets == [(channel.sqid, "telegram")]
     assert len(manager.calls) == 1
     assert manager.calls[0]["channel"] is channel
     assert "message_kind" not in manager.calls[0]
@@ -280,7 +295,7 @@ def test_telegram_takeout_uses_export_owner_id_for_unpaired_channel(
 ) -> None:
     """Personal information makes self-sent messages outbound before live pairing."""
 
-    channel, manager, _filters = _install_messaging_doubles(
+    channel, manager, _targets = _install_messaging_doubles(
         monkeypatch,
         subscription_state={},
     )
@@ -302,7 +317,7 @@ def test_telegram_takeout_reports_every_skipped_message_category(
 ) -> None:
     """Service, unknown-chat, and malformed skips remain visible in the journal."""
 
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     valid = _message(message_id=17)
     service = {**_message(message_id=18), "type": "service"}
     idless = {**_message(message_id=19), "id": ""}
@@ -338,7 +353,7 @@ def test_telegram_takeout_rerun_converges_on_the_same_landed_identity(
 ) -> None:
     """Re-importing one takeout delegates the same external id to idempotent ingest."""
 
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     archive = _takeout_archive(tmp_path)
     extractor = TelegramTakeoutExtractor()
     reporter = SimpleNamespace(heartbeat=lambda: None)
@@ -365,7 +380,7 @@ def test_telegram_takeout_flushes_multiple_bounded_batches(
         monkeypatch.setattr(extractor_module, "_INGEST_BATCH_BYTES", 2 * len(b"telegram-photo-bytes"))
     else:
         monkeypatch.setattr(extractor_module, "_INGEST_BATCH_SIZE", 2)
-    channel, manager, _filters = _install_messaging_doubles(monkeypatch)
+    channel, manager, _targets = _install_messaging_doubles(monkeypatch)
     chats = [
         _chat(
             chat_type="public_channel",
@@ -422,21 +437,11 @@ def test_telegram_takeout_media_limits_and_bad_paths_degrade_to_markers(
     assert "media unavailable: video.mp4" in str(marker.body)
 
 
-def _sync_hash(message: Any) -> str:
-    """Return messaging's exact sync hash for one neutral test message."""
-
-    return _parsed_sync_hash(
-        message,
-        channel_id="channel-1",
-        metadata=_bounded_message_metadata(message.metadata),
-    )
-
-
 def _install_messaging_doubles(
     monkeypatch: pytest.MonkeyPatch,
     *,
     subscription_state: dict[str, Any] | None = None,
-) -> tuple[Any, _RecordingMessageManager, list[dict[str, str]]]:
+) -> tuple[Any, _RecordingMessageManager, list[tuple[str, str]]]:
     """Install complete channel/message owner doubles for extractor execution."""
 
     channel = SimpleNamespace(
@@ -444,19 +449,15 @@ def _install_messaging_doubles(
         owner_id=99,
         subscription_state=subscription_state or {},
     )
-    filters: list[dict[str, str]] = []
+    targets: list[tuple[str, str]] = []
 
-    class _ChannelQuery:
-        def filter(self, **kwargs: str) -> _ChannelQuery:
-            filters.append(kwargs)
-            return self
-
-        def first(self) -> Any:
-            return channel
+    def require_backend_target(public_id: str, *, backend_class: str) -> Any:
+        targets.append((public_id, backend_class))
+        return channel
 
     manager = _RecordingMessageManager()
     models = {
-        "Channel": SimpleNamespace(_base_manager=_ChannelQuery()),
+        "Channel": SimpleNamespace(objects=SimpleNamespace(require_backend_target=require_backend_target)),
         "Message": SimpleNamespace(
             objects=manager,
             MessageKind=SimpleNamespace(CHAT="chat"),
@@ -468,7 +469,7 @@ def _install_messaging_doubles(
         return models[model_name]
 
     monkeypatch.setattr(extractor_module.apps, "get_model", get_model)
-    return channel, manager, filters
+    return channel, manager, targets
 
 
 def _chat(

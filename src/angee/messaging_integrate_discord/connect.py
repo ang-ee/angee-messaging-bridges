@@ -10,7 +10,6 @@ from django.views.decorators.debug import sensitive_variables
 from rebac import system_context
 
 from angee.integrate.credentials import CredentialKind
-from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_discord.backend import DiscordChannelBackend
 
 Channel = apps.get_model("messaging", "Channel")
@@ -21,10 +20,8 @@ Credential = apps.get_model("integrate", "Credential")
 def create_discord_channel(user: Any, name: str, token: str) -> Any:
     """Atomically persist one bot token and channel, then start Gateway login."""
 
-    clean_name = str(name or "").strip()
+    clean_name = Channel.objects.normalized_name(name)
     clean_token = str(token or "").strip()
-    if not clean_name:
-        raise ValueError("A Discord connection name is required.")
     if not clean_token:
         raise ValueError("A Discord bot token is required.")
 
@@ -41,7 +38,7 @@ def create_discord_channel(user: Any, name: str, token: str) -> Any:
             backend_class=DiscordChannelBackend.key,
         )
         channel.connect(credential=credential)
-    resume_channel_pairing(channel)
+    channel.resume_pairing()
     return channel
 
 

@@ -14,6 +14,7 @@ import pytest
 from django.apps import apps
 from packaging.requirements import Requirement
 
+from angee.messaging.managers import ChannelQuerySet
 from angee.messaging_integrate_imessage import extractor as extractor_module
 from angee.messaging_integrate_imessage.autoconfig import SETTINGS as IMESSAGE_SETTINGS
 from angee.messaging_integrate_imessage.extractor import ImessageIphoneBackupExtractor
@@ -88,11 +89,11 @@ def test_imessage_iphone_backup_execute_delegates_to_backup_importer_owner(
 
     target = "int_confirmed"
     channel = SimpleNamespace(sqid=target)
-    resolved: list[str] = []
+    resolved: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        extractor_module,
-        "confirmed_imessage_channel",
-        lambda sqid: resolved.append(sqid) or channel,
+        ChannelQuerySet,
+        "require_backend_target",
+        lambda _channels, public_id, *, backend_class: resolved.append((public_id, backend_class)) or channel,
     )
     calls: list[dict[str, Any]] = []
 
@@ -110,7 +111,7 @@ def test_imessage_iphone_backup_execute_delegates_to_backup_importer_owner(
 
     result = ImessageIphoneBackupExtractor().execute(_BackupArchiveFile(archive), target, reporter)
 
-    assert resolved == [target]
+    assert resolved == [(target, "imessage")]
     assert calls == [{"channel": channel, "manifest": True}]
     assert heartbeats == [True]
     assert result == {"channel": target, "imported": 4}
