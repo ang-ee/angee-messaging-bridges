@@ -22,7 +22,6 @@ from unpaddedbase64 import decode_base64, encode_base64
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
 from angee.messaging_integrate_matrix import recovery
 from angee.messaging_integrate_matrix.backend import MatrixChannelBackend
 from angee.messaging_integrate_matrix.constants import SESSION_QUEUE
@@ -694,7 +693,7 @@ def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
             stop_event.set()
 
     operator = threading.Thread(target=operate, daemon=True)
-    with system_context(reason="test.messaging.matrix.session.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.session.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         outcome = session.run()
@@ -770,7 +769,7 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
             stop_event.set()
 
     operator = threading.Thread(target=operate, daemon=True)
-    with system_context(reason="test.messaging.matrix.skip.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.skip.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         outcome = session.run()
@@ -857,7 +856,7 @@ def test_matrix_mid_session_forbidden_is_retriable_not_logged_out(
         channel,
         stop_event=threading.Event(),
     )
-    with system_context(reason="test.messaging.matrix.retriable_error.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.retriable_error.run"), channel.sync_lock() as acquired:
         assert acquired
         outcome = session.run()
 

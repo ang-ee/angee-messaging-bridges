@@ -11,8 +11,10 @@ BRIDGE_PACKAGES_ROOT = ROOT / "src" / "angee"
 ANGEE_SPEC = importlib.util.find_spec("angee")
 assert ANGEE_SPEC is not None and ANGEE_SPEC.submodule_search_locations
 ANGEE_PACKAGE_ROOTS = tuple(Path(location).resolve() for location in ANGEE_SPEC.submodule_search_locations)
-FRAMEWORK_PACKAGE_ROOTS = tuple(root for root in ANGEE_PACKAGE_ROOTS if root != BRIDGE_PACKAGES_ROOT)
-assert FRAMEWORK_PACKAGE_ROOTS
+# Other editable bridge checkouts may contribute to the same namespace.
+BASE_SPEC = importlib.util.find_spec("angee.base")
+assert BASE_SPEC is not None and BASE_SPEC.origin
+FRAMEWORK_PACKAGE_ROOT = Path(BASE_SPEC.origin).resolve().parents[1]
 SOURCE_ROOTS = tuple(root.parent for root in ANGEE_PACKAGE_ROOTS)
 
 # Derived from this repository's source tree so every new bridge is guarded.
@@ -103,7 +105,7 @@ def _tree_imports(root: Path) -> set[str]:
 def test_framework_does_not_import_bridge_addons() -> None:
     """The framework core and its base addons stay below every optional messaging bridge."""
 
-    imports = {name for root in FRAMEWORK_PACKAGE_ROOTS for name in _tree_imports(root)}
+    imports = _tree_imports(FRAMEWORK_PACKAGE_ROOT)
     assert not any(name.startswith(prefix) for name in imports for prefix in _BRIDGE_PACKAGES)
 
 

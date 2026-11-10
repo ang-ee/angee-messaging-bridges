@@ -18,7 +18,6 @@ from rebac import system_context
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
 from tests.conftest import (
     SchemaAddon,
     Vendor,
@@ -453,7 +452,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
             first_stop.set()
 
     operator = threading.Thread(target=stop_first, daemon=True)
-    with system_context(reason="test.messaging.discord.first.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.discord.first.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         first_outcome = first.run()
@@ -517,7 +516,7 @@ def test_discord_full_session_pairs_ingests_backfills_and_resumes_watermark(
             second_stop.set()
 
     operator = threading.Thread(target=stop_second, daemon=True)
-    with system_context(reason="test.messaging.discord.second.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.discord.second.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         second_outcome = second.run()
