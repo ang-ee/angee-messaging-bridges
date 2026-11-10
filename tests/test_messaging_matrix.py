@@ -22,9 +22,6 @@ from unpaddedbase64 import decode_base64, encode_base64
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
-from angee.integrate.locks import bridge_advisory_lock
-from angee.integrate.sync import BridgeProgressReporter
-from angee.messaging.connect import skip_channel_password, submit_channel_password
 from angee.messaging_integrate_matrix import recovery
 from angee.messaging_integrate_matrix.backend import MatrixChannelBackend
 from angee.messaging_integrate_matrix.constants import SESSION_QUEUE
@@ -165,9 +162,7 @@ def test_matrix_backend_declares_worker_and_transient_material_contracts() -> No
 
 
 @pytest.fixture
-def matrix_tables(
-    composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def matrix_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
     del composed_tables
@@ -330,16 +325,14 @@ def test_matrix_reset_wipes_only_recovery_key(
 ) -> None:
     """The backend declaration preserves the durable BASIC_AUTH password on reset."""
 
-    from angee.messaging import connect as messaging_connect
-
     admin = _platform_admin("msg-matrix-reset-admin")
     channel = _matrix_channel(admin)
     channel.credential.update_material(recovery_key="transient-recovery-key")
-    monkeypatch.setattr(messaging_connect, "await_session_exit", lambda _channel: None)
-    monkeypatch.setattr(messaging_connect, "reset_session_store", lambda _channel: None)
-    monkeypatch.setattr(messaging_connect, "resume_channel_pairing", lambda _channel: None)
+    monkeypatch.setattr("angee.messaging.models.await_session_exit", lambda _channel: None)
+    monkeypatch.setattr("angee.messaging.models.reset_session_store", lambda _channel: None)
+    monkeypatch.setattr(Channel, "resume_pairing", lambda _channel: None)
 
-    messaging_connect.reset_channel_pairing(channel)
+    channel.reset_pairing()
 
     with system_context(reason="test.messaging.matrix.reset.verify"):
         material = Credential.objects.get(pk=channel.credential_id).reveal()
@@ -677,7 +670,6 @@ def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
     stop_event = threading.Event()
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=stop_event,
     )
     failures: list[BaseException] = []
@@ -687,7 +679,7 @@ def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
             wait_until(lambda: session.pairing is PairingState.AWAITING_PASSWORD)
             with system_context(reason="test.messaging.matrix.recovery.submit"):
                 operator_channel = Channel.objects.get(pk=channel.pk)
-                submit_channel_password(operator_channel, fixture.recovery_key)
+                operator_channel.submit_pairing_password(fixture.recovery_key)
             wait_until(
                 lambda: (
                     Message._base_manager.filter(channel_id=channel.pk).count() == 2
@@ -701,7 +693,7 @@ def test_matrix_password_login_recovery_secret_sync_and_bounded_backfill(
             stop_event.set()
 
     operator = threading.Thread(target=operate, daemon=True)
-    with system_context(reason="test.messaging.matrix.session.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.session.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         outcome = session.run()
@@ -759,7 +751,6 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
     stop_event = threading.Event()
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=stop_event,
     )
     failures: list[BaseException] = []
@@ -770,7 +761,7 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
             with system_context(reason="test.messaging.matrix.recovery.skip"):
                 operator_channel = Channel.objects.get(pk=channel.pk)
                 assert operator_channel.live_impl.pairing().can_skip is True
-                skip_channel_password(operator_channel)
+                operator_channel.skip_pairing_password()
             wait_until(lambda: session.pairing is PairingState.PAIRED)
             stop_event.set()
         except BaseException as error:  # noqa: BLE001 — surface operator-thread failures.
@@ -778,7 +769,7 @@ def test_matrix_recovery_skip_continues_forward_only_and_history_gate_holds(
             stop_event.set()
 
     operator = threading.Thread(target=operate, daemon=True)
-    with system_context(reason="test.messaging.matrix.skip.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.skip.run"), channel.sync_lock() as acquired:
         assert acquired
         operator.start()
         outcome = session.run()
@@ -829,7 +820,6 @@ def test_matrix_auth_failures_report_logged_out(
     setattr(_FakeMatrixClient, error_attr, errcode)
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     session.client = session._build_client(path)
@@ -864,10 +854,9 @@ def test_matrix_mid_session_forbidden_is_retriable_not_logged_out(
     _FakeMatrixClient.sync_error = "M_FORBIDDEN"
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
-    with system_context(reason="test.messaging.matrix.retriable_error.run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test.messaging.matrix.retriable_error.run"), channel.sync_lock() as acquired:
         assert acquired
         outcome = session.run()
 
@@ -893,7 +882,6 @@ def test_matrix_undecryptable_event_is_counted_and_skipped(
     channel = _matrix_channel(admin)
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     megolm = nio.Event.parse_event(
@@ -928,7 +916,6 @@ def test_matrix_download_authenticates_and_decrypts_encrypted_attachment(
     channel = _matrix_channel(admin)
     session = matrix_session_module.MatrixSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     path = session_store_path(channel) / "session.json"

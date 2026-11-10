@@ -521,9 +521,9 @@ class YouTubeFeedBackend(FeedBackend):
                 if isinstance(state, ReobserveCursor) and moderation != "published":
                     state.moderation_complete = False
         comments = [top["id"] for _, top, _ in usable]
-        counts = dict(apps.get_model("posts", "PostMetrics").objects.filter(
-            message__channel_id=self.bridge.pk, message__platform="youtube", message__external_id__in=comments,
-        ).values_list("message__external_id", "reply_count"))
+        counts = apps.get_model("posts", "PostMetrics").objects.reply_counts(
+            channel=self.bridge, platform="youtube", external_ids=comments,
+        )
         if changed_only:
             usable = [entry for entry in usable if state.force or entry[2] != counts.get(entry[1]["id"])]
         prior_hidden = {

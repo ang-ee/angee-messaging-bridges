@@ -10,17 +10,53 @@ it pins the property the whole design hangs on.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import plistlib
+import sqlite3
+import threading
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, ClassVar, cast
 
+import pytest
 from django.apps import apps
+from django.conf import settings
+from django.core.management import CommandError, call_command
 from django.db import connection
 from django.db.migrations.state import ProjectState
+from neonize.exc import GetProfilePictureError
+from neonize.proto.Neonize_pb2 import ConnectFailureReason, GetProfilePictureReturnFunction
+from rebac import system_context
 
 from angee.base.fields.state import StateField
+from angee.base.locks import task_lock_is_held
+from angee.base.testing.queries import statement_startswith
+from angee.integrate import tasks as tasks_module
+from angee.integrate.constants import RUN_SESSION_TASK
+from angee.integrate.http import HttpClient
+from angee.integrate.live import PairingState, SessionLoggedOut
+from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus
 from angee.messaging.backends import MediaItem, ParsedHandle, ParsedMessage, ParsedPart, ParsedThread
+from angee.messaging_integrate_whatsapp.backend import (
+    StoreResolver,
+    StoreUnreadable,
+    resolve_channel_lids,
+)
+from angee.messaging_integrate_whatsapp.backup import (
+    CORE_DATA_EPOCH,
+    WHATSAPP_DOMAIN,
+    WHATSAPP_SMB_DOMAIN,
+    BackupError,
+    BackupImporter,
+    IosBackup,
+    import_backup,
+    open_chat_storage,
+    whatsapp_domains,
+)
 from angee.messaging_integrate_whatsapp.compose_migrations.messaging.classify_status_feeds import (
     Migration as StatusMigration,
 )
+from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE
 from angee.messaging_integrate_whatsapp.parser import (
     ChatMessage,
     bare_jid,
@@ -30,6 +66,10 @@ from angee.messaging_integrate_whatsapp.parser import (
     parsed_message,
     phone_for_jid,
 )
+from angee.parties.backends import AvatarReport
+from tests.conftest import make_integration
+from tests.messaging_fixtures import Handle, Message, Participant, Thread, _storage_drive
+from tests.messaging_graphql_fixtures import Channel
 
 UTC = timezone.utc
 
@@ -197,27 +237,6 @@ def test_reconciler_tick_owns_both_the_schedule_and_the_expiry() -> None:
 # --- (b) the live session against a fake vendor client ---
 
 
-import threading  # noqa: E402
-import time  # noqa: E402
-from typing import Any, ClassVar, cast  # noqa: E402
-
-import pytest  # noqa: E402
-from django.core.management import call_command  # noqa: E402
-from rebac import system_context  # noqa: E402
-
-from angee.integrate import tasks as tasks_module  # noqa: E402
-from angee.integrate.constants import RUN_SESSION_TASK  # noqa: E402
-from angee.integrate.live import PairingState, SessionLoggedOut  # noqa: E402
-from angee.integrate.locks import bridge_advisory_lock  # noqa: E402
-from angee.integrate.models import IntegrationLifecycle, IntegrationRuntimeStatus  # noqa: E402
-from angee.integrate.sync import BridgeProgressReporter  # noqa: E402
-from angee.jobs.locks import task_lock_is_held  # noqa: E402
-from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE  # noqa: E402
-from tests.conftest import make_integration  # noqa: E402
-from tests.messaging_fixtures import Message, Thread  # noqa: E402
-from tests.messaging_graphql_fixtures import Channel  # noqa: E402
-
-
 @pytest.fixture
 def whatsapp_session() -> Any:
     """Load the worker session used by session tests."""
@@ -239,7 +258,7 @@ def whatsapp_tables(composed_tables: None, tmp_path: Path, settings: Any, monkey
 def _whatsapp_channel(slug: str = "whatsapp") -> Any:
     """Create a connected, live-desired WhatsApp Channel row.
 
-    The shape ``resume_channel_pairing`` leaves behind, and the only one a
+    The shape ``Channel.resume_pairing`` leaves behind, and the only one a
     session ever runs for: the operator declared connection intent (CONNECTED)
     and the base persisted the live desire.
     """
@@ -358,11 +377,10 @@ def _run_session(
     FakeWhatsAppClient.instances = []
     session = whatsapp_session.WhatsAppSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=stop_event or threading.Event(),
     )
     session.client_class = FakeWhatsAppClient
-    with system_context(reason="test whatsapp session run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp session run"), channel.sync_lock() as acquired:
         assert acquired
         return session.run()
 
@@ -668,7 +686,6 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     """
 
     from angee.integrate.live import session_store_path
-    from angee.messaging.connect import channel_pairing
 
     channel = _whatsapp_channel()
     with system_context(reason="test whatsapp logout setup"):
@@ -689,7 +706,7 @@ def test_run_session_task_records_logged_out_on_runtime_status_and_leaves_the_li
     assert not store.exists()
     assert channel.sync_stage == Channel.SyncStage.FAILED
     assert channel.next_sync_at is None
-    assert channel_pairing(channel).state == PairingState.LOGGED_OUT
+    assert channel.pairing().state == PairingState.LOGGED_OUT
 
     sent: list[str] = []
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
@@ -820,7 +837,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
 
     The reachable counter-sequence, no race: ``disconnect`` deliberately retains
     ``own_jid`` and the store, a disconnected row holds no claim so another
-    channel takes the same account, and ``resume_channel_pairing`` re-declares
+    channel takes the same account, and ``Channel.resume_pairing`` re-declares
     intent without re-checking that the retained claim is still available. The
     rejection that follows is not proof this row's credential is void — deleting
     it here would destroy exactly what ``disconnect`` was designed to preserve,
@@ -831,11 +848,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     the store can, which is where the answer now comes from.
     """
 
-    # Imported here rather than at module scope: connect.py resolves the concrete
-    # Channel at import time, and this file's registry only carries it once
-    # tests.messaging_graphql_fixtures has been imported above.
     from angee.integrate.live import session_store_path
-    from angee.messaging import connect as connect_module
 
     resumed = _whatsapp_channel()
     claimant = _whatsapp_channel("whatsapp-later-claimant")
@@ -869,7 +882,7 @@ def test_duplicate_pairing_keeps_the_retained_store_across_repeated_attempts(
     # channel and wipes the credential the first one kept. The store owns that
     # fact, so every attempt answers it the same way.
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: None)
-    connect_module.resume_channel_pairing(resumed)
+    resumed.resume_pairing()
 
     assert _run_session_task(resumed) == {"ok": False, "duplicate_account": True}
     assert (resumed_store / "session.db").read_bytes() == b"the device credential disconnect retained"
@@ -891,7 +904,6 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
     channel = _whatsapp_channel()
     session = whatsapp_session.WhatsAppSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
 
@@ -908,7 +920,7 @@ def test_generic_disconnect_stops_the_session_and_survives_a_reconciler_tick(
     result = _run_session_task(channel)
     assert result["skipped"] and result["reason"] == "not-connected"
 
-    with system_context(reason="test whatsapp generic disconnect wake"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp generic disconnect wake"), channel.sync_lock() as acquired:
         assert acquired
         assert session._still_wanted() is False
         assert session.pairing == PairingState.STOPPED
@@ -927,7 +939,6 @@ def test_shutdown_reports_whether_the_vendor_connection_unwound(
     channel = _whatsapp_channel()
     session = whatsapp_session.WhatsAppSession(
         channel,
-        reporter=BridgeProgressReporter(channel),
         stop_event=threading.Event(),
     )
     wedged = threading.Event()
@@ -949,26 +960,6 @@ def test_shutdown_reports_whether_the_vendor_connection_unwound(
 
 # --- (c) the backup importer over synthesized ChatStorage fixtures ---
 
-
-import plistlib  # noqa: E402
-import sqlite3  # noqa: E402
-from datetime import timedelta  # noqa: E402
-from pathlib import Path  # noqa: E402
-
-from django.core.management import CommandError  # noqa: E402
-
-from angee.messaging_integrate_whatsapp.backup import (  # noqa: E402
-    CORE_DATA_EPOCH,
-    WHATSAPP_DOMAIN,
-    WHATSAPP_SMB_DOMAIN,
-    BackupError,
-    BackupImporter,
-    IosBackup,
-    import_backup,
-    open_chat_storage,
-    whatsapp_domains,
-)
-from tests.messaging_fixtures import Handle, _storage_drive  # noqa: E402
 
 _OWN_JID = "4917000001@s.whatsapp.net"
 _DM_DATE = 700000000.5  # Core Data seconds — the epoch-conversion pin
@@ -1268,13 +1259,6 @@ def test_whatsapp_import_command_dry_run_counts(whatsapp_tables: Any, tmp_path: 
 
 # --- (d) @lid sender resolution: live session + the store-backed backfill ---
 
-from angee.messaging_integrate_whatsapp.backend import (  # noqa: E402
-    StoreResolver,
-    StoreUnreadable,
-    resolve_channel_lids,
-)
-from tests.messaging_fixtures import Participant  # noqa: E402
-
 
 class _FakeContactStore:
     """Mirror of ``client.contact``: ``get_contact(jid)`` keyed by the JID user."""
@@ -1326,9 +1310,9 @@ def _run_lid_session(
 ) -> str:
     FakeLidClient.script = script
     FakeLidClient.instances = []
-    session = whatsapp_session.WhatsAppSession(channel, reporter=BridgeProgressReporter(channel), stop_event=stop_event)
+    session = whatsapp_session.WhatsAppSession(channel, stop_event=stop_event)
     session.client_class = FakeLidClient
-    with system_context(reason="test whatsapp lid session run"), bridge_advisory_lock(channel) as acquired:
+    with system_context(reason="test whatsapp lid session run"), channel.sync_lock() as acquired:
         assert acquired
         return session.run()
 
@@ -1396,9 +1380,7 @@ def test_resolve_identity_is_non_fatal_when_the_lookup_fails(whatsapp_session: A
     """A failed LID/contact lookup falls back to empty; a named phone sender is skipped."""
 
     channel = _whatsapp_channel("whatsapp-lid-miss")
-    session = whatsapp_session.WhatsAppSession(
-        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
-    )
+    session = whatsapp_session.WhatsAppSession(channel, stop_event=threading.Event())
 
     class _RaisingClient:
         contact = None
@@ -1417,9 +1399,7 @@ def test_contact_name_reads_the_business_name_field(whatsapp_session: Any, whats
     """A business contact whose only populated name is ``BusinessName`` still resolves."""
 
     channel = _whatsapp_channel("whatsapp-bizname")
-    session = whatsapp_session.WhatsAppSession(
-        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
-    )
+    session = whatsapp_session.WhatsAppSession(channel, stop_event=threading.Event())
 
     class _BusinessOnlyContact:
         # A business account whose only set name field is BusinessName — the real
@@ -1429,13 +1409,6 @@ def test_contact_name_reads_the_business_name_field(whatsapp_session: Any, whats
     session.client = _Namespace(contact=_FakeContactStore({"18583421935": _BusinessOnlyContact()}))
     assert session._contact_name("18583421935@s.whatsapp.net") == "Acme Corp"
 
-
-from django.conf import settings  # noqa: E402
-from neonize.exc import GetProfilePictureError  # noqa: E402
-from neonize.proto.Neonize_pb2 import GetProfilePictureReturnFunction  # noqa: E402
-
-from angee.integrate.http import HttpClient  # noqa: E402
-from angee.parties.backends import AvatarReport  # noqa: E402
 
 _GIF_BYTES = bytes.fromhex("47494638396101000100800000000000ffffff21f90401000000002c00000000010001000002024401003b")
 
@@ -1516,9 +1489,7 @@ def test_only_a_not_set_answer_reports_no_avatar(whatsapp_session: Any, whatsapp
     """Hidden from this account, a failed query or an empty answer reports nothing: the handle keeps its avatar."""
 
     channel = _whatsapp_channel("whatsapp-avatars")
-    session = whatsapp_session.WhatsAppSession(
-        channel, reporter=BridgeProgressReporter(channel), stop_event=threading.Event()
-    )
+    session = whatsapp_session.WhatsAppSession(channel, stop_event=threading.Event())
     session.client = FakeWhatsAppClient(str(channel.pk))
     sender = whatsapp_session.handle_for_jid("4917000002@s.whatsapp.net", "Ada")
     jid = "4917000002@s.whatsapp.net"
@@ -1943,10 +1914,8 @@ def test_lid_dry_run_matches_kept_target_name_without_business_writes(whatsapp_t
         preview = resolve_channel_lids(channel, resolver, dry_run=True)
     # Native elevated-read audit records remain; identity/provenance rows do not change.
     audit = connection.ops.quote_name(apps.get_model("rebac", "PermissionAuditEvent")._meta.db_table)
-    writes = [
-        query["sql"] for query in queries if query["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
-    ]
-    assert writes and all(sql.startswith(f"INSERT INTO {audit}") for sql in writes)
+    writes = [query["sql"] for query in queries if statement_startswith(query["sql"], ("INSERT", "UPDATE", "DELETE"))]
+    assert writes and all(statement_startswith(sql, f"INSERT INTO {audit}") for sql in writes)
     result = resolve_channel_lids(channel, resolver)
     assert preview == result
     assert (result.resolved, result.merged, result.named) == (1, 1, not bool(source_name or target_name))
@@ -2021,8 +1990,6 @@ def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
 
 # --- connection refusals ----------------------------------------------------
 
-from neonize.proto.Neonize_pb2 import ConnectFailureReason  # noqa: E402
-
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize(
@@ -2088,7 +2055,6 @@ def test_connection_refusal_ends_the_session_visibly_and_defers_the_retry(
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda name, **_: sent.append(name))
     tasks_module.ensure_bridge_sessions()
     assert sent == []
-
 
 
 @pytest.mark.django_db(transaction=True)

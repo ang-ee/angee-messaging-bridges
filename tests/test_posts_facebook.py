@@ -21,9 +21,8 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import CursorInvalid, advance_stream, open_stream, reset_stream
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
-from angee.messaging.delivery import RECONCILE_BACKOFF
+from angee.messaging.constants import RECONCILE_BACKOFF
 from angee.messaging.events import message_ingested
-from angee.posts.ingest import land_posts
 from angee.posts_integrate_facebook.backend import FacebookFeedBackend
 from angee.posts_integrate_facebook.oauth import MetaFacebook
 from angee.posts_integrate_facebook.parsing import comment_post, root_post, timestamp
@@ -104,7 +103,7 @@ def reply(feed, graph, *, actor, text="A public response"):
     comment = comment_post(
         graph["comments_first"]["data"][0], post_id=root.message.external_id, page_id=feed.external_id,
     )
-    land_posts(feed, [root, comment], owner_id=feed.owner_id, historical=True)
+    apps.get_model("messaging", "Message").posts.land(feed, [root, comment], owner_id=feed.owner_id, historical=True)
     parent = apps.get_model("messaging", "Message").objects.get(channel=feed, external_id=comment.message.external_id)
     assert parent.with_actor(actor).has_access("read")
     return parent.reply_to_comment(body=text, actor=actor)
@@ -199,9 +198,11 @@ def test_activity_skips_unchanged_counts_but_keeps_changed_work_after_root_landi
     with system_context(reason="test.facebook.activity"):
         feed.live_since = moment - timedelta(days=30)
         feed.save(update_fields=["live_since", "updated_at"])
-        land_posts(
-            feed, [root_post(raw, page_id="900001", page_name=feed.display_name)],
-            owner_id=feed.owner_id, historical=True,
+        apps.get_model("messaging", "Message").posts.land(
+            feed,
+            [root_post(raw, page_id="900001", page_name=feed.display_name)],
+            owner_id=feed.owner_id,
+            historical=True,
         )
         state = stream(feed, "activity", {
             "newest_published_at": raw["created_time"],
@@ -606,8 +607,12 @@ def test_identical_text_for_two_comments_posts_twice_without_lookup(feed, replie
         first = reply(feed, graph, actor=replier, text="Thanks!")
         raw = deepcopy(graph["comments_first"]["data"][0])
         raw["id"] = "700001_800007"
-        land_posts(feed, [comment_post(raw, post_id="900001_700001", page_id=feed.external_id)],
-                   owner_id=feed.owner_id, historical=True)
+        apps.get_model("messaging", "Message").posts.land(
+            feed,
+            [comment_post(raw, post_id="900001_700001", page_id=feed.external_id)],
+            owner_id=feed.owner_id,
+            historical=True,
+        )
         parent = apps.get_model("messaging", "Message").objects.get(channel=feed, external_id="700001_800007")
         second = parent.reply_to_comment(body="Thanks!", actor=replier)
         backend = FacebookFeedBackend(feed)
@@ -684,10 +689,15 @@ def test_hourly_active_window_refresh_observes_changes_without_count_change(
     with system_context(reason="test.facebook.refresh"):
         feed.live_since = moment - timedelta(days=30)
         feed.save(update_fields=["live_since", "updated_at"])
-        land_posts(feed, [
-            root_post(raw, page_id=feed.external_id, page_name=feed.display_name),
-            comment_post(before, post_id=raw["id"], page_id=feed.external_id),
-        ], owner_id=feed.owner_id, historical=True)
+        apps.get_model("messaging", "Message").posts.land(
+            feed,
+            [
+                root_post(raw, page_id=feed.external_id, page_name=feed.display_name),
+                comment_post(before, post_id=raw["id"], page_id=feed.external_id),
+            ],
+            owner_id=feed.owner_id,
+            historical=True,
+        )
         state = stream(feed, "reobserve", {
             "recheck_after": moment.isoformat(),
         })

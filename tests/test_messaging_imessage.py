@@ -42,7 +42,6 @@ from angee.messaging_integrate_imessage.store import (
     SMS_DOMAIN,
     SMS_PATH,
     ImessageStore,
-    has_sms_store,
 )
 from tests.conftest import Vendor, make_integration
 from tests.messaging_fixtures import Handle, Message, Thread, _storage_drive
@@ -375,7 +374,7 @@ def test_storeless_backup_reports_no_messages_store(tmp_path: Any) -> None:
     manifest.close()
 
     probe = IosBackup(backup)
-    assert has_sms_store(probe) is False
+    assert probe.has_sqlite_file(SMS_DOMAIN, SMS_PATH) is False
     probe.close()
 
     with pytest.raises(BackupError, match="no Messages store"):

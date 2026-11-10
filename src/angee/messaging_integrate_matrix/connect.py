@@ -12,7 +12,6 @@ from rebac import system_context
 
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.net import is_unsafe_address, parse_http_url, resolved_addresses
-from angee.messaging.connect import resume_channel_pairing
 from angee.messaging_integrate_matrix.backend import MatrixChannelBackend
 
 Channel = apps.get_model("messaging", "Channel")
@@ -42,7 +41,7 @@ def create_matrix_channel(user: Any, homeserver: str, username: str, password: s
             subscription_state={"homeserver": base_url},
         )
         channel.connect(credential=credential)
-    resume_channel_pairing(channel)
+    channel.resume_pairing()
     return channel
 
 

@@ -1,11 +1,14 @@
-"""Signal pairing over the shared messaging channel creation and retry service."""
+"""Signal pairing over the messaging channel manager's create-or-retry verb."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from angee.messaging.connect import resume_or_create_channel
+from django.apps import apps
+
 from angee.messaging_integrate_signal.backend import SignalChannelBackend
+
+Channel = apps.get_model("messaging", "Channel")
 
 
 def create_signal_channel(user: Any) -> Any:
@@ -16,4 +19,6 @@ def create_signal_channel(user: Any) -> Any:
     that directory so a rejected account cannot bypass fresh QR pairing.
     """
 
-    return resume_or_create_channel(user, name=SignalChannelBackend.label, backend_class=SignalChannelBackend.key)
+    return Channel.objects.resume_or_create_pairing(
+        user, name=SignalChannelBackend.label, backend_class=SignalChannelBackend.key
+    )
