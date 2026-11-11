@@ -247,10 +247,10 @@ def whatsapp_session() -> Any:
 
 
 @pytest.fixture
-def whatsapp_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def whatsapp_tables(db: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
-    del composed_tables
+    del db
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     monkeypatch.setattr(tasks_module, "models_with", lambda *, base: (Channel,))
 

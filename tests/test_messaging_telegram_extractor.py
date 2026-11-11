@@ -155,12 +155,10 @@ def test_export_chat_id_rejects_unmarkable_export_identity(
 
 @pytest.mark.django_db(transaction=True)
 def test_telegram_takeout_and_live_paths_converge_on_sync_identity(
-    composed_tables: None,
     tmp_path: Path,
 ) -> None:
     """Takeout and live messages land on the same row through public ingest."""
 
-    del composed_tables
     export_root = tmp_path / "takeout"
     photo = export_root / "chats/chat_001/photos/photo.jpg"
     photo.parent.mkdir(parents=True)

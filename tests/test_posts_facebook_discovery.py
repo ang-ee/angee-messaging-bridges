@@ -27,10 +27,10 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 
 @pytest.fixture
-def oauth_feed(composed_tables):
+def oauth_feed(db):
     """Discovery starts with an already-refined OAuth credential and real account."""
 
-    del composed_tables
+    del db
     with system_context(reason="test.facebook.oauth_feed"):
         feed = make_integration(
             "facebook-oauth", model=apps.get_model("posts", "Feed"), backend_class="feed",

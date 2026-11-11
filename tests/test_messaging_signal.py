@@ -53,10 +53,10 @@ def _signal_module(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def signal_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def signal_tables(db: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
-    del composed_tables
+    del db
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     settings.SIGNAL_CLI_BIN = "/opt/angee/bin/signal-cli"
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
