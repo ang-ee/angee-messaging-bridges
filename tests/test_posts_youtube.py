@@ -83,10 +83,10 @@ def wire():
 
 
 @pytest.fixture
-def feed(composed_tables):
+def feed(db):
     """Compose the real Feed, quota ledger and credential owners."""
 
-    del composed_tables
+    del db
     row = make_integration(
         "youtube", model=apps.get_model("posts", "Feed"), kind=CredentialKind.OAUTH, backend_class="feed",
         feed_backend_class="youtube",

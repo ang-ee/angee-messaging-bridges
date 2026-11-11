@@ -64,10 +64,10 @@ def _telegram_module(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def telegram_tables(composed_tables: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def telegram_tables(db: None, tmp_path: Path, settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the composed tables and isolate session storage."""
 
-    del composed_tables
+    del db
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     monkeypatch.setattr("angee.integrate.impl.enqueue_task", lambda *args, **kwargs: None)
 
