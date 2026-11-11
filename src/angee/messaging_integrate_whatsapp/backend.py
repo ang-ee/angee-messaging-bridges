@@ -155,12 +155,11 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
     model = apps.get_model("parties", "Handle")
     stats = LidResolveStats()
     with system_context(reason="whatsapp_resolve_lids"):
+        # A handle merge keeps participations on the retired handle: each selects its survivor.
+        participating = model._base_manager.filter(participations__thread__channel=channel).survivor_ids()
         handles = list(
             model.objects.canonical()
-            .filter(
-                platform="whatsapp", value__endswith="@lid", participations__thread__channel=channel
-            )
-            .distinct()
+            .filter(platform="whatsapp", value__endswith="@lid", pk__in=participating)
             .order_by("pk")
         )
         stats.candidates = len(handles)
