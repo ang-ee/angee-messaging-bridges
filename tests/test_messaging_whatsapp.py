@@ -1951,6 +1951,7 @@ def test_non_status_broadcast_remains_distinct_from_the_status_feed():
     assert not is_group_jid("4917000001@s.whatsapp.net")
 
 
+@pytest.mark.django_db(transaction=True)  # SQLite's schema editor refuses inside an atomic block
 def test_status_history_repair_is_scoped_and_idempotent(whatsapp_tables):
     Thread = apps.get_model("messaging", "Thread")
     Message = apps.get_model("messaging", "Message")

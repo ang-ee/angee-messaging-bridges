@@ -1,18 +1,26 @@
-"""Concrete FK targets whose addons do not yet ship reusable test models."""
+"""Concrete FK targets whose addons do not yet ship reusable test models.
+
+Each model composes the donors its installed addons contribute, as a composed host
+would, so the session's merged REBAC policy resolves every field backing.
+"""
 
 from angee.intake.models import Need as AbstractNeed
 from angee.knowledge.models import Link as AbstractLink
+from angee.knowledge.models import MarkdownPage as AbstractMarkdownPage
 from angee.knowledge.models import Page as AbstractPage
 from angee.knowledge.models import RecordBinding as AbstractRecordBinding
 from angee.knowledge.models import Vault as AbstractVault
 from angee.money.models import Currency as AbstractCurrency
+from angee.money.models import CurrencyRate as AbstractCurrencyRate
 from angee.money.models import MoneyRole as AbstractMoneyRole
+from angee.projects.models import VaultProjects
 from angee.proposals.models import Answer as AbstractAnswer
 from angee.proposals.models import Proposal as AbstractProposal
 from angee.proposals.models import ProposalsRole as AbstractProposalsRole
 from angee.proposals.models import Review as AbstractReview
 from angee.proposals.models import Round as AbstractRound
 from angee.proposals.models import Topic as AbstractTopic
+from angee.spaces.models import VaultSpace
 
 
 class Need(AbstractNeed):
@@ -101,6 +109,16 @@ class Currency(AbstractCurrency):
         rebac_resource_type = "money/currency"
 
 
+class CurrencyRate(AbstractCurrencyRate):
+    """money target required by the shared framework test composition."""
+
+    class Meta(AbstractCurrencyRate.Meta):
+        abstract = False
+        app_label = "money"
+        db_table = "test_money_rate"
+        rebac_resource_type = "money/rate"
+
+
 class MoneyRole(AbstractMoneyRole):
     """money target required by the shared framework test composition."""
 
@@ -111,8 +129,10 @@ class MoneyRole(AbstractMoneyRole):
         rebac_resource_type = "money/role"
 
 
-class Vault(AbstractVault):
-    """knowledge target required by the shared framework test composition."""
+class Vault(VaultSpace, VaultProjects, AbstractVault):
+    """knowledge target carrying the spaces and projects donors."""
+
+    rebac_grantable = AbstractVault.rebac_grantable
 
     class Meta(AbstractVault.Meta):
         abstract = False
@@ -129,6 +149,16 @@ class Page(AbstractPage):
         app_label = "knowledge"
         db_table = "test_knowledge_page"
         rebac_resource_type = "knowledge/page"
+
+
+class MarkdownPage(AbstractMarkdownPage, Page):
+    """knowledge target required by the shared framework test composition."""
+
+    class Meta(AbstractMarkdownPage.Meta):
+        abstract = False
+        app_label = "knowledge"
+        db_table = "test_knowledge_markdown_page"
+        rebac_resource_type = "knowledge/markdown_page"
 
 
 class RecordBinding(AbstractRecordBinding):
