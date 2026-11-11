@@ -178,15 +178,8 @@ def test_attributed_body_decodes_uint32_form_and_survives_a_decoy_tag() -> None:
 # --- (b) the backup importer over synthesized sms.db fixtures ---
 
 
-@pytest.fixture
-def imessage_tables(composed_tables: None) -> None:
-    """Use the composed tables for importer integration."""
-
-    del composed_tables
-
-
 def test_backup_import_lands_threads_identities_and_media(
-    imessage_tables: Any, tmp_path: Any
+    db: Any, tmp_path: Any
 ) -> None:
     """One import lands every chat: threads, phone/email senders, media, epoch times."""
 
@@ -231,7 +224,7 @@ def test_backup_import_lands_threads_identities_and_media(
         assert marker.external_id == "GUID-MED2"
 
 
-def test_backup_import_is_idempotent(imessage_tables: Any, tmp_path: Any) -> None:
+def test_backup_import_is_idempotent(db: Any, tmp_path: Any) -> None:
     """A re-run converges on the same rows instead of duplicating."""
 
     channel = make_integration("imessage", model=Channel, backend_class="imessage")
@@ -246,7 +239,7 @@ def test_backup_import_is_idempotent(imessage_tables: Any, tmp_path: Any) -> Non
 
 
 def test_backup_import_resume_advances_past_imported_prefix(
-    imessage_tables: Any, tmp_path: Any
+    db: Any, tmp_path: Any
 ) -> None:
     """A resumed import skips each chat's imported prefix and advances to completion."""
 
@@ -291,7 +284,7 @@ def _line_counts(owner: Any) -> dict[str, int]:
 
 
 def test_import_backup_per_line_routes_collapses_and_is_idempotent(
-    imessage_tables: Any, tmp_path: Any
+    db: Any, tmp_path: Any
 ) -> None:
     """Per-line import splits one backup into one channel per local line + a catch-all."""
 
@@ -338,7 +331,7 @@ def test_import_backup_per_line_routes_collapses_and_is_idempotent(
     assert Message._base_manager.count() == 7
 
 
-def test_imessage_import_command_per_line_needs_owner(imessage_tables: Any, tmp_path: Any) -> None:
+def test_imessage_import_command_per_line_needs_owner(db: Any, tmp_path: Any) -> None:
     """The --per-line CLI mode splits by line and requires --owner."""
 
     owner = _per_line_owner(tmp_path)
@@ -382,7 +375,7 @@ def test_storeless_backup_reports_no_messages_store(tmp_path: Any) -> None:
 
 
 def test_mount_backup_extractor_resolves_and_imports(
-    imessage_tables: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    db: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The mount extractor resolves a reference drive's backup root and imports it."""
 
@@ -425,7 +418,7 @@ def test_mount_extractor_rejects_a_storeless_drive(tmp_path: Any, monkeypatch: p
     ) is False
 
 
-def test_imessage_import_command_dry_run_counts(imessage_tables: Any, tmp_path: Any) -> None:
+def test_imessage_import_command_dry_run_counts(db: Any, tmp_path: Any) -> None:
     """The thin command wires the importer; --dry-run parses without writing."""
 
     channel = make_integration("imessage", model=Channel, backend_class="imessage")
@@ -593,7 +586,7 @@ def _build_backup(tmp_path: Path, *, encrypted: bool = False) -> Path:
     return backup
 
 
-def test_per_line_dry_run_does_not_provision_channels(imessage_tables, tmp_path):
+def test_per_line_dry_run_does_not_provision_channels(db, tmp_path):
     owner = _per_line_owner(tmp_path)
     backup = _build_backup(tmp_path)
     before = Channel._base_manager.count()

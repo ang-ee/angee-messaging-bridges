@@ -52,7 +52,6 @@ from angee.posts_integrate_youtube.models import YouTubeFeedState
 from angee.projects.models import DriveProjects, FolderProjects
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
 from angee.proposals.models import DriveProposalAccess, FileProposalAccess
-from angee.provenance.testing import load_statement_sources
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
 from angee.storage.models import File as AbstractFile
@@ -62,19 +61,6 @@ from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
 from angee.tags.testing import models as tags_models  # noqa: F401 -- register shared FK targets
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
-
-
-@pytest.fixture
-def composed_tables(composed_tables: None) -> None:
-    """The bridges' composed tables also carry the declared statement principals.
-
-    Extends the ``angee.base.testing`` plugin fixture of the same name: after its REBAC
-    sync, the install-tier principals and grants that admission reads are loaded,
-    exactly as the framework's hosts do.
-    """
-
-    del composed_tables
-    load_statement_sources("parties")
 
 
 @pytest.fixture

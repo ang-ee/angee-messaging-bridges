@@ -358,16 +358,19 @@ provides-extras = ["postgres"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "angee-base", extras = ["testing"], editable = "../angee/src/angee/base" },
     { name = "angee-django-stubs", extras = ["compatible-mypy"], specifier = "==6.1.2.post3" },
     { name = "angee-mypy", specifier = "==2.1.0" },
     { name = "angee-server", extras = ["profiling"], editable = "../angee/src/angee/server" },
     { name = "daphne", specifier = ">=4.0" },
-    { name = "django-zed-rebac", extras = ["caveats"], specifier = ">=0.31.5,<0.32" },
+    { name = "django-zed-rebac", extras = ["caveats"], specifier = ">=0.33.1,<0.34" },
     { name = "example-notes", editable = "../angee/examples/src/example/notes" },
     { name = "example-theme", editable = "../angee/examples/src/example/theme" },
     { name = "faker", specifier = ">=30.0" },
+    { name = "hypothesis", specifier = ">=6.100" },
+    { name = "import-linter", specifier = ">=2.1" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
-    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest", specifier = ">=9" },
     { name = "pytest-django", specifier = ">=4.8" },
     { name = "pytest-randomly", specifier = ">=3.16" },
     { name = "pytest-split", specifier = ">=0.11" },
@@ -561,6 +564,7 @@ testing = [
     { name = "packaging" },
     { name = "pytest" },
     { name = "pytest-django" },
+    { name = "sqlparse" },
     { name = "tomlkit" },
 ]
 
@@ -573,7 +577,7 @@ requires-dist = [
     { name = "django-environ", specifier = ">=0.12" },
     { name = "django-sqids", specifier = ">=0.1" },
     { name = "django-yamlconf", specifier = ">=1.5.0" },
-    { name = "django-zed-rebac", specifier = ">=0.31.5,<0.32" },
+    { name = "django-zed-rebac", specifier = ">=0.33.1,<0.34" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26" },
     { name = "packaging", marker = "extra == 'testing'", specifier = ">=24" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2" },
@@ -583,6 +587,7 @@ requires-dist = [
     { name = "referencing", specifier = ">=0.37" },
     { name = "sentry-sdk", specifier = ">=2.71.0" },
     { name = "sqids", specifier = ">=0.4.1" },
+    { name = "sqlparse", marker = "extra == 'testing'", specifier = ">=0.6,<0.7" },
     { name = "tomlkit", marker = "extra == 'testing'", specifier = ">=0.13" },
 ]
 provides-extras = ["testing"]
@@ -691,9 +696,9 @@ requires-dist = [
     { name = "channels", specifier = ">=4.0" },
     { name = "channels-redis", specifier = ">=4.2" },
     { name = "django-compose", specifier = ">=0.1.0.dev10,<0.2" },
-    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.31.5,<0.32" },
+    { name = "django-zed-rebac", extras = ["strawberry-django"], specifier = ">=0.33.1,<0.34" },
     { name = "graphql-core", specifier = ">=3.3.1,<3.4" },
-    { name = "pydantic", specifier = ">=2.13" },
+    { name = "pydantic", specifier = ">=2.14" },
     { name = "sentry-sdk", specifier = ">=2.71.0" },
     { name = "strawberry-django-aggregates", specifier = ">=0.14.1,<0.15" },
     { name = "strawberry-django-hasura", specifier = ">=0.15,<0.16" },
@@ -1322,6 +1327,7 @@ dependencies = [
     { name = "angee-messaging" },
     { name = "angee-parties" },
     { name = "angee-posts" },
+    { name = "angee-provenance" },
     { name = "angee-spaces" },
     { name = "angee-timeline" },
     { name = "angee-web" },
@@ -1334,6 +1340,7 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
     { name = "angee-posts", editable = "../angee/src/angee/posts" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
     { name = "angee-spaces", editable = "../angee/src/angee/spaces" },
     { name = "angee-timeline", editable = "../angee/src/angee/timeline" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
@@ -1786,6 +1793,7 @@ dependencies = [
     { name = "angee-knowledge" },
     { name = "angee-messaging" },
     { name = "angee-parties" },
+    { name = "angee-provenance" },
     { name = "angee-web" },
     { name = "django-compose" },
 ]
@@ -1797,6 +1805,7 @@ requires-dist = [
     { name = "angee-knowledge", editable = "../angee/src/angee/knowledge" },
     { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev10,<0.2" },
 ]
@@ -3184,15 +3193,15 @@ wheels = [
 
 [[package]]
 name = "django-zed-rebac"
-version = "0.31.5"
+version = "0.33.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-cte" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/7f/bf9fdb5a85066388661be2461dda6d244c23ce2ef2a9cb0a22d7c82be097/django_zed_rebac-0.31.5.tar.gz", hash = "sha256:733b4d7f53218a1aa2fa25c0134ecbd20e4f5a17732eca3aca9231c81bfd7758", size = 643680, upload-time = "2026-11-07T21:31:40.208Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/29/3bcd8bc21a8c783c4850283e4af8485fe7217792b9c71f2ea5677583a4d8/django_zed_rebac-0.33.1.tar.gz", hash = "sha256:3491acf9641aff030d1f5d8da47f09a36bd85420225d16ffd76c221fc940a8c5", size = 687333, upload-time = "2026-11-11T08:15:34.177Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/65/3dd2b8271e5fba772d8860617e65ffe78a673f754521ba34b83d59ad70c3/django_zed_rebac-0.31.5-py3-none-any.whl", hash = "sha256:aa8e8226b392e7a3bfb1e98d53acd0a67dc3190782597a98b5c5712d9e603cb1", size = 322428, upload-time = "2026-11-07T21:31:38.887Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/34/c61de47faa44f3fbecb385fe6af0eac778602666f3d92b8e6fa0bbbc246b/django_zed_rebac-0.33.1-py3-none-any.whl", hash = "sha256:8e626e5957846f2608a3a199dfe063aa2e1dc3a66571ff9d6235f0d94222c0c9", size = 333700, upload-time = "2026-11-11T08:15:32.921Z" },
 ]
 
 [package.optional-dependencies]
