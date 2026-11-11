@@ -1615,9 +1615,33 @@ def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> 
     assert resolve_channel_lids(channel, resolver).candidates == 0
 
 
+def test_resolve_channel_lids_resolves_a_survivor_participating_through_a_merged_alias(whatsapp_tables: Any) -> None:
+    """A canonical @lid handle reaches the channel only through the participation of a handle merged into it."""
+
+    channel = _whatsapp_channel("whatsapp-redirect")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="111111111111111@lid", text="alias"),
+    )
+    _ingest_whatsapp(
+        _whatsapp_channel("whatsapp-elsewhere"),
+        ChatMessage(chat_jid="333-444@g.us", stanza_id="G2", sender_jid="113352894324870@lid", text="survivor"),
+    )
+    alias = Handle._base_manager.get(external_id="111111111111111@lid")
+    survivor = Handle._base_manager.get(external_id="113352894324870@lid")
+    with system_context(reason="test whatsapp lid redirect"):
+        survivor.fold([alias])
+
+    stats = resolve_channel_lids(channel, _FakeResolver({"113352894324870@lid": "18583421935"}, {}))
+
+    assert (stats.candidates, stats.resolved) == (1, 1)
+    survivor.refresh_from_db()
+    assert survivor.value == "+18583421935"
+
+
 @pytest.mark.django_db(transaction=True)
 def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tables: Any) -> None:
-    """A LID that resolves onto an existing phone handle merges, repointing messages."""
+    """A LID that resolves onto an existing phone handle merges; its rows read through the redirect."""
 
     channel = _whatsapp_channel("whatsapp-merge")
     # The same person as a direct phone-JID sender and as a hidden @lid group sender.
@@ -1646,9 +1670,9 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata == {}
-    # The group participant now points at the surviving phone handle.
+    # The group participation keeps its handle, inside the phone handle's redirect group.
     group_participation.refresh_from_db()
-    assert group_participation.handle_id == phone_handle.pk
+    assert Handle._base_manager.redirect_group(phone_handle).filter(pk=group_participation.handle_id).exists()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -1748,10 +1772,10 @@ def test_resolve_channel_lids_merges_an_older_lid_and_keeps_its_reactions(whatsa
 
 
 @pytest.mark.django_db(transaction=True)
-def test_resolve_channel_lids_collapses_a_participation_and_reaction_the_phone_handle_already_has(
+def test_resolve_channel_lids_collapses_a_reaction_the_phone_handle_already_has(
     whatsapp_tables: Any,
 ) -> None:
-    """The handle merge's generic move drops the alias's copy of a fact the phone handle states; the rest moves."""
+    """The handle merge's generic move drops the alias's copy of a reaction the phone handle states; the rest moves."""
 
     from tests.messaging_fixtures import Reaction
 
@@ -1775,10 +1799,7 @@ def test_resolve_channel_lids_collapses_a_participation_and_reaction_the_phone_h
     with system_context(reason="test lid collisions"):
         group_message = Message._base_manager.get(sender=lid_handle)
         for handle in (lid_handle, phone_handle):
-            # A thread-level membership (no message) and the same reaction, held by both spellings.
-            Participant._base_manager.create(
-                thread_id=group_message.thread_id, handle=handle, role=Participant.ParticipantRole.TO
-            )
+            # The same reaction, held by both spellings.
             Reaction._base_manager.create(message=group_message, handle=handle, reaction="👍")
         moved = Reaction._base_manager.create(message=group_message, handle=lid_handle, reaction="❤️")
 
@@ -1786,10 +1807,6 @@ def test_resolve_channel_lids_collapses_a_participation_and_reaction_the_phone_h
 
     assert (stats.resolved, stats.merged, stats.refused) == (1, 1, 0)
     _assert_handle_redirect(lid_handle, phone_handle)
-    memberships = Participant._base_manager.filter(
-        thread_id=group_message.thread_id, message__isnull=True, handle=phone_handle
-    )
-    assert memberships.count() == 1
     assert sorted(Reaction._base_manager.filter(message=group_message).values_list("handle_id", "reaction")) == sorted(
         [(phone_handle.pk, "👍"), (phone_handle.pk, "❤️")]
     )
@@ -1844,7 +1861,7 @@ def test_resolve_channel_lids_merges_into_a_phone_handle_sync_created_mid_run(
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata == {}
-    assert Message._base_manager.filter(sender=phone_handle).count() == 1
+    assert Message._base_manager.filter(sender__in=Handle._base_manager.redirect_group(phone_handle)).count() == 1
 
 
 @pytest.mark.django_db(transaction=True)
@@ -1885,8 +1902,8 @@ def test_resolve_channel_lids_skips_an_alias_a_concurrent_run_resolved(whatsapp_
     # The stale fold locks the alias, sees the redirect and skips it: nothing to refuse.
     assert (stats.candidates, stats.resolved, stats.merged, stats.refused) == (1, 0, 0, 0)
     _assert_handle_redirect(lid_handle, phone_handle)
-    # Both the direct and the group message now name the phone handle.
-    assert Message._base_manager.filter(sender=phone_handle).count() == 2
+    # Both the direct and the group message read as the phone handle's.
+    assert Message._base_manager.filter(sender__in=Handle._base_manager.redirect_group(phone_handle)).count() == 2
 
 
 @pytest.mark.django_db(transaction=True)
