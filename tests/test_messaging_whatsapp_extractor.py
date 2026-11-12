@@ -183,10 +183,10 @@ def test_bridge_addon_uses_shared_archive_workflows(addon: str) -> None:
     )
 
 
-def test_shared_archive_resources_publish_file_and_drive_graphs(composed_tables: None) -> None:
+def test_shared_archive_resources_publish_file_and_drive_graphs(db: None) -> None:
     """The framework resource publishes one native graph for each storage subject."""
 
-    del composed_tables
+    del db
     config = apps.get_app_config("workflows_integrate")
     result = Resource.objects.load_addons((config,), tiers=[Resource.Tier.INSTALL])
     assert result.loaded == 2

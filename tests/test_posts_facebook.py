@@ -46,10 +46,10 @@ def _failures(stream):
     return list(row.sync_failures(open_only=False))
 
 @pytest.fixture
-def feed(composed_tables):
+def feed(db):
     """Use the shared Feed/Quota composition and real credential methods."""
 
-    del composed_tables
+    del db
     with system_context(reason="test.facebook.feed"):
         row = make_integration(
             "facebook-page", model=apps.get_model("posts", "Feed"), backend_class="feed",

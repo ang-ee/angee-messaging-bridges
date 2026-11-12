@@ -41,13 +41,6 @@ from tests.messaging_graphql_fixtures import Channel
 _AT = datetime(2026, 1, 2, tzinfo=timezone.utc)
 
 
-@pytest.fixture
-def facebook_tables(composed_tables: None) -> None:
-    """Use the composed tables for importer integration."""
-
-    del composed_tables
-
-
 def test_message_parser_maps_direction_identity_and_thread_folder(tmp_path: Path) -> None:
     """Facebook names carry typed confidence and stable thread hints."""
 
@@ -117,12 +110,10 @@ def test_comment_matching_distinguishes_strong_weak_and_unmatched() -> None:
 
 @pytest.mark.django_db(transaction=True)
 def test_importer_is_idempotent_and_lands_every_section_through_owners(
-    facebook_tables: None,
     tmp_path: Path,
 ) -> None:
     """A repeated synthetic export keeps row counts and public semantics stable."""
 
-    del facebook_tables
     root = _facebook_export(tmp_path)
     with (
         system_context(reason="test facebook importer"),

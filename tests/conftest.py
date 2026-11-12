@@ -45,11 +45,13 @@ from angee.portfolio.testing import (
     models as portfolio_models,  # noqa: F401 -- the projects test task composes the portfolio extension; its release target must exist
 )
 from angee.posts.models import Feed as AbstractFeed
+from angee.posts.models import FeedFollow as AbstractFeedFollow
 from angee.posts.models import PostMetrics as AbstractPostMetrics
 from angee.posts.models import Quota as AbstractQuota
 from angee.posts_integrate_youtube.models import YouTubeFeedState
+from angee.projects.models import DriveProjects, FolderProjects
 from angee.projects.testing import models as projects_models  # noqa: F401 -- register shared FK targets
-from angee.provenance.testing import load_statement_sources
+from angee.proposals.models import DriveProposalAccess, FileProposalAccess
 from angee.storage.models import Backend as AbstractStorageBackend
 from angee.storage.models import Drive as AbstractDrive
 from angee.storage.models import File as AbstractFile
@@ -59,19 +61,6 @@ from angee.storage.models import MimeType as AbstractMimeType
 from angee.storage.models import StorageRole as AbstractStorageRole
 from angee.tags.testing import models as tags_models  # noqa: F401 -- register shared FK targets
 from tests import host_models  # noqa: F401 -- register the shared composition's remaining FK targets
-
-
-@pytest.fixture
-def composed_tables(composed_tables: None) -> None:
-    """The bridges' composed tables also carry the declared statement principals.
-
-    Extends the ``angee.base.testing`` plugin fixture of the same name: after its REBAC
-    sync, the install-tier principals and grants that admission reads are loaded,
-    exactly as the framework's hosts do.
-    """
-
-    del composed_tables
-    load_statement_sources("parties")
 
 
 @pytest.fixture
@@ -99,7 +88,6 @@ class OAuthClient(AbstractOAuthClient):
         app_label = "integrate"
         db_table = "test_integrate_oauth_client"
         rebac_resource_type = "integrate/oauth_client"
-        rebac_id_attr = "sqid"
 
 
 class ExternalAccount(AbstractExternalAccount):
@@ -112,7 +100,6 @@ class ExternalAccount(AbstractExternalAccount):
         app_label = "integrate"
         db_table = "test_integrate_external_account"
         rebac_resource_type = "integrate/external_account"
-        rebac_id_attr = "sqid"
 
 
 class Credential(AbstractCredential):
@@ -125,7 +112,6 @@ class Credential(AbstractCredential):
         app_label = "integrate"
         db_table = "test_integrate_credential"
         rebac_resource_type = "integrate/credential"
-        rebac_id_attr = "sqid"
 
 
 class Vendor(AbstractVendor):
@@ -138,7 +124,6 @@ class Vendor(AbstractVendor):
         app_label = "integrate"
         db_table = "test_integrate_vendor"
         rebac_resource_type = "integrate/vendor"
-        rebac_id_attr = "sqid"
 
 
 class WebhookSubscription(AbstractWebhookSubscription):
@@ -151,7 +136,6 @@ class WebhookSubscription(AbstractWebhookSubscription):
         app_label = "integrate"
         db_table = "test_integrate_webhook_subscription"
         rebac_resource_type = "integrate/webhook_subscription"
-        rebac_id_attr = "sqid"
 
 
 class VcsBridge(AbstractVcsBridge, Integration):
@@ -170,7 +154,6 @@ class VcsBridge(AbstractVcsBridge, Integration):
         app_label = "integrate_vcs"
         db_table = "test_integrate_vcs_bridge"
         rebac_resource_type = "integrate_vcs/vcs_bridge"
-        rebac_id_attr = "sqid"
 
 
 class Repository(AbstractRepository):
@@ -183,7 +166,6 @@ class Repository(AbstractRepository):
         app_label = "integrate_vcs"
         db_table = "test_integrate_repository"
         rebac_resource_type = "integrate_vcs/repository"
-        rebac_id_attr = "sqid"
 
 
 class Source(AbstractSource):
@@ -196,7 +178,6 @@ class Source(AbstractSource):
         app_label = "integrate_vcs"
         db_table = "test_integrate_source"
         rebac_resource_type = "integrate_vcs/source"
-        rebac_id_attr = "sqid"
 
 
 class Template(AbstractTemplate):
@@ -211,7 +192,6 @@ class Template(AbstractTemplate):
         app_label = "integrate_vcs"
         db_table = "test_integrate_template"
         rebac_resource_type = "integrate_vcs/template"
-        rebac_id_attr = "sqid"
 
 
 def make_integration(
@@ -266,6 +246,7 @@ class StubVCSBackend(VCSBackend):
     ``stub_repos``/``stub_tree``/``stub_blobs`` through the bridge config.
     """
 
+    key = "stub"
     repository_search_scope_config_key = "stub_org"
 
     def ls_repos(self, *, org: str = "") -> list[RepoDescriptor]:
@@ -327,10 +308,9 @@ class Backend(AbstractStorageBackend):
         app_label = "storage"
         db_table = "test_storage_backend"
         rebac_resource_type = "storage/backend"
-        rebac_id_attr = "sqid"
 
 
-class Drive(AbstractDrive):
+class Drive(DriveProjects, DriveProposalAccess, AbstractDrive):
     """Concrete storage drive used by source-addon tests."""
 
     rebac_grantable = AbstractDrive.rebac_grantable
@@ -342,10 +322,9 @@ class Drive(AbstractDrive):
         app_label = "storage"
         db_table = "test_storage_drive"
         rebac_resource_type = "storage/drive"
-        rebac_id_attr = "sqid"
 
 
-class Folder(AbstractFolder):
+class Folder(FolderProjects, AbstractFolder):
     """Concrete storage folder used by source-addon tests."""
 
     class Meta(AbstractFolder.Meta):
@@ -355,7 +334,6 @@ class Folder(AbstractFolder):
         app_label = "storage"
         db_table = "test_storage_folder"
         rebac_resource_type = "storage/folder"
-        rebac_id_attr = "sqid"
 
 
 class MimeType(AbstractMimeType):
@@ -369,7 +347,7 @@ class MimeType(AbstractMimeType):
         db_table = "test_storage_mimetype"
 
 
-class File(AbstractFile):
+class File(FileProposalAccess, AbstractFile):
     """Concrete storage file used by source-addon tests."""
 
     rebac_grantable = AbstractFile.rebac_grantable
@@ -381,7 +359,6 @@ class File(AbstractFile):
         app_label = "storage"
         db_table = "test_storage_file"
         rebac_resource_type = "storage/file"
-        rebac_id_attr = "sqid"
 
 
 class FileAttachment(AbstractFileAttachment):
@@ -394,7 +371,6 @@ class FileAttachment(AbstractFileAttachment):
         app_label = "storage"
         db_table = "test_storage_file_attachment"
         rebac_resource_type = "storage/file_attachment"
-        rebac_id_attr = "sqid"
 
 
 class StorageRole(AbstractStorageRole):
@@ -426,7 +402,6 @@ class PostMetrics(AbstractPostMetrics):
         app_label = "posts"
         db_table = "test_posts_post_metrics"
         rebac_resource_type = "posts/post_metrics"
-        rebac_id_attr = "sqid"
 
 
 class Feed(YouTubeFeedState, AbstractFeed, messaging_models.Channel):
@@ -439,6 +414,16 @@ class Feed(YouTubeFeedState, AbstractFeed, messaging_models.Channel):
         app_label = "posts"
         db_table = "test_posts_feed"
         rebac_resource_type = "posts/feed"
+
+
+class FeedFollow(AbstractFeedFollow):
+    """Concrete following edge the merged posts policy backs."""
+
+    class Meta(AbstractFeedFollow.Meta):
+        abstract = False
+        app_label = "posts"
+        db_table = "test_posts_feed_follow"
+        rebac_resource_type = "posts/feed_follow"
 
 
 class Quota(AbstractQuota):

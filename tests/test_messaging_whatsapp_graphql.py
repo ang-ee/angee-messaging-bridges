@@ -26,11 +26,11 @@ from tests.messaging_graphql_fixtures import (
 
 @pytest.fixture
 def whatsapp_graphql(
-    messaging_graphql_tables: None, settings: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    db: None, settings: Any, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
 ) -> list[dict[str, Any]]:
     """Vendor row + tmp data dir + a captured enqueue; returns the sent-task log."""
 
-    del messaging_graphql_tables
+    del db
     settings.ANGEE_DATA_DIR = str(tmp_path / "data")
     with system_context(reason="test.messaging.whatsapp.vendor.seed"):
         Vendor.objects.create(slug="whatsapp", display_name="WhatsApp")
@@ -77,7 +77,7 @@ def test_connect_whatsapp_channel_starts_pairing(whatsapp_graphql: list[dict[str
     ]
 
 
-def test_connect_whatsapp_channel_requires_seeded_vendor(messaging_graphql_tables: None) -> None:
+def test_connect_whatsapp_channel_requires_seeded_vendor(db: None) -> None:
     """The mutation reads the addon-owned vendor catalogue row; it never creates it."""
 
     admin = _platform_admin("msg-wa-missing-vendor-admin")
