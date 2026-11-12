@@ -1703,10 +1703,10 @@ def test_resolve_channel_lids_moves_handle_statements_keeping_human_decisions(wh
         confirmed, dismissed, stronger = (
             Party._base_manager.create(display_name=name, created_by=owner) for name in ("Bob", "Robert", "Rob")
         )
-        confirmed.with_actor(owner).confirm(aspect="handle", handle=lid_handle, values={})
+        confirmed.with_actor(owner).confirm_statement(aspect="handle", handle=lid_handle, values={})
         Party.objects.assert_handle(confirmed, phone_handle, asserted_by=owner, confidence=0.6)
         Party.objects.assert_handle(dismissed, lid_handle, asserted_by=owner, confidence=0.6)
-        dismissed.with_actor(owner).dismiss(aspect="handle", handle=lid_handle)
+        dismissed.with_actor(owner).dismiss_statement(aspect="handle", handle=lid_handle)
         Party.objects.assert_handle(stronger, lid_handle, asserted_by=owner, confidence=0.3)
         Party.objects.assert_handle(stronger, phone_handle, asserted_by=owner, confidence=0.9)
         lid_handle.refresh_from_db()
