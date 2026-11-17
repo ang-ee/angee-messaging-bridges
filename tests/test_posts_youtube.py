@@ -17,6 +17,8 @@ from django.db import connection, transaction
 from django.utils import timezone
 from rebac import system_context
 
+from angee.graphql.testing.documents import graphql_request
+from angee.integrate import connect
 from angee.integrate import streams as stream_engine
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery
@@ -24,6 +26,7 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
 from angee.integrate.testing.models import SyncStream
+from angee.integrate_google.providers import GoogleType
 from angee.jobs.enqueue import celery_app
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.constants import RECONCILE_BACKOFF
@@ -39,10 +42,9 @@ from angee.posts_integrate_youtube.cursors import (
     ReplyPosition,
     ThreadIdentity,
 )
-from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
-from angee.resources.entries import ResourceEntry, resource_manifest_for
-from tests.conftest import claim_feed_reply, make_integration
+from angee.resources.entries import resource_manifest_for
+from tests.conftest import OAuthClient, claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
 AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
@@ -296,23 +298,43 @@ def activity(wire):
     return respond
 
 
-def test_youtube_preset_seed_and_read_only_discovery_field(feed):
+def test_youtube_connects_through_the_google_client_and_preset(feed):
     config = apps.get_app_config("posts_integrate_youtube")
-    resource = resource_manifest_for(config)["install"][0]
-    entry = ResourceEntry.from_declaration(config, "install", resource)
-    [group] = entry.read_groups()
-    [client] = group.dataset.dict
-    assert entry.adopt == ("slug", "environment")
-    assert client["_xref"] == "oauth_youtube" and client["slug"] == YouTubeFeedBackend.oauth_client
-    assert client["provider_type"] == GoogleYouTube.key
-    assert "client_id" not in client and "client_secret" not in client
-    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES[GoogleYouTube.key].endswith(".GoogleYouTube")
-    assert GoogleYouTube.defaults["supports_refresh"] and GoogleYouTube.defaults["supports_pkce"]
+    assert resource_manifest_for(config)["install"] == ()
+    assert YouTubeFeedBackend.oauth_client == "google"
+    assert YouTubeFeedBackend.oauth_scopes == ("https://www.googleapis.com/auth/youtube.force-ssl",)
+    assert "google_youtube" not in settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES
+    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google"] == "angee.integrate_google.providers.GoogleType"
+    assert set(YouTubeFeedBackend.oauth_scopes) <= set(GoogleType.effective_defaults()["scopes_catalogue"])
     assert "uploads_playlist_id" not in YouTubeFeedBackend.Config.model_fields
     assert not feed._meta.get_field("youtube_uploads_playlist_id").editable
     assert [(item.key, item.partition) for item in feed.feed_backend.streams()] == [
         ("activity", "channel-demo"), ("history", "channel-demo"), ("reobserve", "channel-demo"),
     ]
+
+
+def test_youtube_connect_requests_its_scope_through_the_google_preset(feed):
+    with system_context(reason="test YouTube connect through google"):
+        client = OAuthClient.objects.create(
+            slug="google", provider_type="google", display_name="Google", client_id="google-client",
+            client_secret="synthetic-google-secret",
+        )
+        apps.get_model("posts", "Feed").objects.filter(pk=feed.pk).update(credential=None, lifecycle="disconnected")
+    feed.refresh_from_db()
+    assert feed.connect_oauth_client("Feed").pk == client.pk
+
+    started = connect.connect_integration_target(
+        feed, client, user=feed.owner, request=graphql_request(feed.owner, session=True),
+        redirect_uri="https://app.example/integrate/oauth/callback", next_path="/",
+    )
+
+    url = urlsplit(started.authorize_url)
+    query = parse_qs(url.query)
+    assert f"{url.scheme}://{url.netloc}{url.path}" == GoogleType.effective_defaults()["authorize_endpoint"]
+    assert query["scope"] == ["openid email profile https://www.googleapis.com/auth/youtube.force-ssl"]
+    assert query["include_granted_scopes"] == ["true"]
+    assert query["access_type"] == ["offline"]
+    assert query["prompt"] == ["select_account"]
 
 
 def test_youtube_discovery_separates_network_facts_from_database_apply(feed, monkeypatch, wire):

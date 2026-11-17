@@ -1,5 +1,12 @@
 # YouTube channel feeds
 
+A channel connects through the deployment's one `google` OAuth client
+(`angee.integrate_google`), asking for `youtube.force-ssl` on top of the client's
+sign-in scopes; enable the YouTube Data API v3 in that client's Cloud project.
+Upgrading from the addon's former `youtube` client: set `provider_type` to
+`google` on any OAuth client row still holding `google_youtube`, then reconnect
+each channel through the `google` client.
+
 The channel feed uses the shared `FeedBackend` configuration, quota and delivery
 owners. The provider config extends the base with a 1,000-unit reply reserve and
 `recheck_interval` (at least one hour). Discovery stores the uploads playlist in

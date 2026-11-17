@@ -225,6 +225,7 @@ dependencies = [
     { name = "angee-intake" },
     { name = "angee-integrate" },
     { name = "angee-integrate-github" },
+    { name = "angee-integrate-google" },
     { name = "angee-integrate-iphone" },
     { name = "angee-integrate-vcs" },
     { name = "angee-jobs" },
@@ -299,6 +300,7 @@ requires-dist = [
     { name = "angee-intake", editable = "../angee/src/angee/intake" },
     { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
     { name = "angee-integrate-github", editable = "../angee/src/angee/integrate_github" },
+    { name = "angee-integrate-google", editable = "../angee/src/angee/integrate_google" },
     { name = "angee-integrate-iphone", editable = "../angee/src/angee/integrate_iphone" },
     { name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" },
     { name = "angee-jobs", editable = "../angee/src/angee/jobs" },
@@ -734,20 +736,20 @@ source = { editable = "../angee/src/angee/iam_integrate_oidc" }
 dependencies = [
     { name = "angee-iam" },
     { name = "angee-integrate" },
+    { name = "angee-integrate-google" },
     { name = "angee-parties" },
     { name = "angee-web" },
     { name = "django-compose" },
-    { name = "pyjwt", extra = ["crypto"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "angee-iam", editable = "../angee/src/angee/iam" },
     { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-google", editable = "../angee/src/angee/integrate_google" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "django-compose", specifier = ">=0.1.0.dev10,<0.2" },
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15" },
 ]
 
 [[package]]
@@ -800,6 +802,7 @@ dependencies = [
     { name = "django-compose" },
     { name = "httpcore2" },
     { name = "httpx2" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "qrcode", extra = ["pil"] },
 ]
 
@@ -817,6 +820,7 @@ requires-dist = [
     { name = "django-compose", specifier = ">=0.1.0.dev10,<0.2" },
     { name = "httpcore2", specifier = ">=2.10,<3" },
     { name = "httpx2", specifier = ">=2.10,<3" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
 ]
 
@@ -830,6 +834,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "angee-integrate-vcs", editable = "../angee/src/angee/integrate_vcs" }]
+
+[[package]]
+name = "angee-integrate-google"
+version = "3.0.0"
+source = { editable = "../angee/src/angee/integrate_google" }
+dependencies = [
+    { name = "angee-integrate" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "angee-integrate", editable = "../angee/src/angee/integrate" }]
 
 [[package]]
 name = "angee-integrate-iphone"
@@ -1584,6 +1599,7 @@ version = "1.0.0"
 source = { editable = "src/angee/posts_integrate_youtube" }
 dependencies = [
     { name = "angee-integrate" },
+    { name = "angee-integrate-google" },
     { name = "angee-parties" },
     { name = "angee-posts" },
     { name = "django-compose" },
@@ -1592,6 +1608,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-google", editable = "../angee/src/angee/integrate_google" },
     { name = "angee-parties", editable = "../angee/src/angee/parties" },
     { name = "angee-posts", editable = "../angee/src/angee/posts" },
     { name = "django-compose", specifier = ">=0.1.0.dev1,<0.2" },
@@ -1737,12 +1754,14 @@ name = "angee-scheduling"
 version = "3.0.0"
 source = { editable = "../angee/src/angee/scheduling" }
 dependencies = [
+    { name = "angee-base" },
     { name = "angee-graphql" },
     { name = "python-dateutil" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "angee-base", editable = "../angee/src/angee/base" },
     { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
     { name = "python-dateutil", specifier = ">=2.9" },
 ]
