@@ -6,6 +6,7 @@ import json
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
@@ -24,6 +25,7 @@ from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
+from angee.integrate.oauth import flow, state
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
 from angee.integrate.testing.models import SyncStream
 from angee.integrate_google.providers import GoogleType
@@ -34,6 +36,9 @@ from angee.messaging.delivery import run_message_delivery
 from angee.messaging.events import message_ingested
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
+from angee.posts_integrate_youtube.compose_migrations.integrate.move_youtube_client_to_google import (
+    move_youtube_client,
+)
 from angee.posts_integrate_youtube.cursors import (
     ActivityCursor,
     HistoryCursor,
@@ -42,6 +47,7 @@ from angee.posts_integrate_youtube.cursors import (
     ReplyPosition,
     ThreadIdentity,
 )
+from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
 from angee.resources.entries import resource_manifest_for
 from tests.conftest import OAuthClient, claim_feed_reply, make_integration
@@ -303,8 +309,10 @@ def test_youtube_connects_through_the_google_client_and_preset(feed):
     assert resource_manifest_for(config)["install"] == ()
     assert YouTubeFeedBackend.oauth_client == "google"
     assert YouTubeFeedBackend.oauth_scopes == ("https://www.googleapis.com/auth/youtube.force-ssl",)
-    assert "google_youtube" not in settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES
     assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google"] == "angee.integrate_google.providers.GoogleType"
+    # The retired key still loads existing rows, as Google.
+    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google_youtube"].endswith(".GoogleYouTube")
+    assert issubclass(GoogleYouTube, GoogleType)
     assert set(YouTubeFeedBackend.oauth_scopes) <= set(GoogleType.effective_defaults()["scopes_catalogue"])
     assert "uploads_playlist_id" not in YouTubeFeedBackend.Config.model_fields
     assert not feed._meta.get_field("youtube_uploads_playlist_id").editable
@@ -335,6 +343,38 @@ def test_youtube_connect_requests_its_scope_through_the_google_preset(feed):
     assert query["include_granted_scopes"] == ["true"]
     assert query["access_type"] == ["offline"]
     assert query["prompt"] == ["select_account"]
+    record = state.consume(started.state)
+    request = graphql_request(feed.owner, session=True)
+    restarted = urlsplit(flow.restart_with_consent(request, client, record).authorize_url)
+    assert parse_qs(restarted.query)["prompt"] == ["select_account consent"]
+
+
+@pytest.mark.django_db
+def test_youtube_upgrade_step_makes_its_client_the_google_client():
+    with system_context(reason="test YouTube client upgrade"):
+        youtube = OAuthClient.objects.create(
+            slug="youtube", provider_type="google_youtube", display_name="YouTube", client_id="operator-client",
+            client_secret="operator-secret",
+        )
+        OAuthClient.objects.filter(pk=youtube.pk).update(scopes_catalogue=["openid"], revoke_endpoint="")
+        move_youtube_client(apps, SimpleNamespace(connection=connection))
+        youtube.refresh_from_db()
+    assert (youtube.slug, youtube.provider_type, youtube.client_id) == ("google", "google", "operator-client")
+    assert youtube.client_secret == "operator-secret"
+    assert youtube.revoke_endpoint == GoogleType.effective_defaults()["revoke_endpoint"]
+    assert "https://www.googleapis.com/auth/youtube.force-ssl" in youtube.scopes_catalogue
+    assert youtube.authorize_params["include_granted_scopes"] == "true"
+
+
+@pytest.mark.django_db
+def test_youtube_upgrade_step_refuses_beside_an_existing_google_client():
+    with system_context(reason="test YouTube client clash"):
+        youtube = OAuthClient.objects.create(slug="youtube", provider_type="google_youtube", display_name="YouTube")
+        OAuthClient.objects.create(slug="google", provider_type="google", display_name="Google")
+        with pytest.raises(RuntimeError, match="No client was changed"), transaction.atomic():
+            move_youtube_client(apps, SimpleNamespace(connection=connection))
+        youtube.refresh_from_db()
+    assert (youtube.slug, youtube.provider_type) == ("youtube", "google_youtube")
 
 
 def test_youtube_discovery_separates_network_facts_from_database_apply(feed, monkeypatch, wire):
