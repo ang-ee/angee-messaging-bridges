@@ -18,6 +18,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 from rebac import system_context
 
+from angee.graphql.impl import model_impl_choices
 from angee.graphql.testing.documents import graphql_request
 from angee.integrate import connect
 from angee.integrate import streams as stream_engine
@@ -36,9 +37,6 @@ from angee.messaging.delivery import run_message_delivery
 from angee.messaging.events import message_ingested
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
-from angee.posts_integrate_youtube.compose_migrations.integrate.move_youtube_client_to_google import (
-    move_youtube_client,
-)
 from angee.posts_integrate_youtube.cursors import (
     ActivityCursor,
     HistoryCursor,
@@ -49,7 +47,9 @@ from angee.posts_integrate_youtube.cursors import (
 )
 from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
+from angee.posts_integrate_youtube.upgrades import move_youtube_client
 from angee.resources.entries import resource_manifest_for
+from angee.resources.testing.models import Resource
 from tests.conftest import OAuthClient, claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -313,6 +313,9 @@ def test_youtube_connects_through_the_google_client_and_preset(feed):
     # The retired key still loads existing rows, as Google.
     assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google_youtube"].endswith(".GoogleYouTube")
     assert issubclass(GoogleYouTube, GoogleType)
+    # Loadable, but never offered for a new client.
+    offered = {choice.key for choice in model_impl_choices(OAuthClient, "provider_type")}
+    assert "google" in offered and "google_youtube" not in offered
     assert set(YouTubeFeedBackend.oauth_scopes) <= set(GoogleType.effective_defaults()["scopes_catalogue"])
     assert "uploads_playlist_id" not in YouTubeFeedBackend.Config.model_fields
     assert not feed._meta.get_field("youtube_uploads_playlist_id").editable
@@ -349,30 +352,83 @@ def test_youtube_connect_requests_its_scope_through_the_google_preset(feed):
     assert parse_qs(restarted.query)["prompt"] == ["select_account consent"]
 
 
+RETIRED_SCOPES = ["openid", "email", "profile", "https://www.googleapis.com/auth/youtube.force-ssl"]
+
+
+def _legacy_youtube_client(**values):
+    """Write a row as the retired google_youtube preset seeded it, without today's compatibility class."""
+
+    youtube = OAuthClient.objects.create(slug="youtube", display_name="YouTube", client_id="operator-client")
+    retired = {
+        "provider_type": "google_youtube", "default_scopes": RETIRED_SCOPES, "scopes_catalogue": RETIRED_SCOPES,
+        "authorize_params": {"access_type": "offline", "prompt": "consent"},
+        "authorize_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token_endpoint": "https://oauth2.googleapis.com/token",
+        "revoke_endpoint": "https://oauth2.googleapis.com/revoke",
+        "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+        "issuer": "", "jwks_uri": "", "discovery_url": "",
+    }
+    OAuthClient.objects.filter(pk=youtube.pk).update(**{**retired, **values})
+    return youtube
+
+
+def _upgrade():
+    move_youtube_client(apps, SimpleNamespace(connection=connection))
+
+
 @pytest.mark.django_db
-def test_youtube_upgrade_step_makes_its_client_the_google_client():
+def test_youtube_upgrade_makes_its_client_the_google_client_without_the_retired_defaults():
     with system_context(reason="test YouTube client upgrade"):
-        youtube = OAuthClient.objects.create(
-            slug="youtube", provider_type="google_youtube", display_name="YouTube", client_id="operator-client",
-            client_secret="operator-secret",
-        )
-        OAuthClient.objects.filter(pk=youtube.pk).update(scopes_catalogue=["openid"], revoke_endpoint="")
-        move_youtube_client(apps, SimpleNamespace(connection=connection))
+        youtube = _legacy_youtube_client()
+        _upgrade()
         youtube.refresh_from_db()
+    preset = GoogleType.effective_defaults()
     assert (youtube.slug, youtube.provider_type, youtube.client_id) == ("google", "google", "operator-client")
-    assert youtube.client_secret == "operator-secret"
-    assert youtube.revoke_endpoint == GoogleType.effective_defaults()["revoke_endpoint"]
-    assert "https://www.googleapis.com/auth/youtube.force-ssl" in youtube.scopes_catalogue
-    assert youtube.authorize_params["include_granted_scopes"] == "true"
+    assert youtube.default_scopes == preset["default_scopes"]
+    assert youtube.authorize_params == {"access_type": "offline", "include_granted_scopes": "true"}
+    assert set(preset["scopes_catalogue"]) <= set(youtube.scopes_catalogue)
+    assert (youtube.issuer, youtube.jwks_uri) == (preset["issuer"], preset["jwks_uri"])
 
 
 @pytest.mark.django_db
-def test_youtube_upgrade_step_refuses_beside_an_existing_google_client():
+def test_youtube_upgrade_keeps_operator_scopes_and_prompt():
+    with system_context(reason="test YouTube operator values"):
+        youtube = _legacy_youtube_client(
+            default_scopes=["openid", "email"], authorize_params={"access_type": "offline", "prompt": "none"},
+        )
+        _upgrade()
+        youtube.refresh_from_db()
+    assert youtube.default_scopes == ["openid", "email"]
+    assert youtube.authorize_params["prompt"] == "none"
+
+
+@pytest.mark.django_db
+def test_youtube_upgrade_deletes_the_unused_demo_google_placeholder():
+    with system_context(reason="test YouTube beside the demo placeholder"):
+        youtube = _legacy_youtube_client()
+        placeholder = OAuthClient.objects.create(
+            slug="google", provider_type="google", display_name="Google (demo)", client_id="demo-oidc-client",
+        )
+        Resource.objects.create(
+            source_addon="angee.iam_integrate_oidc", source_path="resources/demo/010_integrate.oauthclient.yaml",
+            tier="demo", xref="demo_google", content_hash="demo", target_model="integrate.OAuthClient",
+            target_id=placeholder.sqid,
+        )
+        _upgrade()
+        youtube.refresh_from_db()
+        assert not OAuthClient.objects.filter(pk=placeholder.pk).exists()
+        assert not Resource.objects.filter(source_addon="angee.iam_integrate_oidc", xref="demo_google").exists()
+    assert youtube.slug == "google"
+
+
+@pytest.mark.django_db
+def test_youtube_upgrade_refuses_beside_a_google_client_in_use():
     with system_context(reason="test YouTube client clash"):
-        youtube = OAuthClient.objects.create(slug="youtube", provider_type="google_youtube", display_name="YouTube")
-        OAuthClient.objects.create(slug="google", provider_type="google", display_name="Google")
-        with pytest.raises(RuntimeError, match="No client was changed"), transaction.atomic():
-            move_youtube_client(apps, SimpleNamespace(connection=connection))
+        youtube = _legacy_youtube_client()
+        OAuthClient.objects.create(slug="google", provider_type="google", display_name="Google", client_id="real")
+        with pytest.raises(RuntimeError, match="delete the 'google' client if it is an unused placeholder"):
+            with transaction.atomic():
+                _upgrade()
         youtube.refresh_from_db()
     assert (youtube.slug, youtube.provider_type) == ("youtube", "google_youtube")
 

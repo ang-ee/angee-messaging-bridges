@@ -5,13 +5,10 @@ A channel connects through the deployment's one `google` OAuth client
 sign-in scopes; enable the YouTube Data API v3 in that client's Cloud project.
 
 Upgrading from the addon's own `youtube` client: author a native data migration
-that runs `move_youtube_client` from
-`compose_migrations/integrate/move_youtube_client_to_google.py`. It renames the
-`youtube` row to `google` with `provider_type = google` and the preset's
-catalogue, authorize parameters and revoke endpoint, keeping its id, so channels
-keep their credentials and need no reconnect. It refuses when a `google` client
-already exists in the same environment. Until it runs, rows holding the retired
-`google_youtube` key still load.
+that runs `angee.posts_integrate_youtube.upgrades.move_youtube_client` (its
+docstring owns the details). It turns the `youtube` row into the `google` client,
+keeping its id, so channels keep their credentials and need no reconnect. Until it
+runs, rows holding the retired `google_youtube` key still load.
 
 The channel feed uses the shared `FeedBackend` configuration, quota and delivery
 owners. The provider config extends the base with a 1,000-unit reply reserve and
