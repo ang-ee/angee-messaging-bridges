@@ -6,7 +6,6 @@ import json
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
@@ -15,6 +14,8 @@ import pytest
 from django.apps import apps
 from django.conf import settings
 from django.db import connection, transaction
+from django.db.migrations.exceptions import IrreversibleError
+from django.db.migrations.state import ProjectState
 from django.utils import timezone
 from rebac import system_context
 
@@ -29,6 +30,7 @@ from angee.integrate.http import HttpClient
 from angee.integrate.oauth import flow, state
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
 from angee.integrate.testing.models import SyncStream
+from angee.integrate_google.compose_migrations.integrate import align_google_clients as align_template
 from angee.integrate_google.providers import GoogleType
 from angee.jobs.enqueue import celery_app
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
@@ -37,6 +39,9 @@ from angee.messaging.delivery import run_message_delivery
 from angee.messaging.events import message_ingested
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
+from angee.posts_integrate_youtube.compose_migrations.integrate import (
+    move_youtube_client_to_google as move_template,
+)
 from angee.posts_integrate_youtube.cursors import (
     ActivityCursor,
     HistoryCursor,
@@ -47,7 +52,6 @@ from angee.posts_integrate_youtube.cursors import (
 )
 from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
-from angee.posts_integrate_youtube.upgrades import move_youtube_client
 from angee.resources.entries import resource_manifest_for
 from angee.resources.testing.models import Resource
 from tests.conftest import OAuthClient, claim_feed_reply, make_integration
@@ -372,11 +376,26 @@ def _legacy_youtube_client(**values):
     return youtube
 
 
+def _apply(template, app_label="integrate", *, reverse=False):
+    """Run a migration template's ``Migration`` over the installed models' migration state.
+
+    The callables get historical models (no sqid, managers or methods), as a host's copy does.
+    """
+
+    migration = template.Migration(template.__name__.rpartition(".")[2], app_label)
+    with connection.schema_editor() as editor:
+        state = ProjectState.from_apps(apps)
+        if reverse:
+            migration.unapply(state, editor)
+        else:
+            migration.apply(state, editor)
+
+
 def _upgrade():
-    move_youtube_client(apps, SimpleNamespace(connection=connection))
+    _apply(move_template)
+    _apply(align_template)
 
 
-@pytest.mark.django_db
 def test_youtube_upgrade_makes_its_client_the_google_client_without_the_retired_defaults():
     with system_context(reason="test YouTube client upgrade"):
         youtube = _legacy_youtube_client()
@@ -388,9 +407,11 @@ def test_youtube_upgrade_makes_its_client_the_google_client_without_the_retired_
     assert youtube.authorize_params == {"access_type": "offline", "include_granted_scopes": "true"}
     assert set(preset["scopes_catalogue"]) <= set(youtube.scopes_catalogue)
     assert (youtube.issuer, youtube.jwks_uri) == (preset["issuer"], preset["jwks_uri"])
+    # The google client may now serve other features, so the move is not undone.
+    with pytest.raises(IrreversibleError):
+        _apply(move_template, reverse=True)
 
 
-@pytest.mark.django_db
 def test_youtube_upgrade_keeps_operator_scopes_and_prompt():
     with system_context(reason="test YouTube operator values"):
         youtube = _legacy_youtube_client(
@@ -402,7 +423,6 @@ def test_youtube_upgrade_keeps_operator_scopes_and_prompt():
     assert youtube.authorize_params["prompt"] == "none"
 
 
-@pytest.mark.django_db
 def test_youtube_upgrade_deletes_the_unused_demo_google_placeholder():
     with system_context(reason="test YouTube beside the demo placeholder"):
         youtube = _legacy_youtube_client()
@@ -421,14 +441,12 @@ def test_youtube_upgrade_deletes_the_unused_demo_google_placeholder():
     assert youtube.slug == "google"
 
 
-@pytest.mark.django_db
 def test_youtube_upgrade_refuses_beside_a_google_client_in_use():
     with system_context(reason="test YouTube client clash"):
         youtube = _legacy_youtube_client()
         OAuthClient.objects.create(slug="google", provider_type="google", display_name="Google", client_id="real")
         with pytest.raises(RuntimeError, match="delete the 'google' client if it is an unused placeholder"):
-            with transaction.atomic():
-                _upgrade()
+            _apply(move_template)
         youtube.refresh_from_db()
     assert (youtube.slug, youtube.provider_type) == ("youtube", "google_youtube")
 
