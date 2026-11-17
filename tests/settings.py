@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "tests.iam_app.TestIAMConfig",
     "angee.integrate",
     "angee.integrate_vcs",
+    "angee.integrate_google",
     "angee.decisions",
     "angee.workflows",
     "angee.workflows_integrate",

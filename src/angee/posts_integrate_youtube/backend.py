@@ -91,7 +91,10 @@ class YouTubeFeedBackend(FeedBackend):
     key = "youtube"
     label = "YouTube"
     icon = "youtube"
-    oauth_client = "youtube"
+    # The deployment's one Google client (integrate_google), asked for the scope
+    # that reads comments and publishes replies on top of its sign-in defaults.
+    oauth_client = "google"
+    oauth_scopes = ("https://www.googleapis.com/auth/youtube.force-ssl",)
     defaults = {"vendor": "google", "poll_interval": 900}
     # The driver sorts activity ahead of history. Serial drains give the live
     # tail first use of the shared quota and serialize root/comment projection.
