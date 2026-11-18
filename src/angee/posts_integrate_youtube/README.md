@@ -1,5 +1,17 @@
 # YouTube channel feeds
 
+A channel connects through the deployment's one `google` OAuth client
+(`angee.integrate_google`), asking for `youtube.force-ssl` on top of the client's
+sign-in scopes; enable the YouTube Data API v3 in that client's Cloud project.
+
+Upgrading from the addon's own `youtube` client: copy the migration template
+`compose_migrations/integrate/move_youtube_client_to_google.py` into the host's
+`runtime/integrate/migrations/` and pin its dependencies (its docstring owns the
+details), with `integrate_google`'s `align_google_clients` template after it. It
+turns the `youtube` row into the `google` client, keeping its id, so channels keep
+their credentials and need no reconnect. Until it runs, rows holding the retired
+`google_youtube` key still load.
+
 The channel feed uses the shared `FeedBackend` configuration, quota and delivery
 owners. The provider config extends the base with a 1,000-unit reply reserve and
 `recheck_interval` (at least one hour). Discovery stores the uploads playlist in
