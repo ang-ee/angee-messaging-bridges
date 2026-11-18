@@ -217,6 +217,7 @@ dependencies = [
     { name = "angee-appearance-integrate" },
     { name = "angee-base" },
     { name = "angee-calendar" },
+    { name = "angee-calendar-integrate-google" },
     { name = "angee-calendar-integrate-ics" },
     { name = "angee-checklists" },
     { name = "angee-dashboards" },
@@ -297,6 +298,7 @@ requires-dist = [
     { name = "angee-appearance-integrate", editable = "../angee/src/angee/appearance_integrate" },
     { name = "angee-base", editable = "../angee/src/angee/base" },
     { name = "angee-calendar", editable = "../angee/src/angee/calendar" },
+    { name = "angee-calendar-integrate-google", editable = "../angee/src/angee/calendar_integrate_google" },
     { name = "angee-calendar-integrate-ics", editable = "../angee/src/angee/calendar_integrate_ics" },
     { name = "angee-checklists", editable = "../angee/src/angee/checklists" },
     { name = "angee-dashboards", editable = "../angee/src/angee/dashboards" },
@@ -621,6 +623,7 @@ dependencies = [
     { name = "angee-scheduling" },
     { name = "angee-tags" },
     { name = "angee-web" },
+    { name = "icalendar" },
 ]
 
 [package.metadata]
@@ -637,6 +640,34 @@ requires-dist = [
     { name = "angee-scheduling", editable = "../angee/src/angee/scheduling" },
     { name = "angee-tags", editable = "../angee/src/angee/tags" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "icalendar", specifier = ">=6.3,<8" },
+]
+
+[[package]]
+name = "angee-calendar-integrate-google"
+version = "3.0.0"
+source = { editable = "../angee/src/angee/calendar_integrate_google" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-calendar" },
+    { name = "angee-graphql" },
+    { name = "angee-integrate" },
+    { name = "angee-integrate-google" },
+    { name = "angee-scheduling" },
+    { name = "angee-web" },
+    { name = "icalendar" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-calendar", editable = "../angee/src/angee/calendar" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-google", editable = "../angee/src/angee/integrate_google" },
+    { name = "angee-scheduling", editable = "../angee/src/angee/scheduling" },
+    { name = "angee-web", editable = "../angee/src/angee/web" },
+    { name = "icalendar", specifier = ">=6.3,<8" },
 ]
 
 [[package]]
@@ -1995,6 +2026,7 @@ version = "3.0.0"
 source = { editable = "../angee/src/angee/storage_integrate_google_drive" }
 dependencies = [
     { name = "angee-integrate" },
+    { name = "angee-integrate-google" },
     { name = "angee-storage" },
     { name = "angee-storage-integrate" },
     { name = "angee-web" },
@@ -2003,6 +2035,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "angee-integrate", editable = "../angee/src/angee/integrate" },
+    { name = "angee-integrate-google", editable = "../angee/src/angee/integrate_google" },
     { name = "angee-storage", editable = "../angee/src/angee/storage" },
     { name = "angee-storage-integrate", editable = "../angee/src/angee/storage_integrate" },
     { name = "angee-web", editable = "../angee/src/angee/web" },
