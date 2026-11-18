@@ -143,7 +143,7 @@ DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra --strict-markers --import-mode=importlib"
+addopts = "-ra --strict-markers --import-mode=importlib -p no:randomly"
 
 [tool.ruff]
 line-length = 120
