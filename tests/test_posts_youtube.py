@@ -1398,8 +1398,8 @@ def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcome
         else:
             step(feed, source(feed, "activity"))
     if expected is IntegrationError:
-        assert caught.value.transient == (status != 403)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status != 403 else None)
+        assert caught.value.transient == (status == 503)
+        assert caught.value.retry_after == (timedelta(seconds=123) if status == 503 else None)
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):
