@@ -110,6 +110,11 @@ def feed(db):
         platform="youtube", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
     )
     row.save(update_fields=["handle", "updated_at"])
+    # The feed awaits discovery from creation, and stream work and delivery wait for it.
+    assert row.finish_discovery(
+        credential_pk=row.credential_id, generation=row.discovery_generation,
+        discovery=ConnectionDiscovery(data={"uploads_playlist_id": row.youtube_uploads_playlist_id}),
+    )
     return row
 
 
@@ -636,9 +641,7 @@ def test_youtube_sync_engine_settles_a_deadline_with_durable_pending_work(feed, 
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
 
     def respond(method, resource, query, kwargs):
         del method, resource, query, kwargs
@@ -665,9 +668,7 @@ def test_youtube_sync_engine_accepts_an_unchanged_partial_page_at_the_deadline(f
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
     source(feed, "activity", ActivityCursor(
         floor=AT, page=PagePosition(token=None),
     ).model_dump(mode="json"))
