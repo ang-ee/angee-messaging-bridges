@@ -29,6 +29,7 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.oauth import flow, state
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
+from angee.integrate.testing.http import mock_transport
 from angee.integrate.testing.models import SyncStream
 from angee.integrate_google.compose_migrations.integrate import align_google_clients as align_template
 from angee.integrate_google.providers import GoogleType
@@ -119,30 +120,39 @@ def feed(db):
 
 
 def transport(monkeypatch, handler):
-    """Replace only the shared HTTP boundary; preserve auth, URLs, units and timeouts."""
+    """Script the YouTube API at integrate's network seam (``mock_transport``); auth, URLs, units and timeouts
+    are the adapter's own.
+
+    The client, its refusal hook and byte cap run for real. ``handler(method, resource, query, kwargs)`` sees
+    each request (``kwargs``: its ``headers``, ``body`` and read ``timeout``) and answers a payload, a
+    ``(status, payload, headers)`` tuple, a response, or a transport error to raise. ``monkeypatch`` keeps the
+    scripted transport past the block and restores the pinned one at teardown.
+    """
 
     calls = []
 
-    def request(client, method, url, **kwargs):
-        del client
+    def answer(request):
         assert not connection.in_atomic_block
-        parts = urlsplit(url)
+        parts = urlsplit(str(request.url))
         assert (parts.scheme, parts.netloc) == ("https", "www.googleapis.com")
         assert "access_token" not in parts.query
+        kwargs = {"headers": request.headers, "body": request.content, "timeout": request.extensions["timeout"]["read"]}
         assert kwargs["headers"]["Authorization"] == "Bearer synthetic-access"
         assert kwargs["timeout"] == 10.0
         query = {key: values[0] for key, values in parse_qs(parts.query).items()}
         resource = parts.path.rsplit("/", 1)[-1]
-        calls.append((method, resource, query, kwargs))
-        result = handler(method, resource, query, kwargs)
+        calls.append((request.method, resource, query, kwargs))
+        result = handler(request.method, resource, query, kwargs)
         if isinstance(result, Exception):
             raise result
         if isinstance(result, httpx2.Response):
             return result
         status, payload, headers = result if isinstance(result, tuple) else (200, result, {})
-        return httpx2.Response(status, json=deepcopy(payload), headers=headers, request=httpx2.Request(method, url))
+        return httpx2.Response(status, json=deepcopy(payload), headers=headers)
 
-    monkeypatch.setattr(HttpClient, "request", request)
+    with mock_transport(answer):
+        scripted = vars(HttpClient)["transport_factory"]
+    monkeypatch.setattr(HttpClient, "transport_factory", scripted)
     return calls
 
 

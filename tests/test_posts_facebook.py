@@ -21,6 +21,7 @@ from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import CursorInvalid, advance_stream, open_stream, reset_stream
+from angee.integrate.testing.http import mock_transport
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.constants import RECONCILE_BACKOFF
 from angee.messaging.events import message_ingested
@@ -69,28 +70,36 @@ def feed(db):
 
 
 def transport(monkeypatch, handler):
-    """Replace only the public pinned HTTP request seam."""
+    """Script Graph at integrate's network seam (``mock_transport``) for the rest of the test.
+
+    The client, its refusal hook and byte cap run for real. ``handler(method, path, query, kwargs)`` sees each
+    request (``kwargs``: its ``headers``, ``body`` and read ``timeout``) and answers a payload, a
+    ``(status, payload, headers)`` tuple, a response, or a transport error to raise. ``monkeypatch`` keeps the
+    scripted transport past the block and restores the pinned one at teardown.
+    """
 
     calls = []
 
-    def request(client, method, url, **kwargs):
-        del client
+    def answer(request):
         assert not connection.in_atomic_block
-        parts = urlsplit(url)
+        parts = urlsplit(str(request.url))
         query = {key: values[0] for key, values in parse_qs(parts.query).items()}
         assert (parts.scheme, parts.netloc) == ("https", "graph.facebook.com")
         assert "access_token" not in query
         path = parts.path.removeprefix(f"/{MetaFacebook.graph_api_version}/")
-        calls.append((method, path, query, kwargs))
-        result = handler(method, path, query, kwargs)
+        kwargs = {"headers": request.headers, "body": request.content, "timeout": request.extensions["timeout"]["read"]}
+        calls.append((request.method, path, query, kwargs))
+        result = handler(request.method, path, query, kwargs)
         if isinstance(result, Exception):
             raise result
         if isinstance(result, httpx2.Response):
             return result
         status, payload, headers = result if isinstance(result, tuple) else (200, result, {})
-        return httpx2.Response(status, json=deepcopy(payload), headers=headers, request=httpx2.Request(method, url))
+        return httpx2.Response(status, json=deepcopy(payload), headers=headers)
 
-    monkeypatch.setattr(HttpClient, "request", request)
+    with mock_transport(answer):
+        scripted = vars(HttpClient)["transport_factory"]
+    monkeypatch.setattr(HttpClient, "transport_factory", scripted)
     return calls
 
 
@@ -160,7 +169,8 @@ def test_missing_or_invalid_dates_remain_unknown(value):
 
 def test_history_resumes_across_backend_instances_and_stops_when_exhausted(feed, graph, monkeypatch):
     def respond(method, path, query, kwargs):
-        assert method == "GET" and kwargs["headers"] == feed.credential.auth_headers()
+        assert method == "GET"
+        assert all(kwargs["headers"].get(name) == value for name, value in feed.credential.auth_headers().items())
         if path.endswith("/posts"):
             assert "comments.filter(stream).limit(0).summary(true)" in query["fields"]
             return graph["posts_last" if query.get("after") else "posts_first"]
@@ -296,7 +306,8 @@ def test_matching_visitor_text_is_not_mistaken_for_a_page_reply(feed, replier, g
     assert [call[0] for call in calls] == ["POST"]
 
 
-@pytest.mark.parametrize("error_type", [httpx2.ReadTimeout, httpx2.RemoteProtocolError, OSError])
+# A socket's own OSError reaches the client as httpx2's ReadError.
+@pytest.mark.parametrize("error_type", [httpx2.ReadTimeout, httpx2.RemoteProtocolError, httpx2.ReadError])
 def test_lost_ack_is_settled_before_reconciling_the_existing_page_reply(
     feed, replier, graph, monkeypatch, error_type,
 ):
