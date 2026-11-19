@@ -1413,26 +1413,43 @@ def test_youtube_status_it_does_not_name_is_integrates_refusal_with_the_adapters
     )
 
 
-@pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
+@pytest.mark.parametrize("payload", ["html", []], ids=["html", "not-an-object"])
 @pytest.mark.parametrize("method", ["GET", "POST"])
-def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcomes(
-    feed, wire, replier, monkeypatch, status, payload, method,
+def test_youtube_refusal_without_a_youtube_error_is_definite_never_ambiguous(
+    feed, wire, replier, monkeypatch, payload, method,
 ):
+    """A 403 answered the request: a reply POST was not accepted, and a read is refused for good."""
+
     response = httpx2.Response(
-        status, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
-        request=httpx2.Request(method, youtube.API_ROOT + "comments"), headers={"Retry-After": "123"},
+        403, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
+        headers={"Retry-After": "123"},
     )
     transport(monkeypatch, lambda *args: response)
-    expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
-    with pytest.raises(expected) as caught:
+    with pytest.raises(IntegrationError) as caught:
         if method == "POST":
             feed.feed_backend.deliver(reply(feed, wire, actor=replier))
         else:
             step(feed, source(feed, "activity"))
-    if expected is IntegrationError:
-        assert caught.value.transient == (status == 503)
-        # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
-        assert caught.value.retry_after == (None if status == 200 else timedelta(seconds=123))
+    assert not isinstance(caught.value, DeliveryUncertain) and not caught.value.transient
+    # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+    assert caught.value.retry_after == timedelta(seconds=123)
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_youtube_429_without_a_hint_waits_the_adapters_default(feed, wire, replier, monkeypatch, method):
+    """A 429 is integrate's transient refusal, never a reply's ambiguity; with no Retry-After it waits YouTube's
+    own one minute."""
+
+    transport(monkeypatch, lambda *args: (429, {}, {}))
+    with pytest.raises(IntegrationError) as caught:
+        if method == "POST":
+            feed.feed_backend.deliver(reply(feed, wire, actor=replier))
+        else:
+            step(feed, source(feed, "activity"))
+    assert not isinstance(caught.value, DeliveryUncertain)
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        True, timedelta(minutes=1), "The feed is rate limiting requests (HTTP 429).",
+    )
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):

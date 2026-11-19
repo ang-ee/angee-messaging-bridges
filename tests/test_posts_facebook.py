@@ -897,28 +897,74 @@ def test_a_status_graph_does_not_name_is_integrates_refusal_with_the_adapters_wa
     )
 
 
-@pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
+@pytest.mark.parametrize("payload", ["html", []], ids=["html", "not-an-object"])
 @pytest.mark.parametrize("method", ["GET", "POST"])
-def test_shared_http_classifier_distinguishes_answered_refusals_from_ambiguity(
-    feed, graph, replier, monkeypatch, status, payload, method,
+def test_a_refusal_without_a_graph_error_is_definite_never_ambiguous(
+    feed, graph, replier, monkeypatch, payload, method,
 ):
+    """A 403 answered the request: a reply POST was not accepted, and a read is refused for good."""
+
     response = httpx2.Response(
-        status, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
-        request=httpx2.Request(method, MetaFacebook.graph_url("me")), headers={"Retry-After": "123"},
+        403, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
+        headers={"Retry-After": "123"},
     )
     transport(monkeypatch, lambda *args: response)
     with system_context(reason="test.facebook.http_classification"):
         backend = FacebookFeedBackend(feed)
-        expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
-        with pytest.raises(expected) as caught:
+        with pytest.raises(IntegrationError) as caught:
             if method == "POST":
                 backend.deliver(reply(feed, graph, actor=replier))
             else:
                 backend.extract(stream(feed), 100)
-    if expected is IntegrationError:
-        assert caught.value.transient == (status == 503)
-        # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
-        assert caught.value.retry_after == (None if status == 200 else timedelta(seconds=123))
+    assert not isinstance(caught.value, DeliveryUncertain) and not caught.value.transient
+    # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+    assert caught.value.retry_after == timedelta(seconds=123)
+
+
+_FULL_PAGE_USAGE = {"X-Page-Usage": json.dumps({"call_count": 100, "total_time": 1, "total_cputime": 1})}
+
+
+@pytest.mark.parametrize(("status", "error", "headers", "uncertain", "transient", "wait", "message"), [
+    pytest.param(
+        429, None, _FULL_PAGE_USAGE, False, True, timedelta(hours=1),
+        "The feed is rate limiting requests (HTTP 429).", id="a-429-waits-for-facebooks-usage-cooldown",
+    ),
+    pytest.param(
+        400, {"code": 613}, {"Retry-After": "123"}, False, True, timedelta(seconds=123),
+        "Facebook temporarily limited Page requests.", id="a-graph-rate-code-on-a-400-is-transient",
+    ),
+    pytest.param(
+        400, {"code": 2}, {}, True, True, timedelta(minutes=1),
+        "The feed is temporarily unavailable.", id="a-graph-temporary-code-is-ambiguous-for-a-reply",
+    ),
+    pytest.param(
+        400, {"code": 190}, {}, False, False, None,
+        "Facebook authorization was refused; reconnect the Page.", id="a-rejected-page-token",
+    ),
+])
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_facebooks_own_codes_and_waits_reach_integrates_refusal(
+    feed, graph, replier, monkeypatch, method, status, error, headers, uncertain, transient, wait, message,
+):
+    """Graph's error codes are the adapter's own cases on any status; a 429 Graph names none for is integrate's,
+    waiting Facebook's usage-aware horizon. A temporary Graph code leaves a reply's acceptance unknown."""
+
+    payload = {"error": {**error, "message": "Synthetic Graph error", "type": "OAuthException"}} if error else {}
+    transport(monkeypatch, lambda *args: (status, payload, headers))
+    with system_context(reason="test.facebook.own_codes"):
+        backend = FacebookFeedBackend(feed)
+        with pytest.raises(IntegrationError) as caught:
+            if method == "POST":
+                backend.deliver(reply(feed, graph, actor=replier))
+            else:
+                backend.extract(stream(feed), 100)
+    if method == "POST" and uncertain:
+        assert isinstance(caught.value, DeliveryUncertain)
+    else:
+        assert not isinstance(caught.value, DeliveryUncertain)
+        assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+            transient, wait, message,
+        )
 
 
 def test_first_reconciliation_waits_for_visibility_and_normalized_body_never_resends(
