@@ -31,6 +31,9 @@ from tests.conftest import claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
+LIVE_SINCE = timestamp("2026-10-01T00:00:00Z")
+"""The fixture feed's live horizon: the fixture's 2026 posts are live and its 2023 post is historical."""
+
 
 @pytest.fixture
 def graph():
@@ -55,7 +58,7 @@ def feed(db):
         row = make_integration(
             "facebook-page", model=apps.get_model("posts", "Feed"), backend_class="feed",
             feed_backend_class="facebook", material={"api_key": "synthetic-page-token"},
-            external_id="900001", display_name="Example Workshop", config={},
+            external_id="900001", display_name="Example Workshop", config={}, live_since=LIVE_SINCE,
         )
         row.handle = apps.get_model("parties", "Handle").objects.upsert(
             platform="facebook", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
@@ -249,8 +252,6 @@ def test_stream_records_use_per_record_history_and_trash_hidden_comments(feed, g
     message_ingested.connect(observe, weak=False)
     try:
         with system_context(reason="test.facebook.live_records"):
-            feed.live_since = timestamp("2026-10-01T00:00:00Z")
-            feed.save(update_fields=["live_since", "updated_at"])
             hidden_raw = {**graph["old_comments"]["data"][0], "id": "700001_800008", "is_hidden": True}
             transport(monkeypatch, lambda method, path, *args: (
                 graph["posts_last"] if path.endswith("/posts")
@@ -456,8 +457,6 @@ def test_malformed_records_and_permanent_post_reads_are_quarantined_without_wedg
 
     calls = transport(monkeypatch, respond)
     with system_context(reason="test.facebook.quarantine"):
-        feed.live_since = timestamp("2026-10-01T00:00:00Z")
-        feed.save(update_fields=["live_since", "updated_at"])
         first = advance_stream(stream(feed, key), FacebookFeedBackend(feed))
         second = advance_stream(first.stream, FacebookFeedBackend(feed))
         third = advance_stream(second.stream, FacebookFeedBackend(feed))
@@ -815,9 +814,7 @@ def test_reobservation_budget_retains_cursor_and_live_comments_continue(feed, gr
     ))
     with system_context(reason="test.facebook.reobserve_budget"):
         feed.config = {"reobserve_units_per_cycle": budget}
-        # The clock is set back before the fixture's discovery, so the live horizon follows it.
-        feed.live_since = recent - timedelta(days=1)
-        feed.save(update_fields=["config", "live_since", "updated_at"])
+        feed.save(update_fields=["config", "updated_at"])
         state = stream(feed, "reobserve")
         backend = FacebookFeedBackend(feed)
         if budget:
