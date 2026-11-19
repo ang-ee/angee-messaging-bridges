@@ -21,9 +21,9 @@ from angee.integrate.streams import advance_stream
 from angee.posts_integrate_facebook.backend import FacebookFeedBackend
 from angee.posts_integrate_facebook.oauth import MetaFacebook
 from tests.conftest import Credential, ExternalAccount, OAuthClient, make_integration
+from tests.test_posts_facebook import carries_auth, stream, transport
 from tests.test_posts_facebook import feed as feed
 from tests.test_posts_facebook import graph as graph
-from tests.test_posts_facebook import stream, transport
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -130,7 +130,7 @@ def test_discovery_returns_typed_facts_and_derived_material_without_exchange(oau
         assert original.material == material and Credential.objects.count() == before
     assert calls[0][1] == "me/accounts"
     assert calls[0][2]["fields"] == "id,name,access_token"
-    assert calls[0][3]["headers"] == original.auth_headers()
+    assert carries_auth(calls[0][3]["headers"], original)
     exchange.assert_not_called()
 
 
@@ -156,7 +156,7 @@ def test_a_page_token_names_its_page_at_me_and_derives_no_material(feed, graph, 
     assert result.data["external_id"] == result.data["handle"].external_id == "900001"
     assert result.data["display_name"] == "Example Workshop"
     assert [(call[0], call[1], call[2]["fields"]) for call in calls] == [("GET", "me", "id,name")]
-    assert calls[0][3]["headers"] == feed.credential.auth_headers()
+    assert carries_auth(calls[0][3]["headers"], feed.credential)
 
 
 def _synced_state(feed):

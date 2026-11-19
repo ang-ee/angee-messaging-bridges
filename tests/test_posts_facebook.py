@@ -72,6 +72,12 @@ def feed(db):
     return row
 
 
+def carries_auth(headers, credential):
+    """Whether a request's headers (a case-insensitive mapping) carry each header ``credential`` authenticates with."""
+
+    return all(headers.get(name) == value for name, value in credential.auth_headers().items())
+
+
 def transport(monkeypatch, handler):
     """Script Graph at integrate's network seam (``mock_transport``) for the rest of the test.
 
@@ -173,7 +179,7 @@ def test_missing_or_invalid_dates_remain_unknown(value):
 def test_history_resumes_across_backend_instances_and_stops_when_exhausted(feed, graph, monkeypatch):
     def respond(method, path, query, kwargs):
         assert method == "GET"
-        assert all(kwargs["headers"].get(name) == value for name, value in feed.credential.auth_headers().items())
+        assert carries_auth(kwargs["headers"], feed.credential)
         if path.endswith("/posts"):
             assert "comments.filter(stream).limit(0).summary(true)" in query["fields"]
             return graph["posts_last" if query.get("after") else "posts_first"]
