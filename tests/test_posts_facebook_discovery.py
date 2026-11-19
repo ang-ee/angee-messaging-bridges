@@ -17,11 +17,13 @@ from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery, DerivedCredential
 from angee.integrate.errors import IntegrationError
 from angee.integrate.oauth.client import OAuthClientProtocol
+from angee.integrate.streams import advance_stream
 from angee.posts_integrate_facebook.backend import FacebookFeedBackend
 from angee.posts_integrate_facebook.oauth import MetaFacebook
 from tests.conftest import Credential, ExternalAccount, OAuthClient, make_integration
+from tests.test_posts_facebook import carries_auth, stream, transport
+from tests.test_posts_facebook import feed as feed
 from tests.test_posts_facebook import graph as graph
-from tests.test_posts_facebook import stream, transport
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -128,7 +130,7 @@ def test_discovery_returns_typed_facts_and_derived_material_without_exchange(oau
         assert original.material == material and Credential.objects.count() == before
     assert calls[0][1] == "me/accounts"
     assert calls[0][2]["fields"] == "id,name,access_token"
-    assert calls[0][3]["headers"] == original.auth_headers()
+    assert carries_auth(calls[0][3]["headers"], original)
     exchange.assert_not_called()
 
 
@@ -146,21 +148,94 @@ def test_discovery_requires_one_page_without_writing_partial_identity(oauth_feed
         assert oauth_feed.external_id == "" and Credential.objects.count() == before
 
 
-def test_static_page_credential_returns_before_freshness_or_transport(oauth_feed, monkeypatch):
-    calls = transport(monkeypatch, lambda *args: pytest.fail("Static discovery rediscovered the Page"))
+def test_a_page_token_names_its_page_at_me_and_derives_no_material(feed, graph, monkeypatch):
+    calls = transport(monkeypatch, lambda *args: graph["page_identity"])
     with system_context(reason="test.facebook.static_discovery"):
-        static = Credential.objects.create_local_credential(
-            oauth_feed.owner, kind=CredentialKind.STATIC_TOKEN, name="Facebook Page (900001)",
-            material={"api_key": "synthetic-page-token"},
+        result = FacebookFeedBackend(feed).discover_connection(feed.credential)
+    assert result.credential is None
+    assert result.data["external_id"] == result.data["handle"].external_id == "900001"
+    assert result.data["display_name"] == "Example Workshop"
+    assert [(call[0], call[1], call[2]["fields"]) for call in calls] == [("GET", "me", "id,name")]
+    assert carries_auth(calls[0][3]["headers"], feed.credential)
+
+
+def _synced_state(feed):
+    """The feed's stream positions, landed posts and record links, as a refused rediscovery must leave them.
+
+    Page streams are event feeds, so they keep no record links of their own;
+    the links are read so that none appears either.
+    """
+
+    streams = apps.get_model("integrate", "SyncStream").objects.filter(integration_id=feed.pk)
+    posts = apps.get_model("messaging", "Message").objects.filter(channel=feed)
+    links = apps.get_model("integrate", "RecordLink").objects.filter(stream__integration_id=feed.pk)
+    return (
+        sorted(streams.values_list("pk", "generation", "cursor")),
+        sorted(posts.values_list("pk", "external_id", "revision")),
+        sorted(links.values_list("pk", "external_key", "source_hash")),
+    )
+
+
+@pytest.mark.parametrize("page", ["900001", "900002"])
+def test_a_reentered_page_token_must_speak_for_the_feed_page(feed, graph, monkeypatch, page):
+    calls = transport(monkeypatch, lambda method, path, *args: (
+        {**graph["page_identity"], "id": page} if path == "me" else graph["posts_first"]
+    ))
+    with system_context(reason="test.facebook.reentered_token"):
+        synced = advance_stream(stream(feed), FacebookFeedBackend(feed)).stream
+        before = _synced_state(feed)
+        assert before[0] and before[1], "the synced page holds a cursor and landed posts"
+        feed.credential.replace_material({"api_key": "synthetic-reentered-page-token"})
+        feed.refresh_from_db()
+        assert feed.discovery_pending
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+        assert _synced_state(feed) == before
+        assert feed.external_id == feed.handle.external_id == "900001"
+        if page == "900001":
+            assert outcome == {"ok": True, "reason": "applied"} and feed.discovery_ready
+            return
+        assert outcome == {"ok": False, "reason": "discovery-failed"}
+        assert feed.last_error == "This feed is connected to another Facebook Page; create a separate feed."
+        with pytest.raises(IntegrationError, match="discovery must finish"):
+            feed.request_sync()
+        # A run admitted before the re-entry commits nothing it reads on the other Page's token.
+        with pytest.raises(IntegrationError, match="another Facebook Page") as refused:
+            advance_stream(synced, FacebookFeedBackend(feed))
+        assert not refused.value.transient and calls[-1][3]["headers"]["Authorization"].endswith("reentered-page-token")
+        assert _synced_state(feed) == before
+
+
+@pytest.mark.parametrize("answer", [{"name": "Example Workshop"}, {"id": "example-workshop"}])
+def test_a_page_token_that_names_no_page_is_refused_not_matched(feed, monkeypatch, answer):
+    transport(monkeypatch, lambda *args: answer)
+    with system_context(reason="test.facebook.unnamed_page"):
+        feed.credential.replace_material({"api_key": "synthetic-reentered-page-token"})
+        feed.refresh_from_db()
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+    assert outcome == {"ok": False, "reason": "discovery-failed"} and not feed.discovery_ready
+    assert feed.last_error == (
+        "Facebook did not say which Page this token belongs to; "
+        "enter a Page access token or connect the Page through Meta OAuth."
+    )
+    assert feed.external_id == "900001"
+
+
+def test_a_first_connection_with_a_page_token_records_its_page(graph, monkeypatch):
+    transport(monkeypatch, lambda *args: graph["page_identity"])
+    with system_context(reason="test.facebook.static_first_discovery"):
+        feed = make_integration(
+            "facebook-token", model=apps.get_model("posts", "Feed"), backend_class="feed",
+            feed_backend_class="facebook", material={"api_key": "synthetic-page-token"}, external_id="", config={},
         )
-        oauth_feed.external_id = "900001"
-        oauth_feed.save(update_fields=["external_id", "updated_at"])
-        oauth_feed.attach_connection(static)
-        refresh = Mock(side_effect=AssertionError("Static discovery must return early"))
-        monkeypatch.setattr(static, "ensure_fresh", refresh)
-        assert FacebookFeedBackend(oauth_feed).discover_connection(static) == ConnectionDiscovery()
-    refresh.assert_not_called()
-    assert calls == []
+        token = feed.credential_id
+        outcome = feed.run_discovery(credential_pk=token, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+    assert outcome == {"ok": True, "reason": "applied"} and feed.discovery_ready
+    assert feed.external_id == feed.handle.external_id == "900001"
+    assert feed.display_name == "Example Workshop"
+    assert feed.credential_id == token and feed.live_since is not None
 
 
 def test_discovery_follows_an_empty_page_using_only_the_opaque_cursor(oauth_feed, graph, monkeypatch):

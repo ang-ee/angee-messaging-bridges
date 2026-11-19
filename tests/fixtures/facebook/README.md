@@ -10,6 +10,8 @@ Resource and pagination shapes follow the references for
 [Page posts](https://developers.facebook.com/docs/graph-api/reference/page/posts/),
 [object comments](https://developers.facebook.com/docs/graph-api/reference/object/comments/),
 [managed Pages](https://developers.facebook.com/docs/graph-api/reference/user/accounts/),
+[the Page node](https://developers.facebook.com/docs/graph-api/reference/page/) (`page_identity`, the
+Page read at `me`, which a Page access token resolves to its Page),
 [long-lived grants](https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived/),
 [error envelopes](https://developers.facebook.com/docs/graph-api/guides/error-handling/), and
 [rate limits](https://developers.facebook.com/docs/graph-api/overview/rate-limiting/).

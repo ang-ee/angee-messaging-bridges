@@ -29,6 +29,7 @@ from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.oauth import flow, state
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
+from angee.integrate.testing.http import mock_transport
 from angee.integrate.testing.models import SyncStream
 from angee.integrate_google.compose_migrations.integrate import align_google_clients as align_template
 from angee.integrate_google.providers import GoogleType
@@ -110,34 +111,48 @@ def feed(db):
         platform="youtube", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
     )
     row.save(update_fields=["handle", "updated_at"])
+    # The feed awaits discovery from creation, and stream work and delivery wait for it.
+    assert row.finish_discovery(
+        credential_pk=row.credential_id, generation=row.discovery_generation,
+        discovery=ConnectionDiscovery(data={"uploads_playlist_id": row.youtube_uploads_playlist_id}),
+    )
     return row
 
 
 def transport(monkeypatch, handler):
-    """Replace only the shared HTTP boundary; preserve auth, URLs, units and timeouts."""
+    """Script the YouTube API at integrate's network seam (``mock_transport``); auth, URLs, units and timeouts
+    are the adapter's own.
+
+    The client, its refusal hook and byte cap run for real. ``handler(method, resource, query, kwargs)`` sees
+    each request (``kwargs``: its ``headers``, ``body`` and read ``timeout``) and answers a payload, a
+    ``(status, payload, headers)`` tuple, a response, or a transport error to raise. ``monkeypatch`` keeps the
+    scripted transport past the block and restores the pinned one at teardown.
+    """
 
     calls = []
 
-    def request(client, method, url, **kwargs):
-        del client
+    def answer(request):
         assert not connection.in_atomic_block
-        parts = urlsplit(url)
+        parts = urlsplit(str(request.url))
         assert (parts.scheme, parts.netloc) == ("https", "www.googleapis.com")
         assert "access_token" not in parts.query
+        kwargs = {"headers": request.headers, "body": request.content, "timeout": request.extensions["timeout"]["read"]}
         assert kwargs["headers"]["Authorization"] == "Bearer synthetic-access"
         assert kwargs["timeout"] == 10.0
         query = {key: values[0] for key, values in parse_qs(parts.query).items()}
         resource = parts.path.rsplit("/", 1)[-1]
-        calls.append((method, resource, query, kwargs))
-        result = handler(method, resource, query, kwargs)
+        calls.append((request.method, resource, query, kwargs))
+        result = handler(request.method, resource, query, kwargs)
         if isinstance(result, Exception):
             raise result
         if isinstance(result, httpx2.Response):
             return result
         status, payload, headers = result if isinstance(result, tuple) else (200, result, {})
-        return httpx2.Response(status, json=deepcopy(payload), headers=headers, request=httpx2.Request(method, url))
+        return httpx2.Response(status, json=deepcopy(payload), headers=headers)
 
-    monkeypatch.setattr(HttpClient, "request", request)
+    with mock_transport(answer):
+        scripted = vars(HttpClient)["transport_factory"]
+    monkeypatch.setattr(HttpClient, "transport_factory", scripted)
     return calls
 
 
@@ -636,9 +651,7 @@ def test_youtube_sync_engine_settles_a_deadline_with_durable_pending_work(feed, 
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
 
     def respond(method, resource, query, kwargs):
         del method, resource, query, kwargs
@@ -665,9 +678,7 @@ def test_youtube_sync_engine_accepts_an_unchanged_partial_page_at_the_deadline(f
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
     source(feed, "activity", ActivityCursor(
         floor=AT, page=PagePosition(token=None),
     ).model_dump(mode="json"))
@@ -1381,25 +1392,64 @@ def test_youtube_owner_scans_restore_only_top_level_comments_and_preserve_hidden
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
-@pytest.mark.parametrize("method", ["GET", "POST"])
-def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcomes(
-    feed, wire, replier, monkeypatch, status, payload, method,
+@pytest.mark.parametrize(("status", "headers", "transient", "wait", "message"), [
+    pytest.param(
+        408, {"Retry-After": "30"}, True, timedelta(seconds=30), "The feed is temporarily unavailable (HTTP 408).",
+        id="a-request-timeout-waits-for-its-retry-after",
+    ),
+    pytest.param(403, {}, False, None, "The feed refused the request (HTTP 403).", id="a-bare-refusal"),
+])
+def test_youtube_status_it_does_not_name_is_integrates_refusal_with_the_adapters_wait(
+    feed, monkeypatch, status, headers, transient, wait, message,
 ):
+    """Without a YouTube error the adapter names nothing: integrate's status rule decides, with its wait."""
+
+    answer = httpx2.Response(status, content=b"<html>no YouTube error</html>", headers=headers)
+    transport(monkeypatch, lambda *args: answer)
+    with pytest.raises(IntegrationError) as caught:
+        step(feed, source(feed, "activity"))
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        transient, wait, message,
+    )
+
+
+@pytest.mark.parametrize("payload", ["html", []], ids=["html", "not-an-object"])
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_youtube_refusal_without_a_youtube_error_is_definite_never_ambiguous(
+    feed, wire, replier, monkeypatch, payload, method,
+):
+    """A 403 answered the request: a reply POST was not accepted, and a read is refused for good."""
+
     response = httpx2.Response(
-        status, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
-        request=httpx2.Request(method, youtube.API_ROOT + "comments"), headers={"Retry-After": "123"},
+        403, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
+        headers={"Retry-After": "123"},
     )
     transport(monkeypatch, lambda *args: response)
-    expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
-    with pytest.raises(expected) as caught:
+    with pytest.raises(IntegrationError) as caught:
         if method == "POST":
             feed.feed_backend.deliver(reply(feed, wire, actor=replier))
         else:
             step(feed, source(feed, "activity"))
-    if expected is IntegrationError:
-        assert caught.value.transient == (status != 403)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status != 403 else None)
+    assert not isinstance(caught.value, DeliveryUncertain) and not caught.value.transient
+    # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+    assert caught.value.retry_after == timedelta(seconds=123)
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_youtube_429_without_a_hint_waits_the_adapters_default(feed, wire, replier, monkeypatch, method):
+    """A 429 is integrate's transient refusal, never a reply's ambiguity; with no Retry-After it waits YouTube's
+    own one minute."""
+
+    transport(monkeypatch, lambda *args: (429, {}, {}))
+    with pytest.raises(IntegrationError) as caught:
+        if method == "POST":
+            feed.feed_backend.deliver(reply(feed, wire, actor=replier))
+        else:
+            step(feed, source(feed, "activity"))
+    assert not isinstance(caught.value, DeliveryUncertain)
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        True, timedelta(minutes=1), "The feed is rate limiting requests (HTTP 429).",
+    )
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):
