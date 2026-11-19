@@ -7,6 +7,13 @@ The deployment configures its Meta application keys on the Facebook OAuth client
 Connection discovery currently has no Page-choice contract. Grant the app access
 to exactly one managed Page, including when the account manages several Pages;
 discovery refuses grants exposing multiple Pages before applying any identity.
+A Page access token can be entered instead, as a static token stored for the
+Facebook OAuth client: discovery asks Graph's `me`, which a Page token resolves to
+its Page, and records that Page as OAuth discovery does. An answer that names no
+Page is refused, never taken for the feed's Page. A feed stays on the Page its
+first discovery recorded: a re-entered or newly attached token, or a grant, for
+another Page fails discovery with "This feed is connected to another Facebook
+Page; create a separate feed.", and the feed's streams and posts stay as they were.
 The original discovery credential retains the application identity after the Page
 token is attached. Every request recomputes `appsecret_proof` using the current
 confidential client secret. FK descriptors cache the registration within one
