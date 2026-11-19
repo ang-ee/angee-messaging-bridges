@@ -877,8 +877,8 @@ def test_shared_http_classifier_distinguishes_answered_refusals_from_ambiguity(
             else:
                 backend.extract(stream(feed), 100)
     if expected is IntegrationError:
-        assert caught.value.transient == (status != 403)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status != 403 else None)
+        assert caught.value.transient == (status == 503)
+        assert caught.value.retry_after == (timedelta(seconds=123) if status == 503 else None)
 
 
 def test_first_reconciliation_waits_for_visibility_and_normalized_body_never_resends(
