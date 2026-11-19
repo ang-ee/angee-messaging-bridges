@@ -368,13 +368,31 @@ class FakeWhatsAppClient:
         return _Namespace(URL=answer)
 
 
+@pytest.fixture(autouse=True)
+def fresh_fake_clients(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Give each test the fake vendor clients' class state unset, and restore it after.
+
+    Tests script the fakes through class attributes and read back the clients a
+    session built, so a test must not see a script, answer or client another left.
+    """
+
+    for fake in (FakeWhatsAppClient, FakeLidClient):
+        monkeypatch.setattr(fake, "script", ())
+        monkeypatch.setattr(fake, "instances", [])
+    monkeypatch.setattr(FakeWhatsAppClient, "media", None)
+    monkeypatch.setattr(FakeWhatsAppClient, "groups", ())
+    monkeypatch.setattr(FakeWhatsAppClient, "pictures", {})
+    monkeypatch.setattr(FakeWhatsAppClient, "picture_queries", [])
+    monkeypatch.setattr(FakeLidClient, "lid_map", {})
+    monkeypatch.setattr(FakeLidClient, "contacts", {})
+
+
 def _run_session(
     whatsapp_session: Any, channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event | None = None
 ) -> str:
     """Run one session against the fake client under a live reporter."""
 
     FakeWhatsAppClient.script = script
-    FakeWhatsAppClient.instances = []
     session = whatsapp_session.WhatsAppSession(
         channel,
         stop_event=stop_event or threading.Event(),
@@ -545,10 +563,7 @@ def test_session_names_group_threads_from_joined_group_subjects(whatsapp_session
         ),
         finish,
     )
-    try:
-        _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
-    finally:
-        FakeWhatsAppClient.groups = ()
+    _run_session(whatsapp_session, channel, script=script, stop_event=stop_event)
 
     assert title("120363000001@g.us") == "Climbers"
     assert title("120363000002@g.us") == "Book club"
@@ -1309,7 +1324,6 @@ def _run_lid_session(
     whatsapp_session: Any, channel: Any, *, script: tuple[Any, ...], stop_event: threading.Event
 ) -> str:
     FakeLidClient.script = script
-    FakeLidClient.instances = []
     session = whatsapp_session.WhatsAppSession(channel, stop_event=stop_event)
     session.client_class = FakeLidClient
     with system_context(reason="test whatsapp lid session run"), channel.sync_lock() as acquired:
@@ -1441,7 +1455,6 @@ def test_a_senders_avatar_is_read_once_and_follows_its_changes(
 
     monkeypatch.setattr(HttpClient, "download_capped", download_capped)
     FakeWhatsAppClient.pictures = {"4917000002@s.whatsapp.net": "https://pps.whatsapp.net/ada.jpg"}
-    FakeWhatsAppClient.picture_queries = []
     stop_event = threading.Event()
 
     def avatar_id() -> Any:
