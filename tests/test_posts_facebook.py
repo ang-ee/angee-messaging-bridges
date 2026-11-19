@@ -17,6 +17,7 @@ from django.db import connection
 from django.utils import timezone
 from rebac import system_context
 
+from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import CursorInvalid, advance_stream, open_stream, reset_stream
@@ -60,6 +61,10 @@ def feed(db):
             platform="facebook", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
         )
         row.save(update_fields=["handle", "updated_at"])
+        # The feed awaits discovery from creation, and stream work and delivery wait for it.
+        assert row.finish_discovery(
+            credential_pk=row.credential_id, generation=row.discovery_generation, discovery=ConnectionDiscovery(),
+        )
     return row
 
 
@@ -810,7 +815,9 @@ def test_reobservation_budget_retains_cursor_and_live_comments_continue(feed, gr
     ))
     with system_context(reason="test.facebook.reobserve_budget"):
         feed.config = {"reobserve_units_per_cycle": budget}
-        feed.save(update_fields=["config", "updated_at"])
+        # The clock is set back before the fixture's discovery, so the live horizon follows it.
+        feed.live_since = recent - timedelta(days=1)
+        feed.save(update_fields=["config", "live_since", "updated_at"])
         state = stream(feed, "reobserve")
         backend = FacebookFeedBackend(feed)
         if budget:
