@@ -19,7 +19,7 @@ from pydantic import ValidationError as CursorValidationError
 
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery, DerivedCredential
-from angee.integrate.errors import IntegrationError
+from angee.integrate.errors import IntegrationError, is_transient_status
 from angee.integrate.states import StreamDefinition
 from angee.integrate.streams import CursorInvalid, SemanticError, StreamPage
 from angee.messaging.backends import DeliveryUncertain, ParsedHandle
@@ -426,13 +426,18 @@ class FacebookFeedBackend(FeedBackend):
     def _request_refusal(
         self, response: httpx2.Response, data: dict[str, Any], *, params: dict[str, Any], record_local: bool,
     ) -> Exception | None:
-        """Graph-owned authorization, rate, cursor and record-local refusals."""
+        """Graph-owned authorization, rate, cursor and record-local refusals; integrate's rule decides the rest.
+
+        Graph's rate codes are transient on any status. A status integrate calls transient (a 429, a 408) that
+        Graph names no case for is integrate's, waiting this adapter's :meth:`retry_after`; any other Graph error
+        is Facebook's refusal, a record-local read's that record's.
+        """
 
         error = data.get("error") or {}
         code = error.get("code") if isinstance(error, dict) else None
         if code == 190:
             return IntegrationError("Facebook authorization was refused; reconnect the Page.")
-        if (isinstance(code, int) and code in _RATE_CODES) or response.status_code == 429:
+        if isinstance(code, int) and code in _RATE_CODES:
             delay = self.retry_after(response)
             if code in (4, 17, 32) and not any(response.headers.get(header) for header in (
                 "Retry-After", "X-Business-Use-Case-Usage", "X-Page-Usage", "X-App-Usage",
@@ -441,9 +446,11 @@ class FacebookFeedBackend(FeedBackend):
             return IntegrationError("Facebook temporarily limited Page requests.", retry_after=delay)
         if params.get("after") and code == 100 and "cursor" in str(error.get("message") or "").lower():
             return CursorInvalid()
-        if error or response.status_code >= 400:
-            if record_local:
-                return SemanticError("comment_read_refused")
+        if is_transient_status(response.status_code):
+            return None
+        if record_local and (error or not response.is_success):
+            return SemanticError("comment_read_refused")
+        if error:
             return IntegrationError("Facebook refused the request; check Page permissions.")
         return None
 

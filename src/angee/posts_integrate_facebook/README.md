@@ -40,6 +40,10 @@ use integrate's typed not-sent error. Retry horizons combine the shared delta/da
 parser, business recovery minutes, and a conservative one-hour cooldown when
 Page/app utilization reaches 100%; that cooldown is local policy, not a Meta ETA.
 Rate codes 4/17/32 without response hints retain a 15-minute provider default.
-HTTP classification uses the framework's `request_json` helper; a non-JSON 4xx
-is a definite refusal. Quarantine uses framework `RecordRefusal` records keyed
+HTTP classification uses the framework's `request_json` helper and integrate's
+refusal: the adapter names only Graph's own cases (a rejected token, its rate
+codes on any status, a refused cursor, a Graph error, one record's refused
+read); any other status is integrate's rule, so a 429 without a Graph rate code
+is transient and waits this adapter's horizon, and a 4xx without a Graph error
+is a definite refusal in integrate's words. Quarantine uses framework `RecordRefusal` records keyed
 by `external_key` within the page transaction.

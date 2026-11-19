@@ -1392,6 +1392,27 @@ def test_youtube_owner_scans_restore_only_top_level_comments_and_preserve_hidden
     assert len(calls) == 1
 
 
+@pytest.mark.parametrize(("status", "headers", "transient", "wait", "message"), [
+    pytest.param(
+        408, {"Retry-After": "30"}, True, timedelta(seconds=30), "The feed is temporarily unavailable (HTTP 408).",
+        id="a-request-timeout-waits-for-its-retry-after",
+    ),
+    pytest.param(403, {}, False, None, "The feed refused the request (HTTP 403).", id="a-bare-refusal"),
+])
+def test_youtube_status_it_does_not_name_is_integrates_refusal_with_the_adapters_wait(
+    feed, monkeypatch, status, headers, transient, wait, message,
+):
+    """Without a YouTube error the adapter names nothing: integrate's status rule decides, with its wait."""
+
+    answer = httpx2.Response(status, content=b"<html>no YouTube error</html>", headers=headers)
+    transport(monkeypatch, lambda *args: answer)
+    with pytest.raises(IntegrationError) as caught:
+        step(feed, source(feed, "activity"))
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        transient, wait, message,
+    )
+
+
 @pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
 @pytest.mark.parametrize("method", ["GET", "POST"])
 def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcomes(
@@ -1410,7 +1431,8 @@ def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcome
             step(feed, source(feed, "activity"))
     if expected is IntegrationError:
         assert caught.value.transient == (status == 503)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status == 503 else None)
+        # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+        assert caught.value.retry_after == (None if status == 200 else timedelta(seconds=123))
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):

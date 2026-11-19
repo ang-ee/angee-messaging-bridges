@@ -876,6 +876,27 @@ def test_meta_rate_codes_without_hints_keep_fifteen_minute_default(feed, graph, 
     assert caught.value.transient and caught.value.retry_after == timedelta(minutes=15)
 
 
+@pytest.mark.parametrize(("status", "headers", "transient", "wait", "message"), [
+    pytest.param(
+        408, {"X-App-Usage": json.dumps({"call_count": 100})}, True, timedelta(hours=1),
+        "The feed is temporarily unavailable (HTTP 408).", id="a-request-timeout-waits-for-the-page-usage",
+    ),
+    pytest.param(403, {}, False, None, "The feed refused the request (HTTP 403).", id="a-bare-refusal"),
+])
+def test_a_status_graph_does_not_name_is_integrates_refusal_with_the_adapters_wait(
+    feed, monkeypatch, status, headers, transient, wait, message,
+):
+    """Without a Graph error the adapter names nothing: integrate's status rule decides, with Facebook's wait."""
+
+    answer = httpx2.Response(status, content=b"<html>no Graph error</html>", headers=headers)
+    transport(monkeypatch, lambda *args: answer)
+    with system_context(reason="test.facebook.status_rule"), pytest.raises(IntegrationError) as caught:
+        FacebookFeedBackend(feed).extract(stream(feed), 100)
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        transient, wait, message,
+    )
+
+
 @pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
 @pytest.mark.parametrize("method", ["GET", "POST"])
 def test_shared_http_classifier_distinguishes_answered_refusals_from_ambiguity(
@@ -896,7 +917,8 @@ def test_shared_http_classifier_distinguishes_answered_refusals_from_ambiguity(
                 backend.extract(stream(feed), 100)
     if expected is IntegrationError:
         assert caught.value.transient == (status == 503)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status == 503 else None)
+        # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+        assert caught.value.retry_after == (None if status == 200 else timedelta(seconds=123))
 
 
 def test_first_reconciliation_waits_for_visibility_and_normalized_body_never_resends(
