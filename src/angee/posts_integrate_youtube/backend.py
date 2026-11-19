@@ -17,7 +17,7 @@ from pydantic import ValidationError as CursorValidationError
 
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery
-from angee.integrate.errors import IntegrationError
+from angee.integrate.errors import IntegrationError, is_transient_status
 from angee.integrate.states import StreamDefinition
 from angee.integrate.streams import CursorInvalid, StreamPage
 from angee.messaging.backends import DeliveryUncertain, ParsedHandle
@@ -738,12 +738,15 @@ class YouTubeFeedBackend(FeedBackend):
         self, response: httpx2.Response, data: dict[str, Any], *, operation: str,
         params: dict[str, Any], period: Any, now: datetime,
     ) -> Exception | None:
-        """Supply YouTube quota, rate, cursor and resource refusals to the shared classifier."""
+        """Supply YouTube's own authorization, quota, rate, cursor and resource refusals; integrate decides the rest.
+
+        A status integrate calls transient (a 429, a 408) that YouTube names no reason for is integrate's, waiting
+        this adapter's ``retry_after``; a refused answer with no YouTube error is integrate's too, except one
+        item's read, which is that item's refusal.
+        """
 
         if response.status_code == 401:
             return IntegrationError("Google authorization was refused; reconnect the YouTube channel.")
-        if response.status_code == 429:
-            return IntegrationError("YouTube temporarily limited requests.", retry_after=self.retry_after(response))
         refusal = data.get("error") or {}
         errors = refusal.get("errors", []) if isinstance(refusal, dict) else []
         reasons = {
@@ -762,15 +765,15 @@ class YouTubeFeedBackend(FeedBackend):
             )
         if reasons & _QUOTA_REASONS:
             return IntegrationError("YouTube refused the daily quota.", retry_after=period.period_end - now)
-        if refusal or response.status_code >= 400:
-            message = next((_REFUSALS[reason] for reason in sorted(reasons) if reason in _REFUSALS), None)
-            message = message or f"YouTube refused the request (HTTP {response.status_code}); check the channel grant."
-            if operation in {"commentThreads.list", "comments.list", "videos.list"} and (
-                params.get("videoId") or params.get("parentId") or params.get("id")
-            ):
-                return _ItemUnavailable(message, transient=False)
-            return IntegrationError(message, transient=False)
-        return None
+        if is_transient_status(response.status_code) or not (refusal or not response.is_success):
+            return None
+        message = next((_REFUSALS[reason] for reason in sorted(reasons) if reason in _REFUSALS), None)
+        message = message or f"YouTube refused the request (HTTP {response.status_code}); check the channel grant."
+        if operation in {"commentThreads.list", "comments.list", "videos.list"} and (
+            params.get("videoId") or params.get("parentId") or params.get("id")
+        ):
+            return _ItemUnavailable(message)
+        return IntegrationError(message) if refusal else None
 
 
 def _items(data: dict[str, Any], bound: int = _COMMENT_LIMIT) -> list[Any]:
