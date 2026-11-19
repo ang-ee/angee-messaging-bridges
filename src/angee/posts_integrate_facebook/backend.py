@@ -104,14 +104,47 @@ class FacebookFeedBackend(FeedBackend):
     find_published_reply_cost: ClassVar[int] = _RECONCILIATION_PAGES
 
     def discover_connection(self, credential: Any) -> ConnectionDiscovery:
-        """Read Page facts; integrate persists derived material after fencing."""
+        """Read the Page a credential speaks for; integrate persists derived material after fencing.
 
-        if credential.kind == CredentialKind.STATIC_TOKEN and self.bridge.external_id:
-            return ConnectionDiscovery()
+        A Page access token, entered as a static token, names its Page at Graph's
+        ``me``. An OAuth grant names the one Page it manages, whose Page token
+        discovery derives. A feed keeps the Page it first recorded and refuses a
+        credential for another.
+        """
+
+        derived: DerivedCredential | None = None
+        if credential.kind == CredentialKind.STATIC_TOKEN:
+            page = self._request("me", credential=credential, fields="id,name")
+            identity = page.get("id")
+            if not isinstance(identity, str) or not identity.isdigit():
+                raise IntegrationError(
+                    "Facebook did not say which Page this token belongs to; "
+                    "enter a Page access token or connect the Page through Meta OAuth."
+                )
+        else:
+            identity, page = self._managed_page(credential)
+            derived = DerivedCredential(
+                kind=CredentialKind.STATIC_TOKEN, name=f"Facebook Page ({identity})",
+                material={"api_key": page["access_token"]},
+            )
+        if self.bridge.external_id and self.bridge.external_id != identity:
+            raise IntegrationError("This feed is connected to another Facebook Page; create a separate feed.")
+        title = str(page.get("name") or identity)
+        return ConnectionDiscovery(
+            data={
+                "external_id": identity, "display_name": title,
+                "handle": ParsedHandle("facebook", identity, title, identity),
+            },
+            credential=derived,
+        )
+
+    def _managed_page(self, credential: Any) -> tuple[str, dict[str, Any]]:
+        """Return the one Page an OAuth grant manages, following only opaque cursors."""
+
         if credential.kind != CredentialKind.OAUTH or credential.oauth_client is None:
             raise IntegrationError("Connect this Facebook Page through Meta OAuth.", transient=False)
         pages: dict[str, dict[str, Any]] = {}
-        after, seen = "", set()
+        after, seen = "", set[str]()
         while True:
             data = self._request(
                 "me/accounts", credential=credential, fields="id,name,access_token",
@@ -137,20 +170,7 @@ class FacebookFeedBackend(FeedBackend):
             seen.add(after)
         if not pages:
             raise IntegrationError("Facebook returned no managed Page; check the granted Page permissions.")
-        identity, page = next(iter(pages.items()))
-        if self.bridge.external_id and self.bridge.external_id != identity:
-            raise IntegrationError("This feed is connected to another Facebook Page; create a separate feed.")
-        title = str(page.get("name") or identity)
-        material = {"api_key": page["access_token"]}
-        return ConnectionDiscovery(
-            data={
-                "external_id": identity, "display_name": title,
-                "handle": ParsedHandle("facebook", identity, title, identity),
-            },
-            credential=DerivedCredential(
-                kind=CredentialKind.STATIC_TOKEN, name=f"Facebook Page ({identity})", material=material,
-            ),
-        )
+        return next(iter(pages.items()))
 
     def streams(self, *, deadline: float | None = None) -> tuple[StreamDefinition, ...]:
         """Prioritize activity before independent, resumable backfill."""
