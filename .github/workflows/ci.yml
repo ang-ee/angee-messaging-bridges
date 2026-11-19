@@ -18,12 +18,12 @@ permissions:
 jobs:
   checks:
     # Keep this ref aligned with framework-ref so checks share the runtime contract.
-    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@508311d12c3e753336257acee7c8a2fd8b2cd5ff
+    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@b850db4505cbe3889170e41137247e4601bd80f1
     secrets: inherit
     with:
       python-version: "3.14"
       # Match the framework manifests used to generate this dependency lock.
-      framework-ref: "508311d12c3e753336257acee7c8a2fd8b2cd5ff"
+      framework-ref: "b850db4505cbe3889170e41137247e4601bd80f1"
       # The suite resolves base addons from the sibling slot and the
       # fragments' @angee/gql fixture is the stack root's composed runtime/,
       # so pytest + typecheck/test run in the stack lane.
