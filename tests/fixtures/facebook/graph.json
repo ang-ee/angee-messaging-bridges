@@ -13,6 +13,10 @@
       }
     ]
   },
+  "page_identity": {
+    "id": "900001",
+    "name": "Example Workshop"
+  },
   "posts_first": {
     "data": [
       {

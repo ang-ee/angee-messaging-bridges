@@ -19,7 +19,7 @@ from pydantic import ValidationError as CursorValidationError
 
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery, DerivedCredential
-from angee.integrate.errors import IntegrationError
+from angee.integrate.errors import IntegrationError, is_transient_status
 from angee.integrate.states import StreamDefinition
 from angee.integrate.streams import CursorInvalid, SemanticError, StreamPage
 from angee.messaging.backends import DeliveryUncertain, ParsedHandle
@@ -104,14 +104,47 @@ class FacebookFeedBackend(FeedBackend):
     find_published_reply_cost: ClassVar[int] = _RECONCILIATION_PAGES
 
     def discover_connection(self, credential: Any) -> ConnectionDiscovery:
-        """Read Page facts; integrate persists derived material after fencing."""
+        """Read the Page a credential speaks for; integrate persists derived material after fencing.
 
-        if credential.kind == CredentialKind.STATIC_TOKEN and self.bridge.external_id:
-            return ConnectionDiscovery()
+        A Page access token, entered as a static token, names its Page at Graph's
+        ``me``. An OAuth grant names the one Page it manages, whose Page token
+        discovery derives. A feed keeps the Page it first recorded and refuses a
+        credential for another.
+        """
+
+        derived: DerivedCredential | None = None
+        if credential.kind == CredentialKind.STATIC_TOKEN:
+            page = self._request("me", credential=credential, fields="id,name")
+            identity = page.get("id")
+            if not isinstance(identity, str) or not identity.isdigit():
+                raise IntegrationError(
+                    "Facebook did not say which Page this token belongs to; "
+                    "enter a Page access token or connect the Page through Meta OAuth."
+                )
+        else:
+            identity, page = self._managed_page(credential)
+            derived = DerivedCredential(
+                kind=CredentialKind.STATIC_TOKEN, name=f"Facebook Page ({identity})",
+                material={"api_key": page["access_token"]},
+            )
+        if self.bridge.external_id and self.bridge.external_id != identity:
+            raise IntegrationError("This feed is connected to another Facebook Page; create a separate feed.")
+        title = str(page.get("name") or identity)
+        return ConnectionDiscovery(
+            data={
+                "external_id": identity, "display_name": title,
+                "handle": ParsedHandle("facebook", identity, title, identity),
+            },
+            credential=derived,
+        )
+
+    def _managed_page(self, credential: Any) -> tuple[str, dict[str, Any]]:
+        """Return the one Page an OAuth grant manages, following only opaque cursors."""
+
         if credential.kind != CredentialKind.OAUTH or credential.oauth_client is None:
             raise IntegrationError("Connect this Facebook Page through Meta OAuth.", transient=False)
         pages: dict[str, dict[str, Any]] = {}
-        after, seen = "", set()
+        after, seen = "", set[str]()
         while True:
             data = self._request(
                 "me/accounts", credential=credential, fields="id,name,access_token",
@@ -137,20 +170,7 @@ class FacebookFeedBackend(FeedBackend):
             seen.add(after)
         if not pages:
             raise IntegrationError("Facebook returned no managed Page; check the granted Page permissions.")
-        identity, page = next(iter(pages.items()))
-        if self.bridge.external_id and self.bridge.external_id != identity:
-            raise IntegrationError("This feed is connected to another Facebook Page; create a separate feed.")
-        title = str(page.get("name") or identity)
-        material = {"api_key": page["access_token"]}
-        return ConnectionDiscovery(
-            data={
-                "external_id": identity, "display_name": title,
-                "handle": ParsedHandle("facebook", identity, title, identity),
-            },
-            credential=DerivedCredential(
-                kind=CredentialKind.STATIC_TOKEN, name=f"Facebook Page ({identity})", material=material,
-            ),
-        )
+        return next(iter(pages.items()))
 
     def streams(self, *, deadline: float | None = None) -> tuple[StreamDefinition, ...]:
         """Prioritize activity before independent, resumable backfill."""
@@ -426,13 +446,18 @@ class FacebookFeedBackend(FeedBackend):
     def _request_refusal(
         self, response: httpx2.Response, data: dict[str, Any], *, params: dict[str, Any], record_local: bool,
     ) -> Exception | None:
-        """Graph-owned authorization, rate, cursor and record-local refusals."""
+        """Graph-owned authorization, rate, cursor and record-local refusals; integrate's rule decides the rest.
+
+        Graph's rate codes are transient on any status. A status integrate calls transient (a 429, a 408) that
+        Graph names no case for is integrate's, waiting this adapter's :meth:`retry_after`; any other Graph error
+        is Facebook's refusal, a record-local read's that record's.
+        """
 
         error = data.get("error") or {}
         code = error.get("code") if isinstance(error, dict) else None
         if code == 190:
             return IntegrationError("Facebook authorization was refused; reconnect the Page.")
-        if (isinstance(code, int) and code in _RATE_CODES) or response.status_code == 429:
+        if isinstance(code, int) and code in _RATE_CODES:
             delay = self.retry_after(response)
             if code in (4, 17, 32) and not any(response.headers.get(header) for header in (
                 "Retry-After", "X-Business-Use-Case-Usage", "X-Page-Usage", "X-App-Usage",
@@ -441,9 +466,11 @@ class FacebookFeedBackend(FeedBackend):
             return IntegrationError("Facebook temporarily limited Page requests.", retry_after=delay)
         if params.get("after") and code == 100 and "cursor" in str(error.get("message") or "").lower():
             return CursorInvalid()
-        if error or response.status_code >= 400:
-            if record_local:
-                return SemanticError("comment_read_refused")
+        if is_transient_status(response.status_code):
+            return None
+        if record_local and (error or not response.is_success):
+            return SemanticError("comment_read_refused")
+        if error:
             return IntegrationError("Facebook refused the request; check Page permissions.")
         return None
 

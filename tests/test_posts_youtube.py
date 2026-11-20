@@ -14,16 +14,25 @@ import pytest
 from django.apps import apps
 from django.conf import settings
 from django.db import connection, transaction
+from django.db.migrations.exceptions import IrreversibleError
+from django.db.migrations.state import ProjectState
 from django.utils import timezone
 from rebac import system_context
 
+from angee.graphql.impl import model_impl_choices
+from angee.graphql.testing.documents import graphql_request
+from angee.integrate import connect
 from angee.integrate import streams as stream_engine
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
+from angee.integrate.oauth import flow, state
 from angee.integrate.streams import advance_stream, open_stream, sync_bridge
+from angee.integrate.testing.http import mock_transport
 from angee.integrate.testing.models import SyncStream
+from angee.integrate_google.compose_migrations.integrate import align_google_clients as align_template
+from angee.integrate_google.providers import GoogleType
 from angee.jobs.enqueue import celery_app
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.constants import RECONCILE_BACKOFF
@@ -31,6 +40,9 @@ from angee.messaging.delivery import run_message_delivery
 from angee.messaging.events import message_ingested
 from angee.posts_integrate_youtube import backend as youtube
 from angee.posts_integrate_youtube.backend import CALL_COSTS, YouTubeFeedBackend
+from angee.posts_integrate_youtube.compose_migrations.integrate import (
+    move_youtube_client_to_google as move_template,
+)
 from angee.posts_integrate_youtube.cursors import (
     ActivityCursor,
     HistoryCursor,
@@ -41,8 +53,9 @@ from angee.posts_integrate_youtube.cursors import (
 )
 from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
-from angee.resources.entries import ResourceEntry, resource_manifest_for
-from tests.conftest import claim_feed_reply, make_integration
+from angee.resources.entries import resource_manifest_for
+from angee.resources.testing.models import Resource
+from tests.conftest import OAuthClient, claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
 AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
@@ -98,34 +111,48 @@ def feed(db):
         platform="youtube", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
     )
     row.save(update_fields=["handle", "updated_at"])
+    # The feed awaits discovery from creation, and stream work and delivery wait for it.
+    assert row.finish_discovery(
+        credential_pk=row.credential_id, generation=row.discovery_generation,
+        discovery=ConnectionDiscovery(data={"uploads_playlist_id": row.youtube_uploads_playlist_id}),
+    )
     return row
 
 
 def transport(monkeypatch, handler):
-    """Replace only the shared HTTP boundary; preserve auth, URLs, units and timeouts."""
+    """Script the YouTube API at integrate's network seam (``mock_transport``); auth, URLs, units and timeouts
+    are the adapter's own.
+
+    The client, its refusal hook and byte cap run for real. ``handler(method, resource, query, kwargs)`` sees
+    each request (``kwargs``: its ``headers``, ``body`` and read ``timeout``) and answers a payload, a
+    ``(status, payload, headers)`` tuple, a response, or a transport error to raise. ``monkeypatch`` keeps the
+    scripted transport past the block and restores the pinned one at teardown.
+    """
 
     calls = []
 
-    def request(client, method, url, **kwargs):
-        del client
+    def answer(request):
         assert not connection.in_atomic_block
-        parts = urlsplit(url)
+        parts = urlsplit(str(request.url))
         assert (parts.scheme, parts.netloc) == ("https", "www.googleapis.com")
         assert "access_token" not in parts.query
+        kwargs = {"headers": request.headers, "body": request.content, "timeout": request.extensions["timeout"]["read"]}
         assert kwargs["headers"]["Authorization"] == "Bearer synthetic-access"
         assert kwargs["timeout"] == 10.0
         query = {key: values[0] for key, values in parse_qs(parts.query).items()}
         resource = parts.path.rsplit("/", 1)[-1]
-        calls.append((method, resource, query, kwargs))
-        result = handler(method, resource, query, kwargs)
+        calls.append((request.method, resource, query, kwargs))
+        result = handler(request.method, resource, query, kwargs)
         if isinstance(result, Exception):
             raise result
         if isinstance(result, httpx2.Response):
             return result
         status, payload, headers = result if isinstance(result, tuple) else (200, result, {})
-        return httpx2.Response(status, json=deepcopy(payload), headers=headers, request=httpx2.Request(method, url))
+        return httpx2.Response(status, json=deepcopy(payload), headers=headers)
 
-    monkeypatch.setattr(HttpClient, "request", request)
+    with mock_transport(answer):
+        scripted = vars(HttpClient)["transport_factory"]
+    monkeypatch.setattr(HttpClient, "transport_factory", scripted)
     return calls
 
 
@@ -296,23 +323,147 @@ def activity(wire):
     return respond
 
 
-def test_youtube_preset_seed_and_read_only_discovery_field(feed):
+def test_youtube_connects_through_the_google_client_and_preset(feed):
     config = apps.get_app_config("posts_integrate_youtube")
-    resource = resource_manifest_for(config)["install"][0]
-    entry = ResourceEntry.from_declaration(config, "install", resource)
-    [group] = entry.read_groups()
-    [client] = group.dataset.dict
-    assert entry.adopt == ("slug", "environment")
-    assert client["_xref"] == "oauth_youtube" and client["slug"] == YouTubeFeedBackend.oauth_client
-    assert client["provider_type"] == GoogleYouTube.key
-    assert "client_id" not in client and "client_secret" not in client
-    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES[GoogleYouTube.key].endswith(".GoogleYouTube")
-    assert GoogleYouTube.defaults["supports_refresh"] and GoogleYouTube.defaults["supports_pkce"]
+    assert resource_manifest_for(config)["install"] == ()
+    assert YouTubeFeedBackend.oauth_client == "google"
+    assert YouTubeFeedBackend.oauth_scopes == ("https://www.googleapis.com/auth/youtube.force-ssl",)
+    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google"] == "angee.integrate_google.providers.GoogleType"
+    # The retired key still loads existing rows, as Google.
+    assert settings.ANGEE_OAUTH_PROVIDER_TYPE_CLASSES["google_youtube"].endswith(".GoogleYouTube")
+    assert issubclass(GoogleYouTube, GoogleType)
+    # Loadable, but never offered for a new client.
+    offered = {choice.key for choice in model_impl_choices(OAuthClient, "provider_type")}
+    assert "google" in offered and "google_youtube" not in offered
+    assert set(YouTubeFeedBackend.oauth_scopes) <= set(GoogleType.effective_defaults()["scopes_catalogue"])
     assert "uploads_playlist_id" not in YouTubeFeedBackend.Config.model_fields
     assert not feed._meta.get_field("youtube_uploads_playlist_id").editable
     assert [(item.key, item.partition) for item in feed.feed_backend.streams()] == [
         ("activity", "channel-demo"), ("history", "channel-demo"), ("reobserve", "channel-demo"),
     ]
+
+
+def test_youtube_connect_requests_its_scope_through_the_google_preset(feed):
+    with system_context(reason="test YouTube connect through google"):
+        client = OAuthClient.objects.create(
+            slug="google", provider_type="google", display_name="Google", client_id="google-client",
+            client_secret="synthetic-google-secret",
+        )
+        apps.get_model("posts", "Feed").objects.filter(pk=feed.pk).update(credential=None, lifecycle="disconnected")
+    feed.refresh_from_db()
+    assert feed.connect_oauth_client("Feed").pk == client.pk
+
+    started = connect.connect_integration_target(
+        feed, client, user=feed.owner, request=graphql_request(feed.owner, session=True),
+        redirect_uri="https://app.example/integrate/oauth/callback", next_path="/",
+    )
+
+    url = urlsplit(started.authorize_url)
+    query = parse_qs(url.query)
+    assert f"{url.scheme}://{url.netloc}{url.path}" == GoogleType.effective_defaults()["authorize_endpoint"]
+    assert query["scope"] == ["openid email profile https://www.googleapis.com/auth/youtube.force-ssl"]
+    assert query["include_granted_scopes"] == ["true"]
+    assert query["access_type"] == ["offline"]
+    assert query["prompt"] == ["select_account"]
+    record = state.consume(started.state)
+    request = graphql_request(feed.owner, session=True)
+    restarted = urlsplit(flow.restart_with_consent(request, client, record).authorize_url)
+    assert parse_qs(restarted.query)["prompt"] == ["select_account consent"]
+
+
+RETIRED_SCOPES = ["openid", "email", "profile", "https://www.googleapis.com/auth/youtube.force-ssl"]
+
+
+def _legacy_youtube_client(**values):
+    """Write a row as the retired google_youtube preset seeded it, without today's compatibility class."""
+
+    youtube = OAuthClient.objects.create(slug="youtube", display_name="YouTube", client_id="operator-client")
+    retired = {
+        "provider_type": "google_youtube", "default_scopes": RETIRED_SCOPES, "scopes_catalogue": RETIRED_SCOPES,
+        "authorize_params": {"access_type": "offline", "prompt": "consent"},
+        "authorize_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token_endpoint": "https://oauth2.googleapis.com/token",
+        "revoke_endpoint": "https://oauth2.googleapis.com/revoke",
+        "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+        "issuer": "", "jwks_uri": "", "discovery_url": "",
+    }
+    OAuthClient.objects.filter(pk=youtube.pk).update(**{**retired, **values})
+    return youtube
+
+
+def _apply(template, app_label="integrate", *, reverse=False):
+    """Run a migration template's ``Migration`` over the installed models' migration state.
+
+    The callables get historical models (no sqid, managers or methods), as a host's copy does.
+    """
+
+    migration = template.Migration(template.__name__.rpartition(".")[2], app_label)
+    with connection.schema_editor() as editor:
+        state = ProjectState.from_apps(apps)
+        if reverse:
+            migration.unapply(state, editor)
+        else:
+            migration.apply(state, editor)
+
+
+def _upgrade():
+    _apply(move_template)
+    _apply(align_template)
+
+
+def test_youtube_upgrade_makes_its_client_the_google_client_without_the_retired_defaults():
+    with system_context(reason="test YouTube client upgrade"):
+        youtube = _legacy_youtube_client()
+        _upgrade()
+        youtube.refresh_from_db()
+    preset = GoogleType.effective_defaults()
+    assert (youtube.slug, youtube.provider_type, youtube.client_id) == ("google", "google", "operator-client")
+    assert youtube.default_scopes == preset["default_scopes"]
+    assert youtube.authorize_params == {"access_type": "offline", "include_granted_scopes": "true"}
+    assert set(preset["scopes_catalogue"]) <= set(youtube.scopes_catalogue)
+    assert (youtube.issuer, youtube.jwks_uri) == (preset["issuer"], preset["jwks_uri"])
+    # The google client may now serve other features, so the move is not undone.
+    with pytest.raises(IrreversibleError):
+        _apply(move_template, reverse=True)
+
+
+def test_youtube_upgrade_keeps_operator_scopes_and_prompt():
+    with system_context(reason="test YouTube operator values"):
+        youtube = _legacy_youtube_client(
+            default_scopes=["openid", "email"], authorize_params={"access_type": "offline", "prompt": "none"},
+        )
+        _upgrade()
+        youtube.refresh_from_db()
+    assert youtube.default_scopes == ["openid", "email"]
+    assert youtube.authorize_params["prompt"] == "none"
+
+
+def test_youtube_upgrade_deletes_the_unused_demo_google_placeholder():
+    with system_context(reason="test YouTube beside the demo placeholder"):
+        youtube = _legacy_youtube_client()
+        placeholder = OAuthClient.objects.create(
+            slug="google", provider_type="google", display_name="Google (demo)", client_id="demo-oidc-client",
+        )
+        Resource.objects.create(
+            source_addon="angee.iam_integrate_oidc", source_path="resources/demo/010_integrate.oauthclient.yaml",
+            tier="demo", xref="demo_google", content_hash="demo", target_model="integrate.OAuthClient",
+            target_id=placeholder.sqid,
+        )
+        _upgrade()
+        youtube.refresh_from_db()
+        assert not OAuthClient.objects.filter(pk=placeholder.pk).exists()
+        assert not Resource.objects.filter(source_addon="angee.iam_integrate_oidc", xref="demo_google").exists()
+    assert youtube.slug == "google"
+
+
+def test_youtube_upgrade_refuses_beside_a_google_client_in_use():
+    with system_context(reason="test YouTube client clash"):
+        youtube = _legacy_youtube_client()
+        OAuthClient.objects.create(slug="google", provider_type="google", display_name="Google", client_id="real")
+        with pytest.raises(RuntimeError, match="delete the 'google' client if it is an unused placeholder"):
+            _apply(move_template)
+        youtube.refresh_from_db()
+    assert (youtube.slug, youtube.provider_type) == ("youtube", "google_youtube")
 
 
 def test_youtube_discovery_separates_network_facts_from_database_apply(feed, monkeypatch, wire):
@@ -500,9 +651,7 @@ def test_youtube_sync_engine_settles_a_deadline_with_durable_pending_work(feed, 
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
 
     def respond(method, resource, query, kwargs):
         del method, resource, query, kwargs
@@ -529,9 +678,7 @@ def test_youtube_sync_engine_accepts_an_unchanged_partial_page_at_the_deadline(f
     monkeypatch.setattr(youtube, "monotonic", lambda: clock[0])
     monkeypatch.setattr(stream_engine, "monotonic", lambda: clock[0])
     feed.config = {"sync_time_budget": 10}
-    feed.discovery_retry_at = None
-    feed.discovery_completed_at = AT
-    feed.save(update_fields=["config", "discovery_retry_at", "discovery_completed_at", "updated_at"])
+    feed.save(update_fields=["config", "updated_at"])
     source(feed, "activity", ActivityCursor(
         floor=AT, page=PagePosition(token=None),
     ).model_dump(mode="json"))
@@ -1245,25 +1392,64 @@ def test_youtube_owner_scans_restore_only_top_level_comments_and_preserve_hidden
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
-@pytest.mark.parametrize("method", ["GET", "POST"])
-def test_youtube_shared_http_classifier_preserves_definite_and_ambiguous_outcomes(
-    feed, wire, replier, monkeypatch, status, payload, method,
+@pytest.mark.parametrize(("status", "headers", "transient", "wait", "message"), [
+    pytest.param(
+        408, {"Retry-After": "30"}, True, timedelta(seconds=30), "The feed is temporarily unavailable (HTTP 408).",
+        id="a-request-timeout-waits-for-its-retry-after",
+    ),
+    pytest.param(403, {}, False, None, "The feed refused the request (HTTP 403).", id="a-bare-refusal"),
+])
+def test_youtube_status_it_does_not_name_is_integrates_refusal_with_the_adapters_wait(
+    feed, monkeypatch, status, headers, transient, wait, message,
 ):
+    """Without a YouTube error the adapter names nothing: integrate's status rule decides, with its wait."""
+
+    answer = httpx2.Response(status, content=b"<html>no YouTube error</html>", headers=headers)
+    transport(monkeypatch, lambda *args: answer)
+    with pytest.raises(IntegrationError) as caught:
+        step(feed, source(feed, "activity"))
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        transient, wait, message,
+    )
+
+
+@pytest.mark.parametrize("payload", ["html", []], ids=["html", "not-an-object"])
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_youtube_refusal_without_a_youtube_error_is_definite_never_ambiguous(
+    feed, wire, replier, monkeypatch, payload, method,
+):
+    """A 403 answered the request: a reply POST was not accepted, and a read is refused for good."""
+
     response = httpx2.Response(
-        status, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
-        request=httpx2.Request(method, youtube.API_ROOT + "comments"), headers={"Retry-After": "123"},
+        403, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
+        headers={"Retry-After": "123"},
     )
     transport(monkeypatch, lambda *args: response)
-    expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
-    with pytest.raises(expected) as caught:
+    with pytest.raises(IntegrationError) as caught:
         if method == "POST":
             feed.feed_backend.deliver(reply(feed, wire, actor=replier))
         else:
             step(feed, source(feed, "activity"))
-    if expected is IntegrationError:
-        assert caught.value.transient == (status != 403)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status != 403 else None)
+    assert not isinstance(caught.value, DeliveryUncertain) and not caught.value.transient
+    # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+    assert caught.value.retry_after == timedelta(seconds=123)
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_youtube_429_without_a_hint_waits_the_adapters_default(feed, wire, replier, monkeypatch, method):
+    """A 429 is integrate's transient refusal, never a reply's ambiguity; with no Retry-After it waits YouTube's
+    own one minute."""
+
+    transport(monkeypatch, lambda *args: (429, {}, {}))
+    with pytest.raises(IntegrationError) as caught:
+        if method == "POST":
+            feed.feed_backend.deliver(reply(feed, wire, actor=replier))
+        else:
+            step(feed, source(feed, "activity"))
+    assert not isinstance(caught.value, DeliveryUncertain)
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        True, timedelta(minutes=1), "The feed is rate limiting requests (HTTP 429).",
+    )
 
 
 def test_youtube_delivery_hook_opens_current_quota_period_across_midnight(feed, wire, replier, monkeypatch):

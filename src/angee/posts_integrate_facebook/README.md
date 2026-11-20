@@ -7,6 +7,13 @@ The deployment configures its Meta application keys on the Facebook OAuth client
 Connection discovery currently has no Page-choice contract. Grant the app access
 to exactly one managed Page, including when the account manages several Pages;
 discovery refuses grants exposing multiple Pages before applying any identity.
+A Page access token can be entered instead, as a static token stored for the
+Facebook OAuth client: discovery asks Graph's `me`, which a Page token resolves to
+its Page, and records that Page as OAuth discovery does. An answer that names no
+Page is refused, never taken for the feed's Page. A feed stays on the Page its
+first discovery recorded: a re-entered or newly attached token, or a grant, for
+another Page fails discovery with "This feed is connected to another Facebook
+Page; create a separate feed.", and the feed's streams and posts stay as they were.
 The original discovery credential retains the application identity after the Page
 token is attached. Every request recomputes `appsecret_proof` using the current
 confidential client secret. FK descriptors cache the registration within one
@@ -40,6 +47,10 @@ use integrate's typed not-sent error. Retry horizons combine the shared delta/da
 parser, business recovery minutes, and a conservative one-hour cooldown when
 Page/app utilization reaches 100%; that cooldown is local policy, not a Meta ETA.
 Rate codes 4/17/32 without response hints retain a 15-minute provider default.
-HTTP classification uses the framework's `request_json` helper; a non-JSON 4xx
-is a definite refusal. Quarantine uses framework `RecordRefusal` records keyed
+HTTP classification uses the framework's `request_json` helper and integrate's
+refusal: the adapter names only Graph's own cases (a rejected token, its rate
+codes on any status, a refused cursor, a Graph error, one record's refused
+read); any other status is integrate's rule, so a 429 without a Graph rate code
+is transient and waits this adapter's horizon, and a 4xx without a Graph error
+is a definite refusal in integrate's words. Quarantine uses framework `RecordRefusal` records keyed
 by `external_key` within the page transaction.

@@ -17,9 +17,11 @@ from django.db import connection
 from django.utils import timezone
 from rebac import system_context
 
+from angee.integrate.discovery import ConnectionDiscovery
 from angee.integrate.errors import IntegrationError, RequestNotSentError
 from angee.integrate.http import HttpClient
 from angee.integrate.streams import CursorInvalid, advance_stream, open_stream, reset_stream
+from angee.integrate.testing.http import mock_transport
 from angee.messaging.backends import DeliveryOutcome, DeliveryUncertain
 from angee.messaging.constants import RECONCILE_BACKOFF
 from angee.messaging.events import message_ingested
@@ -29,6 +31,9 @@ from angee.posts_integrate_facebook.parsing import comment_post, root_post, time
 from tests.conftest import claim_feed_reply, make_integration
 
 pytestmark = pytest.mark.django_db(transaction=True)
+
+LIVE_SINCE = timestamp("2026-10-01T00:00:00Z")
+"""The fixture feed's live horizon: the fixture's 2026 posts are live and its 2023 post is historical."""
 
 
 @pytest.fixture
@@ -54,38 +59,56 @@ def feed(db):
         row = make_integration(
             "facebook-page", model=apps.get_model("posts", "Feed"), backend_class="feed",
             feed_backend_class="facebook", material={"api_key": "synthetic-page-token"},
-            external_id="900001", display_name="Example Workshop", config={},
+            external_id="900001", display_name="Example Workshop", config={}, live_since=LIVE_SINCE,
         )
         row.handle = apps.get_model("parties", "Handle").objects.upsert(
             platform="facebook", value=row.external_id, external_id=row.external_id, created_by_id=row.owner_id,
         )
         row.save(update_fields=["handle", "updated_at"])
+        # The feed awaits discovery from creation, and stream work and delivery wait for it.
+        assert row.finish_discovery(
+            credential_pk=row.credential_id, generation=row.discovery_generation, discovery=ConnectionDiscovery(),
+        )
     return row
 
 
+def carries_auth(headers, credential):
+    """Whether a request's headers (a case-insensitive mapping) carry each header ``credential`` authenticates with."""
+
+    return all(headers.get(name) == value for name, value in credential.auth_headers().items())
+
+
 def transport(monkeypatch, handler):
-    """Replace only the public pinned HTTP request seam."""
+    """Script Graph at integrate's network seam (``mock_transport``) for the rest of the test.
+
+    The client, its refusal hook and byte cap run for real. ``handler(method, path, query, kwargs)`` sees each
+    request (``kwargs``: its ``headers``, ``body`` and read ``timeout``) and answers a payload, a
+    ``(status, payload, headers)`` tuple, a response, or a transport error to raise. ``monkeypatch`` keeps the
+    scripted transport past the block and restores the pinned one at teardown.
+    """
 
     calls = []
 
-    def request(client, method, url, **kwargs):
-        del client
+    def answer(request):
         assert not connection.in_atomic_block
-        parts = urlsplit(url)
+        parts = urlsplit(str(request.url))
         query = {key: values[0] for key, values in parse_qs(parts.query).items()}
         assert (parts.scheme, parts.netloc) == ("https", "graph.facebook.com")
         assert "access_token" not in query
         path = parts.path.removeprefix(f"/{MetaFacebook.graph_api_version}/")
-        calls.append((method, path, query, kwargs))
-        result = handler(method, path, query, kwargs)
+        kwargs = {"headers": request.headers, "body": request.content, "timeout": request.extensions["timeout"]["read"]}
+        calls.append((request.method, path, query, kwargs))
+        result = handler(request.method, path, query, kwargs)
         if isinstance(result, Exception):
             raise result
         if isinstance(result, httpx2.Response):
             return result
         status, payload, headers = result if isinstance(result, tuple) else (200, result, {})
-        return httpx2.Response(status, json=deepcopy(payload), headers=headers, request=httpx2.Request(method, url))
+        return httpx2.Response(status, json=deepcopy(payload), headers=headers)
 
-    monkeypatch.setattr(HttpClient, "request", request)
+    with mock_transport(answer):
+        scripted = vars(HttpClient)["transport_factory"]
+    monkeypatch.setattr(HttpClient, "transport_factory", scripted)
     return calls
 
 
@@ -155,7 +178,8 @@ def test_missing_or_invalid_dates_remain_unknown(value):
 
 def test_history_resumes_across_backend_instances_and_stops_when_exhausted(feed, graph, monkeypatch):
     def respond(method, path, query, kwargs):
-        assert method == "GET" and kwargs["headers"] == feed.credential.auth_headers()
+        assert method == "GET"
+        assert carries_auth(kwargs["headers"], feed.credential)
         if path.endswith("/posts"):
             assert "comments.filter(stream).limit(0).summary(true)" in query["fields"]
             return graph["posts_last" if query.get("after") else "posts_first"]
@@ -244,8 +268,6 @@ def test_stream_records_use_per_record_history_and_trash_hidden_comments(feed, g
     message_ingested.connect(observe, weak=False)
     try:
         with system_context(reason="test.facebook.live_records"):
-            feed.live_since = timestamp("2026-10-01T00:00:00Z")
-            feed.save(update_fields=["live_since", "updated_at"])
             hidden_raw = {**graph["old_comments"]["data"][0], "id": "700001_800008", "is_hidden": True}
             transport(monkeypatch, lambda method, path, *args: (
                 graph["posts_last"] if path.endswith("/posts")
@@ -291,7 +313,8 @@ def test_matching_visitor_text_is_not_mistaken_for_a_page_reply(feed, replier, g
     assert [call[0] for call in calls] == ["POST"]
 
 
-@pytest.mark.parametrize("error_type", [httpx2.ReadTimeout, httpx2.RemoteProtocolError, OSError])
+# A socket's own OSError reaches the client as httpx2's ReadError.
+@pytest.mark.parametrize("error_type", [httpx2.ReadTimeout, httpx2.RemoteProtocolError, httpx2.ReadError])
 def test_lost_ack_is_settled_before_reconciling_the_existing_page_reply(
     feed, replier, graph, monkeypatch, error_type,
 ):
@@ -451,8 +474,6 @@ def test_malformed_records_and_permanent_post_reads_are_quarantined_without_wedg
 
     calls = transport(monkeypatch, respond)
     with system_context(reason="test.facebook.quarantine"):
-        feed.live_since = timestamp("2026-10-01T00:00:00Z")
-        feed.save(update_fields=["live_since", "updated_at"])
         first = advance_stream(stream(feed, key), FacebookFeedBackend(feed))
         second = advance_stream(first.stream, FacebookFeedBackend(feed))
         third = advance_stream(second.stream, FacebookFeedBackend(feed))
@@ -858,27 +879,95 @@ def test_meta_rate_codes_without_hints_keep_fifteen_minute_default(feed, graph, 
     assert caught.value.transient and caught.value.retry_after == timedelta(minutes=15)
 
 
-@pytest.mark.parametrize("status, payload", [(403, "html"), (403, []), (200, "html"), (503, {})])
-@pytest.mark.parametrize("method", ["GET", "POST"])
-def test_shared_http_classifier_distinguishes_answered_refusals_from_ambiguity(
-    feed, graph, replier, monkeypatch, status, payload, method,
+@pytest.mark.parametrize(("status", "headers", "transient", "wait", "message"), [
+    pytest.param(
+        408, {"X-App-Usage": json.dumps({"call_count": 100})}, True, timedelta(hours=1),
+        "The feed is temporarily unavailable (HTTP 408).", id="a-request-timeout-waits-for-the-page-usage",
+    ),
+    pytest.param(403, {}, False, None, "The feed refused the request (HTTP 403).", id="a-bare-refusal"),
+])
+def test_a_status_graph_does_not_name_is_integrates_refusal_with_the_adapters_wait(
+    feed, monkeypatch, status, headers, transient, wait, message,
 ):
+    """Without a Graph error the adapter names nothing: integrate's status rule decides, with Facebook's wait."""
+
+    answer = httpx2.Response(status, content=b"<html>no Graph error</html>", headers=headers)
+    transport(monkeypatch, lambda *args: answer)
+    with system_context(reason="test.facebook.status_rule"), pytest.raises(IntegrationError) as caught:
+        FacebookFeedBackend(feed).extract(stream(feed), 100)
+    assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+        transient, wait, message,
+    )
+
+
+@pytest.mark.parametrize("payload", ["html", []], ids=["html", "not-an-object"])
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_a_refusal_without_a_graph_error_is_definite_never_ambiguous(
+    feed, graph, replier, monkeypatch, payload, method,
+):
+    """A 403 answered the request: a reply POST was not accepted, and a read is refused for good."""
+
     response = httpx2.Response(
-        status, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
-        request=httpx2.Request(method, MetaFacebook.graph_url("me")), headers={"Retry-After": "123"},
+        403, content=b"<html>refused</html>" if payload == "html" else json.dumps(payload).encode(),
+        headers={"Retry-After": "123"},
     )
     transport(monkeypatch, lambda *args: response)
     with system_context(reason="test.facebook.http_classification"):
         backend = FacebookFeedBackend(feed)
-        expected = DeliveryUncertain if method == "POST" and status != 403 else IntegrationError
-        with pytest.raises(expected) as caught:
+        with pytest.raises(IntegrationError) as caught:
             if method == "POST":
                 backend.deliver(reply(feed, graph, actor=replier))
             else:
                 backend.extract(stream(feed), 100)
-    if expected is IntegrationError:
-        assert caught.value.transient == (status != 403)
-        assert caught.value.retry_after == (timedelta(seconds=123) if status != 403 else None)
+    assert not isinstance(caught.value, DeliveryUncertain) and not caught.value.transient
+    # Integrate keeps a refused answer's Retry-After as its horizon, transient or not.
+    assert caught.value.retry_after == timedelta(seconds=123)
+
+
+_FULL_PAGE_USAGE = {"X-Page-Usage": json.dumps({"call_count": 100, "total_time": 1, "total_cputime": 1})}
+
+
+@pytest.mark.parametrize(("status", "error", "headers", "uncertain", "transient", "wait", "message"), [
+    pytest.param(
+        429, None, _FULL_PAGE_USAGE, False, True, timedelta(hours=1),
+        "The feed is rate limiting requests (HTTP 429).", id="a-429-waits-for-facebooks-usage-cooldown",
+    ),
+    pytest.param(
+        400, {"code": 613}, {"Retry-After": "123"}, False, True, timedelta(seconds=123),
+        "Facebook temporarily limited Page requests.", id="a-graph-rate-code-on-a-400-is-transient",
+    ),
+    pytest.param(
+        400, {"code": 2}, {}, True, True, timedelta(minutes=1),
+        "The feed is temporarily unavailable.", id="a-graph-temporary-code-is-ambiguous-for-a-reply",
+    ),
+    pytest.param(
+        400, {"code": 190}, {}, False, False, None,
+        "Facebook authorization was refused; reconnect the Page.", id="a-rejected-page-token",
+    ),
+])
+@pytest.mark.parametrize("method", ["GET", "POST"])
+def test_facebooks_own_codes_and_waits_reach_integrates_refusal(
+    feed, graph, replier, monkeypatch, method, status, error, headers, uncertain, transient, wait, message,
+):
+    """Graph's error codes are the adapter's own cases on any status; a 429 Graph names none for is integrate's,
+    waiting Facebook's usage-aware horizon. A temporary Graph code leaves a reply's acceptance unknown."""
+
+    payload = {"error": {**error, "message": "Synthetic Graph error", "type": "OAuthException"}} if error else {}
+    transport(monkeypatch, lambda *args: (status, payload, headers))
+    with system_context(reason="test.facebook.own_codes"):
+        backend = FacebookFeedBackend(feed)
+        with pytest.raises(IntegrationError) as caught:
+            if method == "POST":
+                backend.deliver(reply(feed, graph, actor=replier))
+            else:
+                backend.extract(stream(feed), 100)
+    if method == "POST" and uncertain:
+        assert isinstance(caught.value, DeliveryUncertain)
+    else:
+        assert not isinstance(caught.value, DeliveryUncertain)
+        assert (caught.value.transient, caught.value.retry_after, caught.value.public_message) == (
+            transient, wait, message,
+        )
 
 
 def test_first_reconciliation_waits_for_visibility_and_normalized_body_never_resends(
