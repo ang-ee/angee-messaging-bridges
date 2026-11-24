@@ -1628,6 +1628,32 @@ def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> 
     assert resolve_channel_lids(channel, resolver).candidates == 0
 
 
+@pytest.mark.parametrize("from_row", [False, True], ids=["sender", "sender-and-from-row"])
+def test_resolve_channel_lids_finds_a_channel_sender_once(whatsapp_tables: Any, from_row: bool) -> None:
+    """A LID that only sent on the channel is one candidate; a ``from`` row repeating the sender adds nothing."""
+
+    channel = _whatsapp_channel("whatsapp-sender")
+    _ingest_whatsapp(
+        channel,
+        ChatMessage(chat_jid="111-222@g.us", stanza_id="G1", sender_jid="113352894324870@lid", text="here"),
+    )
+    _ingest_whatsapp(
+        _whatsapp_channel("whatsapp-elsewhere"),
+        ChatMessage(chat_jid="333-444@g.us", stanza_id="G2", sender_jid="111111111111111@lid", text="elsewhere"),
+    )
+    group_message = Message._base_manager.get(channel=channel)
+    assert not Participant._base_manager.filter(message=group_message, role="from").exists()
+    if from_row:
+        with system_context(reason="test whatsapp from row written before"):
+            Participant._base_manager.create(
+                message=group_message, thread=group_message.thread, handle_id=group_message.sender_id, role="from",
+            )
+
+    stats = resolve_channel_lids(channel, _FakeResolver({}, {}))
+
+    assert (stats.candidates, stats.unresolved) == (1, 1)
+
+
 def test_resolve_channel_lids_resolves_a_survivor_participating_through_a_merged_alias(whatsapp_tables: Any) -> None:
     """A canonical @lid handle reaches the channel only through the participation of a handle merged into it."""
 
@@ -1674,7 +1700,7 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
     )
     phone_handle = Handle._base_manager.get(external_id="18583421935@s.whatsapp.net")
     lid_handle = Handle._base_manager.get(external_id="113352894324870@lid")
-    group_participation = Participant._base_manager.get(handle=lid_handle)
+    group_message = Message._base_manager.get(sender=lid_handle)
 
     resolver = _FakeResolver({"113352894324870@lid": "18583421935"}, {"18583421935": ""})
     stats = resolve_channel_lids(channel, resolver)
@@ -1683,9 +1709,9 @@ def test_resolve_channel_lids_merges_into_an_existing_phone_handle(whatsapp_tabl
     _assert_handle_redirect(lid_handle, phone_handle)
     phone_handle.refresh_from_db()
     assert phone_handle.metadata == {}
-    # The group participation keeps its handle, inside the phone handle's redirect group.
-    group_participation.refresh_from_db()
-    assert Handle._base_manager.redirect_group(phone_handle).filter(pk=group_participation.handle_id).exists()
+    # The group message keeps its sender, inside the phone handle's redirect group.
+    group_message.refresh_from_db()
+    assert Handle._base_manager.redirect_group(phone_handle).filter(pk=group_message.sender_id).exists()
 
 
 @pytest.mark.django_db(transaction=True)
