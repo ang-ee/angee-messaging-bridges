@@ -160,7 +160,6 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
         # both on the retired handle: each selects its survivor.
         involved = MessageQuerySet.involved_handle_ids(
             apps.get_model("messaging", "Message")._base_manager.filter(thread__channel=channel),
-            participants=apps.get_model("messaging", "Participant")._base_manager.all(),
         )
         participating = model._base_manager.filter(pk__in=involved).survivor_ids()
         handles = list(
