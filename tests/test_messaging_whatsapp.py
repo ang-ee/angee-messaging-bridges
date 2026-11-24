@@ -1629,8 +1629,12 @@ def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> 
 
 
 @pytest.mark.parametrize("from_row", [False, True], ids=["sender", "sender-and-from-row"])
-def test_resolve_channel_lids_finds_a_channel_sender_once(whatsapp_tables: Any, from_row: bool) -> None:
-    """A LID that only sent on the channel is one candidate; a ``from`` row repeating the sender adds nothing."""
+def test_resolve_channel_lids_finds_a_handle_that_only_sent_here(whatsapp_tables: Any, from_row: bool) -> None:
+    """A LID that only sent on the channel is a candidate, and another channel's is not.
+
+    Candidates are selected ``pk IN``, so a handle cannot repeat by construction; the
+    ``from``-row case proves only that a row repeating the sender changes nothing.
+    """
 
     channel = _whatsapp_channel("whatsapp-sender")
     _ingest_whatsapp(
@@ -1655,7 +1659,7 @@ def test_resolve_channel_lids_finds_a_channel_sender_once(whatsapp_tables: Any, 
 
 
 def test_resolve_channel_lids_resolves_a_survivor_participating_through_a_merged_alias(whatsapp_tables: Any) -> None:
-    """A canonical @lid handle reaches the channel only through the participation of a handle merged into it."""
+    """A canonical @lid handle reaches the channel only through a message sent by a handle merged into it."""
 
     channel = _whatsapp_channel("whatsapp-redirect")
     _ingest_whatsapp(

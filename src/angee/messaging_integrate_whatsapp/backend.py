@@ -13,6 +13,7 @@ from rebac import system_context
 
 from angee.integrate.live import SessionLoggedOut
 from angee.messaging.backends import LiveChannelBackend, ParsedMessage
+from angee.messaging.managers import MessageQuerySet
 from angee.messaging_integrate_whatsapp.client import DuplicateAccountRejected
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE
 from angee.messaging_integrate_whatsapp.parser import (
@@ -155,11 +156,13 @@ def resolve_channel_lids(channel: Any, resolver: LidResolver, *, dry_run: bool =
     model = apps.get_model("parties", "Handle")
     stats = LidResolveStats()
     with system_context(reason="whatsapp_resolve_lids"):
-        # The channel's senders and recipients. A handle merge keeps both on the
-        # retired handle: each selects its survivor.
-        participating = model._base_manager.filter(sent_messages__thread__channel=channel).survivor_ids().union(
-            model._base_manager.filter(participations__thread__channel=channel).survivor_ids(),
+        # The handles that sent or received on the channel. A handle merge keeps
+        # both on the retired handle: each selects its survivor.
+        involved = MessageQuerySet.involved_handle_ids(
+            apps.get_model("messaging", "Message")._base_manager.filter(thread__channel=channel),
+            participants=apps.get_model("messaging", "Participant")._base_manager.all(),
         )
+        participating = model._base_manager.filter(pk__in=involved).survivor_ids()
         handles = list(
             model.objects.canonical()
             .filter(platform="whatsapp", value__endswith="@lid", pk__in=participating)
