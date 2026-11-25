@@ -39,6 +39,7 @@ angee-appearance = {path = "../angee/src/angee/appearance", editable = true}
 angee-appearance-integrate = {path = "../angee/src/angee/appearance_integrate", editable = true}
 angee-base = {path = "../angee/src/angee/base", editable = true}
 angee-brandkit = {path = "../angee/src/angee/brandkit", editable = true}
+angee-messaging-templates = {path = "../angee/src/angee/messaging_templates", editable = true}
 angee-dashboards = {path = "../angee/src/angee/dashboards", editable = true}
 angee-decisions = {path = "../angee/src/angee/decisions", editable = true}
 angee-extraction = {path = "../angee/src/angee/extraction", editable = true}

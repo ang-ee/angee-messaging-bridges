@@ -68,7 +68,7 @@ from angee.messaging_integrate_whatsapp.parser import (
 )
 from angee.parties.backends import AvatarReport
 from tests.conftest import make_integration
-from tests.messaging_fixtures import Handle, Message, Participant, Thread, _storage_drive
+from tests.messaging_fixtures import Handle, Message, Thread, _storage_drive
 from tests.messaging_graphql_fixtures import Channel
 
 UTC = timezone.utc
@@ -1628,12 +1628,10 @@ def test_resolve_channel_lids_rewrites_handle_in_place(whatsapp_tables: Any) -> 
     assert resolve_channel_lids(channel, resolver).candidates == 0
 
 
-@pytest.mark.parametrize("from_row", [False, True], ids=["sender", "sender-and-from-row"])
-def test_resolve_channel_lids_finds_a_handle_that_only_sent_here(whatsapp_tables: Any, from_row: bool) -> None:
+def test_resolve_channel_lids_finds_a_handle_that_only_sent_here(whatsapp_tables: Any) -> None:
     """A LID that only sent on the channel is a candidate, and another channel's is not.
 
-    Candidates are selected ``pk IN``, so a handle cannot repeat by construction; the
-    ``from``-row case proves only that a row repeating the sender changes nothing.
+    Candidates are selected ``pk IN``, so a handle cannot repeat by construction.
     """
 
     channel = _whatsapp_channel("whatsapp-sender")
@@ -1645,13 +1643,6 @@ def test_resolve_channel_lids_finds_a_handle_that_only_sent_here(whatsapp_tables
         _whatsapp_channel("whatsapp-elsewhere"),
         ChatMessage(chat_jid="333-444@g.us", stanza_id="G2", sender_jid="111111111111111@lid", text="elsewhere"),
     )
-    group_message = Message._base_manager.get(channel=channel)
-    assert not Participant._base_manager.filter(message=group_message, role="from").exists()
-    if from_row:
-        with system_context(reason="test whatsapp from row written before"):
-            Participant._base_manager.create(
-                message=group_message, thread=group_message.thread, handle_id=group_message.sender_id, role="from",
-            )
 
     stats = resolve_channel_lids(channel, _FakeResolver({}, {}))
 

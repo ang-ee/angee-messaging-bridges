@@ -241,6 +241,7 @@ dependencies = [
     { name = "angee-messaging" },
     { name = "angee-messaging-integrate-imap" },
     { name = "angee-messaging-integrate-slack" },
+    { name = "angee-messaging-templates" },
     { name = "angee-money" },
     { name = "angee-nexus" },
     { name = "angee-operator" },
@@ -326,6 +327,7 @@ requires-dist = [
     { name = "angee-messaging", editable = "../angee/src/angee/messaging" },
     { name = "angee-messaging-integrate-imap", editable = "../angee/src/angee/messaging_integrate_imap" },
     { name = "angee-messaging-integrate-slack", editable = "../angee/src/angee/messaging_integrate_slack" },
+    { name = "angee-messaging-templates", editable = "../angee/src/angee/messaging_templates" },
     { name = "angee-money", editable = "../angee/src/angee/money" },
     { name = "angee-nexus", editable = "../angee/src/angee/nexus" },
     { name = "angee-operator", editable = "../angee/src/angee/operator" },
@@ -1472,6 +1474,29 @@ requires-dist = [
     { name = "angee-web", editable = "../angee/src/angee/web" },
     { name = "angee-workflows-integrate", editable = "../angee/src/angee/workflows_integrate" },
     { name = "neonize", specifier = ">=0.10.0" },
+]
+
+[[package]]
+name = "angee-messaging-templates"
+version = "3.0.0"
+source = { editable = "../angee/src/angee/messaging_templates" }
+dependencies = [
+    { name = "angee-base" },
+    { name = "angee-graphql" },
+    { name = "angee-iam" },
+    { name = "angee-parties" },
+    { name = "angee-provenance" },
+    { name = "angee-resources" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "angee-base", editable = "../angee/src/angee/base" },
+    { name = "angee-graphql", editable = "../angee/src/angee/graphql" },
+    { name = "angee-iam", editable = "../angee/src/angee/iam" },
+    { name = "angee-parties", editable = "../angee/src/angee/parties" },
+    { name = "angee-provenance", editable = "../angee/src/angee/provenance" },
+    { name = "angee-resources", editable = "../angee/src/angee/resources" },
 ]
 
 [[package]]
