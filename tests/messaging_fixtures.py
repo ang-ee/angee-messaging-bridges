@@ -25,10 +25,10 @@ from angee.messaging.testing.models import MessageStar as MessageStar
 from angee.messaging.testing.models import MessageSubtype as MessageSubtype
 from angee.messaging.testing.models import Organization as Organization
 from angee.messaging.testing.models import Part as Part
-from angee.messaging.testing.models import Participant as Participant
 from angee.messaging.testing.models import Party as Party
 from angee.messaging.testing.models import Person as Person
 from angee.messaging.testing.models import Reaction as Reaction
+from angee.messaging.testing.models import Recipient as Recipient
 from angee.messaging.testing.models import Relationship as Relationship
 from angee.messaging.testing.models import RelationshipKind as RelationshipKind
 from angee.messaging.testing.models import Thread as Thread
