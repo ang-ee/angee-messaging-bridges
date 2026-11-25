@@ -18,17 +18,18 @@ permissions:
 jobs:
   checks:
     # Keep this ref aligned with framework-ref so checks share the runtime contract.
-    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@291b20520b7bc596a462afe90754529203363586
+    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@b550b4f6022cc55da1e8a35c24d2eaa5ac020011
     secrets: inherit
     with:
       # The framework's .python-version holds the CPython pin the composed stack runs on.
       # Match the framework manifests used to generate this dependency lock.
-      framework-ref: "291b20520b7bc596a462afe90754529203363586"
+      framework-ref: "b550b4f6022cc55da1e8a35c24d2eaa5ac020011"
       # The suite resolves base addons from the sibling slot and the
       # fragments' @angee/gql fixture is the stack root's composed runtime/,
       # so pytest + typecheck/test run in the stack lane.
       uv-enabled: false
       pnpm-enabled: false
       stack-enabled: true
-      # CI_RUNS_ON (a JSON runs-on value) moves every job to self-hosted runners.
-      runs-on: ${{ vars.CI_RUNS_ON || '"ubuntu-latest"' }}
+      # CI_RUNS_ON (a JSON runs-on value) moves every job to self-hosted runners; a
+      # pull request from a fork always runs on GitHub-hosted ones.
+      runs-on: ${{ (github.event.pull_request.head.repo.fork && '"ubuntu-latest"') || vars.CI_RUNS_ON || '"ubuntu-latest"' }}
