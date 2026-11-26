@@ -28,7 +28,7 @@ from angee.messaging.events import message_ingested
 from angee.posts_integrate_facebook.backend import FacebookFeedBackend
 from angee.posts_integrate_facebook.oauth import MetaFacebook
 from angee.posts_integrate_facebook.parsing import comment_post, root_post, timestamp
-from tests.conftest import claim_feed_reply, make_integration
+from tests.conftest import claim_feed_reply, make_integration, reply_as
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -128,8 +128,7 @@ def reply(feed, graph, *, actor, text="A public response"):
     )
     apps.get_model("messaging", "Message").posts.land(feed, [root, comment], owner_id=feed.owner_id, historical=True)
     parent = apps.get_model("messaging", "Message").objects.get(channel=feed, external_id=comment.message.external_id)
-    assert parent.with_actor(actor).has_access("read")
-    return parent.reply_to_comment(body=text, actor=actor)
+    return reply_as(parent, body=text, actor=actor)
 
 
 def settle_uncertain_reply(message, error, *, monkeypatch):
@@ -635,7 +634,7 @@ def test_identical_text_for_two_comments_posts_twice_without_lookup(feed, replie
             historical=True,
         )
         parent = apps.get_model("messaging", "Message").objects.get(channel=feed, external_id="700001_800007")
-        second = parent.reply_to_comment(body="Thanks!", actor=replier)
+        second = reply_as(parent, body="Thanks!", actor=replier)
         backend = FacebookFeedBackend(feed)
         assert backend.deliver(first).accepted and backend.deliver(second).accepted
     assert [call[0] for call in calls] == ["POST", "POST"]

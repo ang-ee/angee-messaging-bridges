@@ -8,6 +8,7 @@ import tempfile
 import time
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack
+from contextvars import Context
 from importlib.util import spec_from_file_location
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -607,6 +608,20 @@ def assert_private_hasura_insert_access(
     )[detail_root]
     assert denied is None
     return created, readable, updated
+
+
+def reply_as(comment: Any, *, body: str, actor: Any) -> Any:
+    """Answer ``comment`` through posts' reply policy as ``actor`` writes it: the actor's own work, never elevated.
+
+    A request or a workflow step runs a person's answer outside any system context, and compose refuses an
+    elevated call, so the answer runs in a fresh context, whatever system context the test holds around it.
+    """
+
+    def answer() -> Any:
+        assert comment.with_actor(actor).has_access("read")
+        return comment.reply_to_comment(body=body, actor=actor)
+
+    return Context().run(answer)
 
 
 def claim_feed_reply(message: Any, *, actor: Any) -> Any:
