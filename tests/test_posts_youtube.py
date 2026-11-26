@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextvars import Context
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -229,11 +230,20 @@ def seed(feed, wire, *, count=2, hidden=False):
 
 
 def reply(feed, wire, *, actor):
-    """Prepare a held reply through the Message owner."""
+    """Prepare a held reply through the Message owner, as ``actor`` writes it.
+
+    The comment lands as the provider's observation, system work like the module's other setup. The answer is the
+    actor's own, so it runs in a fresh context, outside the module's ambient ``system_context``, as a request or a
+    workflow step runs it: compose refuses an elevated call.
+    """
 
     parent = seed(feed, wire)
-    assert parent.with_actor(actor).has_access("read")
-    return parent.reply_to_comment(body="Here is an example answer.", actor=actor)
+
+    def answer():
+        assert parent.with_actor(actor).has_access("read")
+        return parent.reply_to_comment(body="Here is an example answer.", actor=actor)
+
+    return Context().run(answer)
 
 
 def settle_uncertain_reply(message, error, *, monkeypatch):
