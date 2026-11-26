@@ -55,7 +55,7 @@ from angee.posts_integrate_youtube.oauth import GoogleYouTube
 from angee.posts_integrate_youtube.parsing import comment_post, timestamp, video_post
 from angee.resources.entries import resource_manifest_for
 from angee.resources.testing.models import Resource
-from tests.conftest import OAuthClient, claim_feed_reply, make_integration
+from tests.conftest import OAuthClient, claim_feed_reply, make_integration, reply_as
 
 pytestmark = pytest.mark.django_db(transaction=True)
 AT = datetime(2026, 10, 10, 12, tzinfo=UTC)
@@ -229,11 +229,9 @@ def seed(feed, wire, *, count=2, hidden=False):
 
 
 def reply(feed, wire, *, actor):
-    """Prepare a held reply through the Message owner."""
+    """Prepare a held reply through the Message owner: the comment lands as system work, the answer is ``actor``'s."""
 
-    parent = seed(feed, wire)
-    assert parent.with_actor(actor).has_access("read")
-    return parent.reply_to_comment(body="Here is an example answer.", actor=actor)
+    return reply_as(seed(feed, wire), body="Here is an example answer.", actor=actor)
 
 
 def settle_uncertain_reply(message, error, *, monkeypatch):
