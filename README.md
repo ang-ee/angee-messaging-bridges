@@ -21,9 +21,10 @@ pnpm --config.verify-deps-before-run=false -r test
 
 Bridge source tests use `tests.settings` and a checkout-local SQLite database.
 To check affected tests locally, use the bridge test environment with the
-framework's locked check tools and a sibling checkout with changed-path
-selection. Run from the bridge source root and set `base_sha` and `checked_sha`
-to the commits you want to compare. The checked commit must match `HEAD`.
+framework's locked check tools and a sibling framework checkout whose
+`scripts/changed_path_selection.py` supports the `pytest` subcommand. Run from the
+bridge source root and set `base_sha` and `checked_sha` to the commits you want to
+compare. The checked commit must match `HEAD`.
 
 ```sh
 python ../angee/scripts/changed_path_selection.py pytest \
