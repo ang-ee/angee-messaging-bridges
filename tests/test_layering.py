@@ -6,6 +6,10 @@ import ast
 import importlib.util
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.shared_inputs
+
 ROOT = Path(__file__).resolve().parents[1]
 BRIDGE_PACKAGES_ROOT = ROOT / "src" / "angee"
 ANGEE_SPEC = importlib.util.find_spec("angee")
