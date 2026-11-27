@@ -24,9 +24,8 @@ jobs:
       # The framework's .python-version holds the CPython pin the composed stack runs on.
       # Match the framework manifests used to generate this dependency lock.
       framework-ref: "b550b4f6022cc55da1e8a35c24d2eaa5ac020011"
-      # The suite resolves base addons from the sibling slot and the
-      # fragments' @angee/gql fixture is the stack root's composed runtime/,
-      # so pytest + typecheck/test run in the stack lane.
+      # The framework's stack lane runs bridge pytest with this checkout's
+      # configuration and checks fragments against the composed host's @angee/gql.
       uv-enabled: false
       pnpm-enabled: false
       stack-enabled: true

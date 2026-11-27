@@ -20,17 +20,12 @@ from packaging.requirements import Requirement
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
+from angee.graphql.testing.documents import execute_schema, result_data
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
 from angee.integrate.models import IntegrationRuntimeStatus
 from angee.messaging.models import Thread
-from tests.conftest import (
-    SchemaAddon,
-    Vendor,
-    execute_schema,
-    result_data,
-    wait_until,
-)
+from tests.conftest import SchemaAddon, Vendor, wait_until
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
     Channel,
