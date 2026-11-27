@@ -11,17 +11,15 @@ from contextlib import ExitStack
 from contextvars import Context
 from importlib.util import spec_from_file_location
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
-from typing import Any, cast
+from types import ModuleType
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 from django.apps import AppConfig, apps
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
-from django.test import RequestFactory
 from django.utils import timezone
-from rebac import actor_context, system_context
+from rebac import system_context
 
 from angee.base.testing.packages import write_addon_distribution
 from angee.decisions.testing import models as decisions_models  # noqa: F401 -- register shared FK targets
@@ -519,95 +517,6 @@ def addon_schema(schemas: dict[str, Any], name: str) -> Any:
 
     parts = {key: tuple(schemas[name].get(key, ())) for key in SCHEMA_PART_KEYS}
     return GraphQLSchemas([SchemaAddon({name: parts})]).build(name)
-
-
-def graphql_request(user: Any) -> Any:
-    """Return a bare POST request carrying ``user``."""
-
-    request = RequestFactory().post("/graphql/public/")
-    request.user = user
-    return request
-
-
-def execute_schema(
-    schema: Any,
-    query: str,
-    variables: dict[str, Any] | None = None,
-    *,
-    user: Any | None = None,
-    request: Any | None = None,
-) -> Any:
-    """Execute a GraphQL operation with a request-shaped context."""
-
-    request = request or graphql_request(user or AnonymousUser())
-    actor = getattr(request, "user", AnonymousUser())
-    with actor_context(actor):
-        return schema.execute_sync(
-            query,
-            variable_values=variables or {},
-            context_value=SimpleNamespace(request=request),
-        )
-
-
-def result_data(result: Any) -> dict[str, Any]:
-    """Return result data after asserting the operation succeeded."""
-
-    assert result.errors is None, result.errors
-    assert result.data is not None
-    return cast(dict[str, Any], result.data)
-
-
-def assert_private_hasura_insert_access(
-    schema: Any,
-    *,
-    creator: Any,
-    outsider: Any,
-    create_mutation: str,
-    create_root: str,
-    detail_query: str,
-    detail_root: str,
-    update_mutation: str,
-    update_root: str,
-    create_variables: dict[str, Any] | None = None,
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    """Execute and assert the private-row create/read/write/denied-read contract."""
-
-    assert not creator.is_superuser
-    created = result_data(
-        execute_schema(
-            schema,
-            create_mutation,
-            create_variables,
-            user=creator,
-        )
-    )[create_root]
-    variables = {"id": created["id"]}
-    readable = result_data(
-        execute_schema(
-            schema,
-            detail_query,
-            variables,
-            user=creator,
-        )
-    )[detail_root]
-    updated = result_data(
-        execute_schema(
-            schema,
-            update_mutation,
-            variables,
-            user=creator,
-        )
-    )[update_root]
-    denied = result_data(
-        execute_schema(
-            schema,
-            detail_query,
-            variables,
-            user=outsider,
-        )
-    )[detail_root]
-    assert denied is None
-    return created, readable, updated
 
 
 def reply_as(comment: Any, *, body: str, actor: Any) -> Any:

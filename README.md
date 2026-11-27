@@ -18,3 +18,17 @@ uv run pytest -q
 pnpm --config.verify-deps-before-run=false -r typecheck
 pnpm --config.verify-deps-before-run=false -r test
 ```
+
+Bridge source tests use `tests.settings` and a checkout-local SQLite database.
+To check affected tests locally, use the bridge test environment with the
+framework's locked check tools and a sibling checkout with changed-path
+selection. Run from the bridge source root and set `base_sha` and `checked_sha`
+to the commits you want to compare. The checked commit must match `HEAD`.
+
+```sh
+python ../angee/scripts/changed_path_selection.py pytest \
+  --root "$PWD" --base "$base_sha" --head "$checked_sha" -- -q
+```
+
+The runner uses the same pytest configuration and reports which paths it selected
+or why it ran the full suite. Use `uv run pytest -q` for a full local run.

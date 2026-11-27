@@ -20,19 +20,14 @@ from rebac import system_context
 from unpaddedbase64 import decode_base64, encode_base64
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
+from angee.graphql.testing.documents import execute_schema, result_data
 from angee.integrate.credentials import CredentialKind
 from angee.integrate.live import PairingState, session_store_path
 from angee.messaging_integrate_matrix import recovery
 from angee.messaging_integrate_matrix.backend import MatrixChannelBackend
 from angee.messaging_integrate_matrix.constants import SESSION_QUEUE
 from angee.messaging_integrate_matrix.identity import MatrixMediaFact, parsed_message
-from tests.conftest import (
-    SchemaAddon,
-    Vendor,
-    execute_schema,
-    result_data,
-    wait_until,
-)
+from tests.conftest import SchemaAddon, Vendor, wait_until
 from tests.messaging_fixtures import Message
 from tests.messaging_graphql_fixtures import (
     Channel,

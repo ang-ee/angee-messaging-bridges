@@ -9,10 +9,10 @@ import pytest
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
+from angee.graphql.testing.documents import execute_schema, result_data
 from angee.integrate.constants import RUN_SESSION_TASK
 from angee.messaging_integrate_whatsapp.constants import SESSION_QUEUE
-from tests.conftest import SchemaAddon, Vendor, execute_schema, make_integration
-from tests.conftest import result_data as _data
+from tests.conftest import SchemaAddon, Vendor, make_integration
 from tests.messaging_graphql_fixtures import (
     Channel,
     _platform_admin,
@@ -140,7 +140,7 @@ def _mutate(admin: Any, mutation: str, variables: dict[str, Any]) -> dict[str, A
     """Execute one addon mutation and return its data payload."""
 
     result = execute_schema(_schema(), mutation, variables, request=_request(admin))
-    return _data(result)
+    return result_data(result)
 
 
 _CONNECT_MUTATION = """
