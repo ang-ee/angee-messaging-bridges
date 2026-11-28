@@ -18,7 +18,7 @@ from angee.integrate.discovery import ConnectionDiscovery, DerivedCredential
 from angee.integrate.errors import IntegrationError
 from angee.integrate.oauth.client import OAuthClientProtocol
 from angee.integrate.streams import advance_stream
-from angee.posts_integrate_facebook.backend import FacebookFeedBackend
+from angee.posts_integrate_facebook.backend import FacebookFeedBackend, _names_a_person
 from angee.posts_integrate_facebook.oauth import MetaFacebook
 from tests.conftest import Credential, ExternalAccount, OAuthClient, make_integration
 from tests.test_posts_facebook import carries_auth, stream, transport
@@ -155,7 +155,8 @@ def test_a_page_token_names_its_page_at_me_and_derives_no_material(feed, graph, 
     assert result.credential is None
     assert result.data["external_id"] == result.data["handle"].external_id == "900001"
     assert result.data["display_name"] == "Example Workshop"
-    assert [(call[0], call[1], call[2]["fields"]) for call in calls] == [("GET", "me", "id,name")]
+    # One read names the Page and shows it is one: only a Page carries a category.
+    assert [(call[0], call[1], call[2]["fields"]) for call in calls] == [("GET", "me", "id,name,category")]
     assert carries_auth(calls[0][3]["headers"], feed.credential)
 
 
@@ -220,6 +221,119 @@ def test_a_page_token_that_names_no_page_is_refused_not_matched(feed, monkeypatc
         "enter a Page access token or connect the Page through Meta OAuth."
     )
     assert feed.external_id == "900001"
+
+
+_PERSON = "This token belongs to a person, not a Page: enter the Page's access token."
+
+
+def _person(graph, shape):
+    """A user token's answer at ``me``: Graph refuses the Page-only field, or omits it."""
+
+    if shape == "refused":
+        return 400, graph["person_identity"], {}
+    return {"id": "600001", "name": "Ada Example"}
+
+
+@pytest.mark.parametrize("shape", ["refused", "no_category"])
+def test_a_person_token_on_a_first_connection_is_refused_and_records_nothing(graph, monkeypatch, shape):
+    transport(monkeypatch, lambda *args: _person(graph, shape))
+    with system_context(reason="test.facebook.person_first_discovery"):
+        feed = make_integration(
+            "facebook-person", model=apps.get_model("posts", "Feed"), backend_class="feed",
+            feed_backend_class="facebook", material={"api_key": "synthetic-user-token"}, external_id="", config={},
+        )
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+        assert not apps.get_model("parties", "Handle").objects.filter(platform="facebook", value="600001").exists()
+    assert outcome == {"ok": False, "reason": "discovery-failed"} and feed.last_error == _PERSON
+    assert (feed.external_id, feed.handle_id, feed.live_since) == ("", None, None)
+
+
+@pytest.mark.parametrize("shape", ["refused", "no_category"])
+def test_a_person_token_re_entered_on_a_page_feed_is_refused_and_leaves_the_feed(feed, graph, monkeypatch, shape):
+    transport(monkeypatch, lambda method, path, *args: _person(graph, shape) if path == "me" else graph["posts_first"])
+    with system_context(reason="test.facebook.person_rediscovery"):
+        advance_stream(stream(feed), FacebookFeedBackend(feed))
+        before = _synced_state(feed)
+        feed.credential.replace_material({"api_key": "synthetic-user-token"})
+        feed.refresh_from_db()
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+        assert _synced_state(feed) == before
+    assert outcome == {"ok": False, "reason": "discovery-failed"} and feed.last_error == _PERSON
+    assert feed.external_id == feed.handle.external_id == "900001" and feed.display_name == "Example Workshop"
+
+
+def test_graph_names_a_person_only_in_its_own_wording(graph):
+    """The one refusal read as a person: ``category`` asked of a User node, in Graph's words."""
+
+    error = graph["person_identity"]["error"]
+    assert error["message"] == "(#100) Tried accessing nonexisting field (category) on node type (User)"
+    assert _names_a_person(error)
+    for other in (
+        {**error, "message": "(#100) Tried accessing nonexisting field (category) on node type (Page)"},
+        {**error, "message": "(#100) Synthetic invalid parameter"},
+        {**error, "code": 10},
+        graph["missing"]["error"], graph["permission_denied"]["error"], None, "refused",
+    ):
+        assert not _names_a_person(other)
+
+
+def _ambiguous(graph, shape):
+    """A refusal of ``category`` that names no person: an invalid parameter, a permission error, or no Graph error."""
+
+    if shape == "invalid_parameter":
+        return {"error": {**graph["person_identity"]["error"], "message": "(#100) Synthetic invalid parameter"}}
+    return graph["permission_denied"] if shape == "permission" else {}
+
+
+@pytest.mark.parametrize("shape", ["invalid_parameter", "permission", "no_graph_error"])
+def test_an_ambiguous_refusal_of_category_asks_again_without_it_on_a_first_connection(graph, monkeypatch, shape):
+    page = {key: graph["page_identity"][key] for key in ("id", "name")}
+    calls = transport(monkeypatch, lambda method, path, query, kwargs: (
+        (400, _ambiguous(graph, shape), {}) if "category" in query["fields"] else page
+    ))
+    with system_context(reason="test.facebook.ambiguous_first_discovery"):
+        feed = make_integration(
+            "facebook-ambiguous", model=apps.get_model("posts", "Feed"), backend_class="feed",
+            feed_backend_class="facebook", material={"api_key": "synthetic-page-token"}, external_id="", config={},
+        )
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+    # Not a person on Graph's word: it connects with what me names, as before the check.
+    assert [call[2]["fields"] for call in calls] == ["id,name,category", "id,name"]
+    assert outcome == {"ok": True, "reason": "applied"}
+    assert feed.external_id == feed.handle.external_id == "900001" and feed.display_name == "Example Workshop"
+
+
+@pytest.mark.parametrize("shape", ["invalid_parameter", "permission", "no_graph_error"])
+def test_an_ambiguous_refusal_of_category_asks_again_without_it_on_rediscovery(feed, graph, monkeypatch, shape):
+    page = {key: graph["page_identity"][key] for key in ("id", "name")}
+    calls = transport(monkeypatch, lambda method, path, query, kwargs: (
+        graph["posts_first"] if path != "me"
+        else (400, _ambiguous(graph, shape), {}) if "category" in query["fields"] else page
+    ))
+    with system_context(reason="test.facebook.ambiguous_rediscovery"):
+        advance_stream(stream(feed), FacebookFeedBackend(feed))
+        before = _synced_state(feed)
+        feed.credential.replace_material({"api_key": "synthetic-reentered-page-token"})
+        feed.refresh_from_db()
+        outcome = feed.run_discovery(credential_pk=feed.credential_id, generation=feed.discovery_generation)
+        feed.refresh_from_db()
+        assert _synced_state(feed) == before
+    assert [call[2]["fields"] for call in calls if call[1] == "me"] == ["id,name,category", "id,name"]
+    assert outcome == {"ok": True, "reason": "applied"} and feed.discovery_ready
+    assert feed.external_id == "900001"
+
+
+def test_a_transient_status_on_the_token_read_is_integrates_and_asks_nothing_again(feed, monkeypatch):
+    """A 408 says nothing of ``category``: integrate calls it transient, and ``me`` is read once."""
+
+    calls = transport(monkeypatch, lambda *args: (408, {}, {}))
+    with system_context(reason="test.facebook.token_status_rule"), pytest.raises(IntegrationError) as caught:
+        FacebookFeedBackend(feed).discover_connection(feed.credential)
+    assert caught.value.transient and caught.value.public_message == "The feed is temporarily unavailable (HTTP 408)."
+    assert [call[2]["fields"] for call in calls] == ["id,name,category"]
 
 
 def test_a_first_connection_with_a_page_token_records_its_page(graph, monkeypatch):

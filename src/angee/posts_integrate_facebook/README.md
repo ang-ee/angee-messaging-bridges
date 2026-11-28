@@ -9,8 +9,17 @@ to exactly one managed Page, including when the account manages several Pages;
 discovery refuses grants exposing multiple Pages before applying any identity.
 A Page access token can be entered instead, as a static token stored for the
 Facebook OAuth client: discovery asks Graph's `me`, which a Page token resolves to
-its Page, and records that Page as OAuth discovery does. An answer that names no
-Page is refused, never taken for the feed's Page. A feed stays on the Page its
+its Page, and records that Page as OAuth discovery does. The token must be the
+Page's own: the same read asks for `category`, a field only Pages carry. A
+person's token (whose `me` is the person) is refused before anything is recorded,
+with "This token belongs to a person, not a Page: enter the Page's access token.",
+only on Graph's own evidence: an answer without `category`, or Graph's refusal of
+it on a User node. Any other refusal of `category` asks `me` again without it and
+connects as before the check, Graph's refusal of a person's streams remaining the
+backstop. The Page-only refusal relies on a Page's own token reading its
+`category` at `me?fields=id,name,category`, which has not yet been confirmed on
+a live Page connection. An answer that names no Page is refused, never taken for
+the feed's Page. A feed stays on the Page its
 first discovery recorded: a re-entered or newly attached token, or a grant, for
 another Page fails discovery with "This feed is connected to another Facebook
 Page; create a separate feed.", and the feed's streams and posts stay as they were.
@@ -50,7 +59,8 @@ Rate codes 4/17/32 without response hints retain a 15-minute provider default.
 HTTP classification uses the framework's `request_json` helper and integrate's
 refusal: the adapter names only Graph's own cases (a rejected token, its rate
 codes on any status, a refused cursor, a Graph error, one record's refused
-read); any other status is integrate's rule, so a 429 without a Graph rate code
+read, a token's refused `category` read); any other status is integrate's
+rule, so a 429 without a Graph rate code
 is transient and waits this adapter's horizon, and a 4xx without a Graph error
 is a definite refusal in integrate's words. Quarantine uses framework `RecordRefusal` records keyed
 by `external_key` within the page transaction.
