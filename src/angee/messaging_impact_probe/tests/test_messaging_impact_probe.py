@@ -29,5 +29,6 @@ class MessagingImpactProbeVisibilityTests(TestCase):
     def test_owner_reads_own_rows_and_an_outsider_reads_none(self) -> None:
         """The field-backed owner relation scopes reads without storing a tuple."""
 
-        self.assertEqual([visible.pk for visible in MessagingImpactProbe.objects.as_user(self.owner)], [self.row.pk])
+        visible = MessagingImpactProbe.objects.as_user(self.owner).values_list("pk", "title")
+        self.assertEqual(list(visible), [(self.row.pk, "First")])
         self.assertFalse(MessagingImpactProbe.objects.as_user(self.outsider).exists())
