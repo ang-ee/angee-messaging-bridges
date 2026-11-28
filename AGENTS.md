@@ -17,6 +17,5 @@ Shared messaging behavior belongs in the base `angee.messaging` addon, not in
 an individual bridge.
 
 The stack root owns the JS installation; never run `pnpm install` in a source
-slot. Before handing off changes, run `uv run pytest -q`,
-`pnpm --config.verify-deps-before-run=false -r typecheck`, and
-`pnpm --config.verify-deps-before-run=false -r test` from the repository root.
+slot. Before handing off changes, run the [README checks](README.md) from the
+repository root.

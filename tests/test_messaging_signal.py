@@ -19,13 +19,9 @@ import pytest
 from rebac import system_context
 
 from angee.graphql.schema import SCHEMA_PART_KEYS, GraphQLSchemas
+from angee.graphql.testing.documents import execute_schema, result_data
 from angee.integrate.live import PairingState, session_store_path
-from tests.conftest import (
-    SchemaAddon,
-    Vendor,
-    execute_schema,
-    result_data,
-)
+from tests.conftest import SchemaAddon, Vendor
 from tests.messaging_fixtures import Message, Part, _storage_drive
 from tests.messaging_graphql_fixtures import (
     Channel,
