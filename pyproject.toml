@@ -146,7 +146,6 @@ python_files = ["test_*.py"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib -p no:randomly"
-markers = ["shared_inputs: reads inputs across the composed host or repository"]
 
 [tool.ruff]
 line-length = 120
