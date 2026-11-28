@@ -17,12 +17,12 @@ permissions:
 jobs:
   checks:
     # Keep this ref aligned with framework-ref so checks share the runtime contract.
-    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@ef0f4a4e8c2ca65b560fc80d932892e08de2e0e0
+    uses: ang-ee/angee-django/.github/workflows/reusable-checks.yml@5b2ddf3e8da61a0e2b2d847cb2fd075fb3eca96a
     secrets: inherit
     with:
       # The framework's .python-version holds the CPython pin the composed stack runs on.
       # Match the framework manifests used to generate this dependency lock.
-      framework-ref: "ef0f4a4e8c2ca65b560fc80d932892e08de2e0e0"
+      framework-ref: "5b2ddf3e8da61a0e2b2d847cb2fd075fb3eca96a"
       # The framework's stack lane runs bridge pytest with this checkout's
       # configuration and checks fragments against the composed host's @angee/gql.
       uv-enabled: false
