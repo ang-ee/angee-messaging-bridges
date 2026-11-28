@@ -35,6 +35,9 @@ _RECONCILIATION_PAGES = 10
 _RECHECK_INTERVAL = timedelta(hours=1)
 _RATE_CODES = frozenset({4, 17, 32, 613, 80001})
 _GRAPH_PAGE_LIMIT = 100
+_NOT_A_PAGE = "This token belongs to a person, not a Page: enter the Page's access token."
+_PERSON_NODE_REFUSAL = "nonexisting field (category) on node type (User)"
+"""Graph's wording when the Page-only ``category`` is asked of a person's node (a User)."""
 
 
 class FacebookCursor(BaseModel):
@@ -80,6 +83,19 @@ class FacebookCursor(BaseModel):
         return self.model_dump(exclude_defaults=True)
 
 
+class _CategoryRefused(IntegrationError):
+    """Graph refused the Page-only ``category`` without naming a person: no evidence either way."""
+
+
+def _names_a_person(error: Any) -> bool:
+    """Whether a Graph refusal says the token's node is a person: ``category`` refused on a User, in Graph's words."""
+
+    return (
+        isinstance(error, dict) and error.get("code") == 100
+        and _PERSON_NODE_REFUSAL in str(error.get("message") or "")
+    )
+
+
 class FacebookFeedBackend(FeedBackend):
     """Extract one Page through independent live, history and re-observation streams.
 
@@ -107,20 +123,14 @@ class FacebookFeedBackend(FeedBackend):
         """Read the Page a credential speaks for; integrate persists derived material after fencing.
 
         A Page access token, entered as a static token, names its Page at Graph's
-        ``me``. An OAuth grant names the one Page it manages, whose Page token
-        discovery derives. A feed keeps the Page it first recorded and refuses a
-        credential for another.
+        ``me`` (:meth:`_token_page`). An OAuth grant names the one Page it
+        manages, whose Page token discovery derives. A feed keeps the Page it
+        first recorded and refuses a credential for another.
         """
 
         derived: DerivedCredential | None = None
         if credential.kind == CredentialKind.STATIC_TOKEN:
-            page = self._request("me", credential=credential, fields="id,name")
-            identity = page.get("id")
-            if not isinstance(identity, str) or not identity.isdigit():
-                raise IntegrationError(
-                    "Facebook did not say which Page this token belongs to; "
-                    "enter a Page access token or connect the Page through Meta OAuth."
-                )
+            identity, page = self._token_page(credential)
         else:
             identity, page = self._managed_page(credential)
             derived = DerivedCredential(
@@ -137,6 +147,33 @@ class FacebookFeedBackend(FeedBackend):
             },
             credential=derived,
         )
+
+    def _token_page(self, credential: Any) -> tuple[str, dict[str, Any]]:
+        """Return the Page a token names at ``me``, refusing a person's token only on Graph's evidence.
+
+        The read also asks for ``category``, a field only Pages carry (Graph's node
+        introspection is retired). A successful answer without it is a person's,
+        and so is Graph's refusal of it on a User node (:func:`_names_a_person`):
+        both are refused before anything is recorded. Any other refusal of the
+        field says nothing either way, so ``me`` is asked again without it, as
+        before this check, and Graph's refusal of a person's streams stays the
+        backstop.
+        """
+
+        try:
+            page = self._request("me", credential=credential, fields="id,name,category", page_identity=True)
+            asked_category = True
+        except _CategoryRefused:
+            page, asked_category = self._request("me", credential=credential, fields="id,name"), False
+        identity = page.get("id")
+        if not isinstance(identity, str) or not identity.isdigit():
+            raise IntegrationError(
+                "Facebook did not say which Page this token belongs to; "
+                "enter a Page access token or connect the Page through Meta OAuth."
+            )
+        if asked_category and not page.get("category"):
+            raise IntegrationError(_NOT_A_PAGE)
+        return identity, page
 
     def _managed_page(self, credential: Any) -> tuple[str, dict[str, Any]]:
         """Return the one Page an OAuth grant manages, following only opaque cursors."""
@@ -403,7 +440,7 @@ class FacebookFeedBackend(FeedBackend):
     def _request(
         self, path: str, *, method: str = "GET", credential: Any = None,
         form: dict[str, str] | None = None, delivery: bool = False, record_local: bool = False,
-        reobserve: bool = False, **params: Any,
+        reobserve: bool = False, page_identity: bool = False, **params: Any,
     ) -> dict[str, Any]:
         credential = credential or self.bridge.credential
         if credential is None:
@@ -432,7 +469,7 @@ class FacebookFeedBackend(FeedBackend):
             method, url, headers=headers, body=body, timeout=10, max_bytes=2**21,
             is_transient=self._is_transient,
             refusal=lambda response, data: self._request_refusal(
-                response, data, params=params, record_local=record_local,
+                response, data, params=params, record_local=record_local, page_identity=page_identity,
             ),
         )
 
@@ -445,12 +482,15 @@ class FacebookFeedBackend(FeedBackend):
 
     def _request_refusal(
         self, response: httpx2.Response, data: dict[str, Any], *, params: dict[str, Any], record_local: bool,
+        page_identity: bool = False,
     ) -> Exception | None:
         """Graph-owned authorization, rate, cursor and record-local refusals; integrate's rule decides the rest.
 
         Graph's rate codes are transient on any status. A status integrate calls transient (a 429, a 408) that
         Graph names no case for is integrate's, waiting this adapter's :meth:`retry_after`; any other Graph error
-        is Facebook's refusal, a record-local read's that record's.
+        is Facebook's refusal, a record-local read's that record's. A token's identity read asks for a Page-only
+        field: Graph's refusal of it on a User node is a person's token; any other refusal of that read is
+        ambiguous (:meth:`_token_page` asks again without the field).
         """
 
         error = data.get("error") or {}
@@ -468,6 +508,8 @@ class FacebookFeedBackend(FeedBackend):
             return CursorInvalid()
         if is_transient_status(response.status_code):
             return None
+        if page_identity and (error or not response.is_success):
+            return IntegrationError(_NOT_A_PAGE) if _names_a_person(error) else _CategoryRefused()
         if record_local and (error or not response.is_success):
             return SemanticError("comment_read_refused")
         if error:
