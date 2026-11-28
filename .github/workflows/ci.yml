@@ -28,7 +28,6 @@ jobs:
       uv-enabled: false
       pnpm-enabled: false
       stack-enabled: true
-      consumer-quality-tests: '["tests/test_layering.py"]'
       # CI_RUNS_ON (a JSON runs-on value) moves every job to self-hosted runners; a
       # pull request from a fork always runs on GitHub-hosted ones.
       runs-on: ${{ (github.event.pull_request.head.repo.fork && '"ubuntu-latest"') || vars.CI_RUNS_ON || '"ubuntu-latest"' }}
