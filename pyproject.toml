@@ -5,7 +5,7 @@ description = "angee-messaging-bridges addon collection"
 requires-python = ">=3.14"
 license = "LGPL-3.0-or-later"
 license-files = ["LICENSE", "LICENSE.GPL"]
-dependencies = ["angee-messaging-integrate-discord==1.0.0", "angee-messaging-integrate-facebook==1.0.0", "angee-messaging-integrate-imessage==1.0.0", "angee-messaging-integrate-matrix==1.0.0", "angee-messaging-integrate-meta==1.0.0", "angee-messaging-integrate-signal==1.0.0", "angee-messaging-integrate-telegram==1.0.0", "angee-messaging-integrate-whatsapp==1.0.0", "angee-posts-integrate-facebook==1.0.0", "angee-posts-integrate-youtube==1.0.0"]
+dependencies = ["angee-messaging-impact-probe==1.0.0", "angee-messaging-integrate-discord==1.0.0", "angee-messaging-integrate-facebook==1.0.0", "angee-messaging-integrate-imessage==1.0.0", "angee-messaging-integrate-matrix==1.0.0", "angee-messaging-integrate-meta==1.0.0", "angee-messaging-integrate-signal==1.0.0", "angee-messaging-integrate-telegram==1.0.0", "angee-messaging-integrate-whatsapp==1.0.0", "angee-posts-integrate-facebook==1.0.0", "angee-posts-integrate-youtube==1.0.0"]
 
 [dependency-groups]
 dev = [
@@ -58,6 +58,7 @@ angee-knowledge-graph-pgvector = {path = "../angee/src/angee/knowledge_graph_pgv
 angee-knowledge-integrate-notion = {path = "../angee/src/angee/knowledge_integrate_notion", editable = true}
 angee-mcp = {path = "../angee/src/angee/mcp", editable = true}
 angee-messaging = {path = "../angee/src/angee/messaging", editable = true}
+angee-messaging-impact-probe = {workspace = true}
 angee-messaging-integrate-discord = {workspace = true}
 angee-messaging-integrate-facebook = {workspace = true}
 angee-messaging-integrate-imap = {path = "../angee/src/angee/messaging_integrate_imap", editable = true}
@@ -138,7 +139,7 @@ phrogg-theme-phrogg = {path = "../angee-phrogg/src/phrogg/theme_phrogg", editabl
 tests-blankchoices = {path = "../angee/tests/blankchoices", editable = true}
 
 [tool.uv.workspace]
-members = ["src/angee/messaging_integrate_discord", "src/angee/messaging_integrate_facebook", "src/angee/messaging_integrate_imessage", "src/angee/messaging_integrate_matrix", "src/angee/messaging_integrate_meta", "src/angee/messaging_integrate_signal", "src/angee/messaging_integrate_telegram", "src/angee/messaging_integrate_whatsapp", "src/angee/posts_integrate_facebook", "src/angee/posts_integrate_youtube"]
+members = ["src/angee/messaging_impact_probe", "src/angee/messaging_integrate_discord", "src/angee/messaging_integrate_facebook", "src/angee/messaging_integrate_imessage", "src/angee/messaging_integrate_matrix", "src/angee/messaging_integrate_meta", "src/angee/messaging_integrate_signal", "src/angee/messaging_integrate_telegram", "src/angee/messaging_integrate_whatsapp", "src/angee/posts_integrate_facebook", "src/angee/posts_integrate_youtube"]
 [tool.pytest.ini_options]
 cache_dir = ".pytest_cache"
 DJANGO_SETTINGS_MODULE = "tests.settings"
@@ -146,7 +147,6 @@ python_files = ["test_*.py"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib -p no:randomly"
-markers = ["shared_inputs: reads inputs across the composed host or repository"]
 
 [tool.ruff]
 line-length = 120
